@@ -31,7 +31,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setError(null)
 
     try {
-      // Using Unsplash API to search for destination images
       const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}`)
 
       if (!response.ok) {
@@ -41,7 +40,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       const data = await response.json()
 
       if (data.results && data.results.length > 0) {
-        // Get the first image result
         setDestinationImage(data.results[0].urls.regular)
       } else {
         setError("Não foi possível encontrar imagens para este destino")
@@ -91,7 +89,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
 
-    return "Brasil" // Default
+    return "Brasil"
   }
 
   // Get regime de alimentação
@@ -115,7 +113,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   // Format date range
   const formatDateRange = () => {
     try {
-      // Extract dates from DATA_FORMATADA
       const datePattern = /(\d{1,2})\/(\d{1,2}) até (\d{1,2})\/(\d{1,2}) de (\d{4})/
       const match = promo.DATA_FORMATADA.match(datePattern)
 
@@ -138,7 +135,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setIsGenerating(true)
 
     try {
-      // Temporariamente remover o scale para capturar a imagem no tamanho correto
       const template = templateRef.current
       const originalTransform = template.style.transform
       template.style.transform = ""
@@ -149,10 +145,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         height: 1920,
       })
 
-      // Restaurar o estilo original
       template.style.transform = originalTransform
 
-      // Criar o link de download
       const link = document.createElement("a")
       link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
       link.href = dataUrl
@@ -218,63 +212,71 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             {/* Text Overlay */}
             <div className="absolute inset-0">
               {/* Region Tag */}
-              <div className="absolute top-[270px] right-[70px] text-[#002043] font-bold text-[60px]">
+              <div className="absolute top-[270px] right-[70px] text-[#002043] text-5xl font-black">
                 {getRegion(promo.DESTINO)}
               </div>
 
               {/* Destination */}
-              <div className="absolute top-[360px] left-[480px] text-[#e2aa2d] font-bold text-[80px]">
+              <div className="absolute top-[360px] left-[480px] text-[#e2aa2d] text-6xl font-bold">
                 {promo.DESTINO}
               </div>
 
               {/* Hotel */}
-              <div className="absolute top-[450px] left-[480px] text-white font-medium text-[60px]">{promo.HOTEL}</div>
+              <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium">
+                {promo.HOTEL}
+              </div>
 
               {/* Date */}
-              <div className="absolute top-[530px] left-[480px] text-[#e2aa2d] font-medium text-[40px]">
+              <div className="absolute top-[530px] left-[480px] text-[#e2aa2d] text-4xl font-medium">
                 {formatDateRange()}
               </div>
 
               {/* Price */}
-              <div className="absolute top-[610px] left-[600px] text-[#002043] font-bold text-[30px]">
+              <div className="absolute top-[610px] left-[600px] text-[#002043] text-3xl font-medium">
                 {parcelas}x de
               </div>
-              <div className="absolute top-[610px] left-[540px] text-[#002043] font-bold text-[30px]">R$</div>
-              <div className="absolute top-[625px] left-[600px] text-[#002043] font-bold text-[100px]">{baseValue}</div>
-              <div className="absolute top-[760px] left-[540px] text-[#002043] font-medium text-[30px]">
+              <div className="absolute top-[610px] left-[540px] text-[#002043] text-6xl font-black">
+                R$
+              </div>
+              <div className="absolute top-[625px] left-[600px] text-[#002043] text-9xl font-black">
+                {baseValue.toFixed(2).replace(".", ",")}
+              </div>
+              <div className="absolute top-[760px] left-[540px] text-[#002043] text-3xl font-medium">
                 no cartão e {parcelas - 1}x no boleto sem juros.
               </div>
 
-              {/* Features - positioned to the right of the icons */}
-              <div className="absolute top-[835px] left-[545px] text-white font-medium text-[30px]">
+              {/* Features */}
+              <div className="absolute top-[835px] left-[545px] text-white text-3xl font-medium">
                 Aéreo Ida e Volta
               </div>
-              <div className="absolute top-[885px] left-[545px] text-white font-medium text-[30px]">
+              <div className="absolute top-[885px] left-[545px] text-white text-3xl font-medium">
                 Valor por pessoa
               </div>
-              <div className="absolute top-[935px] left-[545px] text-white font-medium text-[30px]">
+              <div className="absolute top-[935px] left-[545px] text-white text-3xl font-medium">
                 {promo.NUMERO_DE_NOITES} Noites
               </div>
-              <div className="absolute top-[980px] left-[545px] text-white font-medium text-[30px]">
+              <div className="absolute top-[980px] left-[545px] text-white text-3xl font-medium">
                 {getRegimeAlimentacao()}
               </div>
 
               {/* Departure */}
-              <div className="absolute top-[1070px] left-[410px] text-[#002043] font-bold text-[20px]">saindo de</div>
-              <div className="absolute top-[1100px] left-[410px] text-[#002043] font-bold text-[20px]">
+              <div className="absolute top-[1070px] left-[410px] text-[#002043] text-xl font-medium">
+                saindo de
+              </div>
+              <div className="absolute top-[1100px] left-[410px] text-[#002043] text-xl font-bold">
                 {getDepartureAirport()}
               </div>
 
               {/* Fine print */}
-              <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] max-w-[500px]">
+              <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] font-normal max-w-[500px]">
                 Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.
               </div>
 
               {/* Contact */}
-              <div className="absolute top-[1250px] left-[580px] text-[#002043] font-bold text-[30px]">
+              <div className="absolute top-[1250px] left-[580px] text-[#002043] text-3xl font-medium">
                 Contato e Whatsapp
               </div>
-              <div className="absolute top-[1285px] left-[580px] text-[#002043] font-bold text-[30px]">
+              <div className="absolute top-[1285px] left-[580px] text-[#002043] text-3xl font-medium">
                 (67) 9 9637-2769
               </div>
             </div>
@@ -284,4 +286,3 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     </div>
   )
 }
-
