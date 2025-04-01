@@ -204,7 +204,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           <div className="absolute inset-0 w-[1080px] h-[1920px] font-neo z-10">
             {/* Background template image */}
             <img
-              src="/assets/LAYOUTFINAL.png"
+              src="/assets/LAYOUTFINAL2.png"
               alt="Promo Template"
               className="w-full h-full object-cover"
             />
@@ -217,7 +217,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
 
               {/* Destination */}
-              <div className="absolute top-[360px] left-[480px] text-[#e2aa2d] text-6xl font-bold">
+              <div className="absolute top-[360px] left-[480px] text-[#002043] text-6xl font-bold">
                 {promo.DESTINO}
               </div>
 
@@ -227,7 +227,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
 
               {/* Date */}
-              <div className="absolute top-[530px] left-[480px] text-[#e2aa2d] text-4xl font-medium">
+              <div className="absolute top-[530px] left-[480px] text-[#002043] text-4xl font-medium">
                 {formatDateRange()}
               </div>
 
