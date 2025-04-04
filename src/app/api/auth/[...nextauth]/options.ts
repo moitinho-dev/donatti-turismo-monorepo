@@ -12,6 +12,37 @@ declare module "next-auth" {
   }
 }
 
+
+function getSafeISOString() {
+  const now = new Date();
+  if (isNaN(now.getTime())) {
+    console.error("Invalid Date encountered");
+    return null;
+  }
+  return now.toISOString();
+}
+
+// Example usage in options.ts
+const users: User[] = []; // Define users array
+const user: User = { id: "", email: "", name: "", password: "", role: "", createdAt: "", active: true }; // Define user object
+const sessions: any[] = []; // Define sessions array
+const credentials: { userAgent?: string } = {}; // Define credentials object
+
+// Update last login for a user
+users.forEach((u: User) => {
+  if (u.id === user.id) {
+    u.lastLogin = getSafeISOString();
+  }
+});
+
+// Record login session
+sessions.push({
+  userId: user.id,
+  email: user.email,
+  loginTime: getSafeISOString(),
+  userAgent: credentials.userAgent || "Unknown",
+});
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
