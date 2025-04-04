@@ -24,7 +24,7 @@ function getSafeISOString() {
 
 // Example usage in options.ts
 const users: User[] = []; // Define users array
-const user: User = { id: "", email: "", name: "", password: "", role: "", createdAt: "", active: true }; // Define user object
+const user: User = { id: "", email: "", name: "", password: "", role: "admin", createdAt: "", active: true }; // Define user object
 const sessions: any[] = []; // Define sessions array
 const credentials: { userAgent?: string } = {}; // Define credentials object
 
