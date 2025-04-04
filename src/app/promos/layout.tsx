@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { PromoProvider } from "@/providers/PromoProvider"
-import { AuthProvider } from "@/providers/AuthProvider"
+import PromosLayoutClient from "./PromosLayoutClient"
 
 export const metadata: Metadata = {
   title: "Gerenciador de Promoções | Lemonde Tourisme",
@@ -13,10 +12,6 @@ export default function PromosLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AuthProvider>
-      <PromoProvider>{children}</PromoProvider>
-    </AuthProvider>
-  )
+  return <PromosLayoutClient>{children}</PromosLayoutClient>
 }
 
