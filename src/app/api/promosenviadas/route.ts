@@ -2,7 +2,9 @@ import { GoogleSpreadsheet } from "google-spreadsheet"
 import { JWT } from "google-auth-library"
 import type { NextRequest, NextResponse } from "next/server"
 
+// Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
+
 // Defina o tipo de dados da linha
 export type PlanilhaData = {
   DESTINO: string

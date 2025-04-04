@@ -5,6 +5,9 @@ import { nanoid } from "nanoid"
 import { z } from "zod"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 // Schema for promo validation
 const promoSchema = z.object({
   id: z.string().optional(),

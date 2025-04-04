@@ -1,5 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 // Unsplash API credentials
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || ""
 

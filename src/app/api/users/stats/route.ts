@@ -4,6 +4,9 @@ import { authOptions } from "../../auth/[...nextauth]/options"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 import type { User, UserStats } from "@/types/user"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 export async function GET(req: NextRequest) {
   try {
     // Check authentication

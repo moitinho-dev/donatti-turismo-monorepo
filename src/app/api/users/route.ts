@@ -6,6 +6,9 @@ import { z } from "zod"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 import type { User } from "@/types/user"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 // Schema for user validation
 const userSchema = z.object({
   id: z.string().optional(),
