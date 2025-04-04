@@ -19,6 +19,37 @@ interface UsersListProps {
   onRefresh: () => void
 }
 
+// Add this helper function at the top of the component
+const formatDate = (dateString?: string) => {
+  if (!dateString) return "-"
+
+  try {
+    const date = parseISO(dateString)
+    if (isNaN(date.getTime())) {
+      return "Data inválida"
+    }
+    return format(date, "dd/MM/yyyy", { locale: ptBR })
+  } catch (error) {
+    console.error("Error formatting date:", error, dateString)
+    return "Data inválida"
+  }
+}
+
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return "-"
+
+  try {
+    const date = parseISO(dateString)
+    if (isNaN(date.getTime())) {
+      return "Data inválida"
+    }
+    return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR })
+  } catch (error) {
+    console.error("Error formatting date:", error, dateString)
+    return "Data inválida"
+  }
+}
+
 export function UsersList({ users, onEdit, onRefresh }: UsersListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
@@ -174,17 +205,13 @@ export function UsersList({ users, onEdit, onRefresh }: UsersListProps) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 font-mon">
-                        {user.createdAt ? format(parseISO(user.createdAt), "dd/MM/yyyy", { locale: ptBR }) : "-"}
-                      </span>
+                      <span className="text-sm text-gray-900 font-mon">{formatDate(user.createdAt)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 font-mon">
-                        {user.lastLogin ? format(parseISO(user.lastLogin), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"}
-                      </span>
+                      <span className="text-sm text-gray-900 font-mon">{formatDateTime(user.lastLogin)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

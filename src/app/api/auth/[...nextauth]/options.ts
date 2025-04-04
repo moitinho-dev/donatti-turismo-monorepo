@@ -12,28 +12,32 @@ declare module "next-auth" {
   }
 }
 
-
 function getSafeISOString() {
-  const now = new Date();
-  if (isNaN(now.getTime())) {
-    console.error("Invalid Date encountered");
-    return null;
+  try {
+    const now = new Date()
+    if (isNaN(now.getTime())) {
+      console.error("Invalid Date encountered")
+      return new Date(0).toISOString() // Return epoch time as fallback
+    }
+    return now.toISOString()
+  } catch (error) {
+    console.error("Error generating ISO string:", error)
+    return new Date(0).toISOString() // Return epoch time as fallback
   }
-  return now.toISOString();
 }
 
 // Example usage in options.ts
-const users: User[] = []; // Define users array
-const user: User = { id: "", email: "", name: "", password: "", role: "admin", createdAt: "", active: true }; // Define user object
-const sessions: any[] = []; // Define sessions array
-const credentials: { userAgent?: string } = {}; // Define credentials object
+const users: User[] = [] // Define users array
+const user: User = { id: "", email: "", name: "", password: "", role: "admin", createdAt: "", active: true } // Define user object
+const sessions: any[] = [] // Define sessions array
+const credentials: { userAgent?: string } = {} // Define credentials object
 
 // Update last login for a user
 users.forEach((u: User) => {
   if (u.id === user.id) {
-    u.lastLogin = getSafeISOString();
+    u.lastLogin = getSafeISOString()
   }
-});
+})
 
 // Record login session
 sessions.push({
@@ -41,7 +45,7 @@ sessions.push({
   email: user.email,
   loginTime: getSafeISOString(),
   userAgent: credentials.userAgent || "Unknown",
-});
+})
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -75,7 +79,7 @@ export const authOptions: NextAuthOptions = {
               if (u.id === user.id) {
                 return {
                   ...u,
-                  lastLogin: new Date().toISOString(),
+                  lastLogin: getSafeISOString(),
                 }
               }
               return u
@@ -89,7 +93,7 @@ export const authOptions: NextAuthOptions = {
             sessions.push({
               userId: user.id,
               email: user.email,
-              loginTime: new Date().toISOString(),
+              loginTime: getSafeISOString(),
               userAgent: credentials.userAgent || "Unknown",
             })
             await redis.set(REDIS_KEYS.USER_SESSIONS, sessions)

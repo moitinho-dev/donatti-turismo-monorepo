@@ -30,6 +30,22 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart | null>(null)
 
+  // Add this helper function at the beginning of the component
+  const safeParseDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        console.error("Invalid date encountered:", dateString)
+        return new Date(0) // Return epoch time as fallback
+      }
+      return date
+    } catch (error) {
+      console.error("Error parsing date:", error)
+      return new Date(0) // Return epoch time as fallback
+    }
+  }
+
+  // Update the useEffect hook that creates the chart
   useEffect(() => {
     if (!stats || !detailed || !chartRef.current) return
 
@@ -41,15 +57,23 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
     const ctx = chartRef.current.getContext("2d")
     if (!ctx) return
 
+    // Create new chart with safe data
+    const safeData = stats.daily.map((day) => ({
+      ...day,
+      date: day.date || "",
+      label: day.label || "",
+      count: typeof day.count === "number" ? day.count : 0,
+    }))
+
     // Create new chart
     chartInstance.current = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: stats.daily.map((day) => day.label),
+        labels: safeData.map((day) => day.label),
         datasets: [
           {
             label: "Promoções Criadas",
-            data: stats.daily.map((day) => day.count),
+            data: safeData.map((day) => day.count),
             backgroundColor: "rgba(51, 125, 157, 0.7)",
             borderColor: "rgba(51, 125, 157, 1)",
             borderWidth: 1,

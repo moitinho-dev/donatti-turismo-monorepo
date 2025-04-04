@@ -58,10 +58,19 @@ export async function GET(req: NextRequest) {
     const today = new Date()
     const thirtyDaysAgo = subDays(today, 30)
 
+    // Add this helper function at the beginning of the GET function
+    const safeDate = (date: Date | null): Date => {
+      if (!date || isNaN(date.getTime())) {
+        return new Date(0) // Return epoch time as fallback
+      }
+      return date
+    }
+
+    // Then update the daily stats calculation
     // Create array of all days in the interval
     const daysInterval = eachDayOfInterval({
-      start: thirtyDaysAgo,
-      end: today,
+      start: safeDate(thirtyDaysAgo),
+      end: safeDate(today),
     })
 
     // Initialize daily counts with zeros
@@ -73,13 +82,22 @@ export async function GET(req: NextRequest) {
 
     // Count promos per day
     promos.forEach((promo) => {
-      const createdAt = new Date(promo.createdAt)
-      const dayIndex = dailyCounts.findIndex(
-        (day) => createdAt >= startOfDay(new Date(day.date)) && createdAt <= endOfDay(new Date(day.date)),
-      )
+      try {
+        const createdAt = new Date(promo.createdAt)
+        if (isNaN(createdAt.getTime())) {
+          console.error("Invalid date in promo:", promo.id)
+          return
+        }
 
-      if (dayIndex !== -1) {
-        dailyCounts[dayIndex].count++
+        const dayIndex = dailyCounts.findIndex(
+          (day) => createdAt >= startOfDay(new Date(day.date)) && createdAt <= endOfDay(new Date(day.date)),
+        )
+
+        if (dayIndex !== -1) {
+          dailyCounts[dayIndex].count++
+        }
+      } catch (error) {
+        console.error("Error processing promo date:", error)
       }
     })
 

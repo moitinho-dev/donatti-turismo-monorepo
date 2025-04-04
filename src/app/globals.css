@@ -1,8 +1,8 @@
 /* Add Neo Sans W1G font import */
 @font-face {
   font-family: "Neo Sans W1G";
-  src: url("../../public/fonts/NeoSansW1G-Regular.otf") format("otf"),
-    url("../../public/fonts/NeoSansW1G-Regular.otf") format("otf");
+  src: url("../../public/fonts/NeoSansW1G-Regular.otf") format("otf"), url("../../public/fonts/NeoSansW1G-Regular.otf")
+    format("otf");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -10,8 +10,8 @@
 
 @font-face {
   font-family: "Neo Sans W1G";
-  src: url("../../public/fonts/NeoSansW1G-Medium.otf") format("otf"),
-    url("../../public/fonts/NeoSansW1G-Medium.otf") format("otf");
+  src: url("../../public/fonts/NeoSansW1G-Medium.otf") format("otf"), url("../../public/fonts/NeoSansW1G-Medium.otf")
+    format("otf");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
