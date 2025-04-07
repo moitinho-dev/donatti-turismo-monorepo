@@ -21,7 +21,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     MES_ATE: "",
     ANO: "",
     VALOR: "",
-    PARCELAS: "10",
+    PARCELAS: "",
     COM_CAFE: false,
     SEM_CAFE: false,
     MEIA_PENSAO: false,
