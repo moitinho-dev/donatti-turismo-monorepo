@@ -14,9 +14,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [error, setError] = useState<string | null>(null)
   const templateRef = useRef<HTMLDivElement>(null)
 
-// Calcular valores
-const baseValue = Number.parseFloat(promo.VALOR)
-const parcelas = promo.PARCELAS ? Number.parseInt(promo.PARCELAS, 10) : 10 // Usar o valor enviado ou 1 como padrão
+  // Calculate values
+  const baseValue = Number.parseFloat(promo.VALOR)
+  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
 
   // Fetch destination image when component mounts or destination changes
   useEffect(() => {
@@ -159,6 +159,14 @@ const parcelas = promo.PARCELAS ? Number.parseInt(promo.PARCELAS, 10) : 10 // Us
     }
   }
 
+  // Calculate the installment value
+  const getInstallmentValue = () => {
+    if (isNaN(baseValue) || parcelas === 0) {
+      return "0,00"
+    }
+    return (baseValue / parcelas).toFixed(2).replace(".", ",")
+  }
+
   return (
     <div className="flex flex-col items-center">
       <div className="mb-4 flex gap-4">
@@ -229,7 +237,7 @@ const parcelas = promo.PARCELAS ? Number.parseInt(promo.PARCELAS, 10) : 10 // Us
               </div>
               <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl font-black">R$</div>
               <div className="absolute top-[605px] left-[600px] text-[#002043] text-[126px] font-black">
-                {baseValue.toFixed(2).replace(".", ",")}
+                {getInstallmentValue()}
               </div>
               <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px] font-medium">
                 no cartão e {parcelas - 1}x no boleto sem juros.
