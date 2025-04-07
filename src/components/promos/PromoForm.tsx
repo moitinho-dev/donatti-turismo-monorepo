@@ -97,22 +97,54 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       ...prev,
       [field]: value,
     }))
-
-    // If changing parcelas, update the formatted amount
+  
+    // Atualizar o valor formatado ao alterar parcelas
     if (field === "PARCELAS" && typeof value === "string") {
       const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
       const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
       if (!isNaN(numericValue)) {
         const parcelas = Number.parseInt(value, 10)
-        const valueAfterCalculation = numericValue * parcelas * 2
+        const installmentValue = numericValue / parcelas
         setFormattedAmount(
-          valueAfterCalculation.toLocaleString("pt-BR", {
+          installmentValue.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           }),
         )
       }
     }
+  }
+  
+  const parseCurrencyValue = (value: string) => {
+    const cleanedValue = value.replace(/[^\d,.-]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+  
+    if (isNaN(numericValue)) {
+      return "0.00"
+    }
+  
+    const parcelas = Number.parseInt(formData.PARCELAS || "10", 10) // Usar o valor de parcelas selecionado
+    const valueAfterCalculation = (numericValue / parcelas).toFixed(2)
+    return valueAfterCalculation
+  }
+  
+  const getInstallmentValue = () => {
+    const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+  
+    if (isNaN(numericValue)) {
+      return "R$ 0,00"
+    }
+  
+    const parcelas = Number.parseInt(formData.PARCELAS, 10)
+    const installmentValue = numericValue / parcelas
+  
+    return installmentValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
   }
 
   const handleChangeRegimeAlimentacao = (valor: string) => {
@@ -202,18 +234,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }))
   }
 
-  const parseCurrencyValue = (value: string) => {
-    const cleanedValue = value.replace(/[^\d,.-]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
-
-    if (isNaN(numericValue)) {
-      return "0.00"
-    }
-
-    const parcelas = Number.parseInt(formData.PARCELAS || "10", 10)
-    const valueAfterCalculation = ((numericValue * 10) / 2 / parcelas).toFixed(2)
-    return valueAfterCalculation
-  }
+  
 
   const formatCurrencyValue = (value: string) => {
     const formattedValue = value.replace(/[^\d]/g, "")
@@ -297,26 +318,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     setAteDate("")
   }
 
-  // Calculate installment value for display
-  const getInstallmentValue = () => {
-    const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
 
-    if (isNaN(numericValue)) {
-      return "R$ 0,00"
-    }
-
-    const parcelas = Number.parseInt(formData.PARCELAS, 10)
-    const totalValue = numericValue * parcelas * 2
-    const installmentValue = totalValue / parcelas
-
-    return installmentValue.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -423,28 +425,30 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
               />
               <p className="text-xs text-gray-500 font-mon">Valor total que será dividido por pessoa e em parcelas</p>
             </div>
-
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
-                <CreditCard className="h-4 w-4" />
-                Parcelas <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="PARCELAS"
-                value={formData.PARCELAS}
-                onChange={(e) => handleChange("PARCELAS", e.target.value)}
-                required
-              >
-                <option value="10">10x</option>
-                <option value="12">12x</option>
-                <option value="15">15x</option>
-                <option value="18">18x</option>
-              </select>
-              <p className="text-xs text-gray-500 font-mon">
-                {formData.PARCELAS}x de {getInstallmentValue()}
-              </p>
-            </div>
+  <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+    <CreditCard className="h-4 w-4" />
+    Parcelas <span className="text-red-500">*</span>
+  </label>
+  <select
+    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+    id="PARCELAS"
+    value={formData.PARCELAS}
+    onChange={(e) => handleChange("PARCELAS", e.target.value)}
+    required
+  >
+    <option value="1">1x</option>
+    <option value="2">2x</option>
+    <option value="3">3x</option>
+    <option value="6">6x</option>
+    <option value="10">10x</option>
+    <option value="12">12x</option>
+    <option value="15">15x</option>
+  </select>
+  <p className="text-xs text-gray-500 font-mon">
+    {formData.PARCELAS}x de {getInstallmentValue()}
+  </p>
+</div>
 
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
