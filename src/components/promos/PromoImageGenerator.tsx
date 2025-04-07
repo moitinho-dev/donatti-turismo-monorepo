@@ -14,9 +14,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [error, setError] = useState<string | null>(null)
   const templateRef = useRef<HTMLDivElement>(null)
 
-  // Calculate values
-  const baseValue = Number.parseFloat(promo.VALOR)
-  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
+// Calcular valores
+const baseValue = Number.parseFloat(promo.VALOR)
+const parcelas = promo.PARCELAS ? Number.parseInt(promo.PARCELAS, 10) : 10 // Usar o valor enviado ou 1 como padrão
 
   // Fetch destination image when component mounts or destination changes
   useEffect(() => {
