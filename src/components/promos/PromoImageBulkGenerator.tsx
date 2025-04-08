@@ -75,7 +75,12 @@ export function PromoImageBulkGenerator({ promos }: PromoImageBulkGeneratorProps
 
         <TabsContent value="single">
           {selectedPromo ? (
-            <PromoImageGenerator promo={selectedPromo} />
+            <PromoImageGenerator 
+              promo={selectedPromo} 
+              format="defaultFormat" 
+              onGenerated={() => console.log("Image generated")} 
+              onGenerating={() => console.log("Generating image")} 
+            />
           ) : (
             <div className="text-center py-12 text-gray-500">Nenhuma promoção disponível para gerar imagem.</div>
           )}
