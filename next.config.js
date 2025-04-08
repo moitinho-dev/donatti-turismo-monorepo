@@ -13,6 +13,7 @@ module.exports = {
       config.resolve.fallback.tls = false
       config.resolve.fallback.net = false
       config.resolve.fallback.child_process = false
+      config.resolve.alias['@'] = new URL('./src', import.meta.url).pathname;
     }
 
     return config
