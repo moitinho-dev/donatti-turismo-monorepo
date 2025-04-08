@@ -1,29 +1,27 @@
-/** @type {import('next').NextConfig} */
+const path = require('path');
 
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   env: {
     GOOGLE_SERVICE_PRIVATE_KEY: process.env.GOOGLE_SERVICE_PRIVATE_KEY,
   },
-}
-
-module.exports = {
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback.fs = false
-      config.resolve.fallback.tls = false
-      config.resolve.fallback.net = false
-      config.resolve.fallback.child_process = false
-      config.resolve.alias['@'] = new URL('./src', import.meta.url).pathname;
-    }
-
-    return config
-  },
-}
-
-const nextConfig = {
   images: {
     domains: ["lh3.googleusercontent.com", "images.unsplash.com"],
   },
-}
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Fallbacks for Node.js modules that aren't needed in the browser
+      config.resolve.fallback.fs = false;
+      config.resolve.fallback.tls = false;
+      config.resolve.fallback.net = false;
+      config.resolve.fallback.child_process = false;
 
-module.exports = nextConfig
+      // Set up the @ alias for Webpack
+      config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    }
+
+    return config;
+  },
+};
+
+module.exports = nextConfig;
