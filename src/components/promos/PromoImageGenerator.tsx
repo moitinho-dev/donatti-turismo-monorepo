@@ -165,7 +165,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         <button
           onClick={fetchDestinationImage}
           disabled={isLoadingImage}
-          className="flex items-center gap-2 px-4 py-2 bg-second-blue text-white rounded-md hover:bg-primary-blue transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50"
         >
           {isLoadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Buscar imagem
