@@ -16,8 +16,6 @@ import {
   Utensils,
   Plane,
 } from "lucide-react"
-import { format, parseISO } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { PromoImageGeneratorModal } from "./PromoImageGeneratorModal"
 
 interface PromoData {
@@ -47,51 +45,79 @@ interface PromosListProps {
   onDelete: () => void
 }
 
-// Add this helper function at the top of the component
+// Fix the date formatting to use local timezone
+// Replace the formatRelativeDate function with this improved version
+const formatRelativeDate = (dateString: string) => {
+  try {
+    // Parse the UTC date and convert to local timezone
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    // Compare dates by setting time to midnight for accurate day comparison
+    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const localYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+    if (localDate.getTime() === localToday.getTime()) {
+      return "Hoje"
+    } else if (localDate.getTime() === localYesterday.getTime()) {
+      return "Ontem"
+    } else {
+      return date.toLocaleDateString("pt-BR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    }
+  } catch (error) {
+    console.error("Error formatting relative date:", error)
+    return "Data desconhecida"
+  }
+}
+
+// Also update the formatDate function for consistent timezone handling
 const formatDate = (dateString: string) => {
   try {
-    const date = parseISO(dateString)
+    const date = new Date(dateString)
     if (isNaN(date.getTime())) {
       return "Data inválida"
     }
-    return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR })
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   } catch (error) {
-    console.error("Error formatting date:", error, dateString)
+    console.error("Error formatting date:", error)
     return "Data inválida"
   }
 }
 
-// Adicionar função para formatar data relativa
-const formatRelativeDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return "Hoje"
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return "Ontem"
-  } else {
-    return new Date(date).toLocaleDateString("pt-BR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
-}
-
-// Modificar a função para agrupar promos por data
+// Update the groupPromosByDate function to use local dates
 const groupPromosByDate = (promos: PromoData[]) => {
   const groups: { [key: string]: PromoData[] } = {}
 
   promos.forEach((promo) => {
-    const date = promo.createdAt ? new Date(promo.createdAt).toISOString().split("T")[0] : "unknown"
-    if (!groups[date]) {
-      groups[date] = []
+    if (!promo.createdAt) {
+      const unknownGroup = "unknown"
+      if (!groups[unknownGroup]) groups[unknownGroup] = []
+      groups[unknownGroup].push(promo)
+      return
     }
-    groups[date].push(promo)
+
+    // Convert UTC date to local date and use as group key
+    const date = new Date(promo.createdAt)
+    const localDateStr = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split("T")[0]
+
+    if (!groups[localDateStr]) {
+      groups[localDateStr] = []
+    }
+    groups[localDateStr].push(promo)
   })
 
   // Sort dates in descending order (newest first)

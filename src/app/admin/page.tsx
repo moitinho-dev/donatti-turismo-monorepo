@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../api/auth/[...nextauth]/options"
-import AdminDashboard from "@/components/admin/AdminDashboard"
+import AdminDashboardContent from "@/components/admin/AdminDashboardContent"
+import { DashboardLayout } from "@/components/layouts/DashboardLayout"
 
 export const metadata: Metadata = {
   title: "Painel Administrativo | Donatti Turismo",
@@ -24,8 +25,8 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <AdminDashboard user={session.user} />
-    </main>
+    <DashboardLayout user={session.user}>
+      <AdminDashboardContent user={session.user} />
+    </DashboardLayout>
   )
 }

@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../api/auth/[...nextauth]/options"
-import AgentDashboard from "@/components/agent/AgentDashboard"
+import AgentDashboardContent from "@/components/agent/AgentDashboardContent"
+import { DashboardLayout } from "@/components/layouts/DashboardLayout"
 
 export const metadata: Metadata = {
   title: "Painel do Agente | Donatti Turismo",
@@ -19,8 +20,8 @@ export default async function AgentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <AgentDashboard user={session.user} />
-    </main>
+    <DashboardLayout user={session.user} onAddNew={() => {}}>
+      <AgentDashboardContent user={session.user} />
+    </DashboardLayout>
   )
 }

@@ -212,10 +212,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
+  // Improve the value formatting in the form
+  // Replace the handleAmountChange function with this improved version
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.target
     const cursorPosition = input.selectionStart // Store cursor position
-    let inputValue = input.value.replace(/[^\d]/g, "") // Remove all non-digits
+    const inputValue = input.value.replace(/[^\d]/g, "") // Remove all non-digits
 
     // Convert the raw input into a number (assuming the last two digits are cents)
     if (inputValue.length === 0) {
