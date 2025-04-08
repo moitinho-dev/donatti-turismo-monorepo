@@ -228,11 +228,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 {parcelas}x de
               </div>
               <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl font-black">R$</div>
-              <div className="absolute top-[605px] left-[600px] text-[#002043] text-[126px] font-black">
+              <div className="absolute top-[605px] left-[600px] text-[#002043] text-[119px] font-black">
                 {baseValue.toFixed(2).replace(".", ",")}
               </div>
               <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px] font-medium">
-                no cartão e {parcelas - 1}x no boleto sem juros.
+                no cartão e 10x no boleto sem juros.
               </div>
 
               {/* Features */}
