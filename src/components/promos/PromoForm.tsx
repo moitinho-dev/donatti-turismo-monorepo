@@ -195,16 +195,25 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
+  // Corrigir a função handleAmountChange para processar corretamente o valor digitado
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value
-    const formattedValue = formatCurrencyValue(inputValue)
-    const parsedValue = parseCurrencyValue(inputValue, formData.PARCELAS)
+    setFormattedAmount(inputValue)
 
-    setFormattedAmount(formattedValue)
-    setFormData((prev) => ({
-      ...prev,
-      VALOR: parsedValue,
-    }))
+    // Extrair apenas os números do valor digitado
+    const cleanedValue = inputValue.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+
+    if (!isNaN(numericValue)) {
+      // Armazenar o valor base por parcela por pessoa
+      const parcelasNum = Number.parseInt(formData.PARCELAS || "10", 10)
+      const valorPorParcela = (numericValue / 2 / parcelasNum).toFixed(2)
+
+      setFormData((prev) => ({
+        ...prev,
+        VALOR: valorPorParcela,
+      }))
+    }
   }
 
   const parseCurrencyValue = (value: string, parcelas: string) => {
@@ -221,20 +230,27 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return valueAfterCalculation
   }
 
+  // Corrigir a função formatCurrencyValue para manter o valor digitado
   const formatCurrencyValue = (value: string) => {
-    const formattedValue = value.replace(/[^\d]/g, "")
-    const numberValue = Number.parseFloat(formattedValue) / 100
-
-    if (isNaN(numberValue)) {
-      return "R$ 0,00"
+    // Apenas formatar se for um valor numérico válido
+    if (value) {
+      const cleanedValue = value.replace(/[^\d.,]/g, "")
+      try {
+        const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+        if (!isNaN(numericValue)) {
+          return numericValue.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        }
+      } catch (e) {
+        // Em caso de erro, retornar o valor original
+        return value
+      }
     }
-
-    return numberValue.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
+    return "R$ 0,00"
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -306,7 +322,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     setAteDate("")
   }
 
-  // Calculate total value for display
+  // Corrigir a função getTotalValue para calcular corretamente o valor total
   const getTotalValue = () => {
     const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
     const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))

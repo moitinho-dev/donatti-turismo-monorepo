@@ -168,7 +168,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (isNaN(baseValue) || parcelas === 0) {
       return "0,00"
     }
-    // Usar o valor real de parcelas e o valor por parcela individual
+
+    // Mostrar o valor exato da parcela por pessoa
     return baseValue.toFixed(2).replace(".", ",")
   }
 
