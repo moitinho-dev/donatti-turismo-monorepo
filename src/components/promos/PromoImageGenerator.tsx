@@ -5,9 +5,6 @@ import { Loader2, Download, RefreshCw } from "lucide-react"
 
 interface PromoImageGeneratorProps {
   promo: any
-  format: string
-  onGenerated: (url: string) => void
-  onGenerating: () => void
 }
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
@@ -18,7 +15,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const templateRef = useRef<HTMLDivElement>(null)
 
   // Calculate values
-  const baseValue = Number.parseFloat(promo.VALOR.replace(",", ".")) // Per-person installment value
+  const baseValue = Number.parseFloat(promo.VALOR)
   const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
 
   // Fetch destination image when component mounts or destination changes
@@ -34,46 +31,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setError(null)
 
     try {
-      let searchQuery = promo.DESTINO
-
-      const cityTerms = {
-        "Porto Alegre": "cidade porto alegre brasil skyline",
-        "Rio de Janeiro": "rio de janeiro cidade cristo",
-        "São Paulo": "são paulo avenida paulista cidade",
-        Natal: "natal praia cidade brasil",
-        Fortaleza: "fortaleza praia cidade brasil",
-        Recife: "recife cidade brasil",
-        Salvador: "salvador bahia pelourinho cidade",
-        Florianópolis: "florianópolis praia cidade brasil",
-        Gramado: "gramado cidade brasil",
-        "Foz do Iguaçu": "cataratas do iguaçu brasil",
-        Maceió: "maceió praia cidade brasil",
-        "João Pessoa": "joão pessoa praia cidade brasil",
-        Orlando: "orlando disney world",
-        Miami: "miami beach florida",
-        "Nova York": "new york city skyline",
-        Cancún: "cancun mexico beach resort",
-        "Buenos Aires": "buenos aires argentina city",
-        Santiago: "santiago chile city",
-        Lisboa: "lisbon portugal city",
-        Madrid: "madrid spain city",
-        Barcelona: "barcelona spain sagrada familia",
-        Paris: "paris france eiffel tower",
-        Roma: "rome italy colosseum",
-        Londres: "london england big ben",
-        Tóquio: "tokyo japan city",
-        Dubai: "dubai uae burj khalifa",
-      }
-
-      for (const [city, term] of Object.entries(cityTerms)) {
-        if (promo.DESTINO.includes(city)) {
-          searchQuery = term
-          break
-        }
-      }
-
-      const randomPage = Math.floor(Math.random() * 5) + 1
-      const response = await fetch(`/api/image-search?query=${encodeURIComponent(searchQuery)}&page=${randomPage}`)
+      const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch destination image")
@@ -82,17 +40,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       const data = await response.json()
 
       if (data.results && data.results.length > 0) {
-        const randomIndex = Math.floor(Math.random() * data.results.length)
-        setDestinationImage(data.results[randomIndex].urls.regular)
+        setDestinationImage(data.results[0].urls.regular)
       } else {
-        // Fallback to a default Unsplash image if no results
-        setDestinationImage(`https://source.unsplash.com/1600x900/?${encodeURIComponent(searchQuery)}`)
+        setError("Não foi possível encontrar imagens para este destino")
       }
     } catch (err) {
       console.error("Error fetching destination image:", err)
       setError("Erro ao buscar imagem do destino")
-      // Fallback to a default Unsplash image if API fails
-      setDestinationImage(`https://source.unsplash.com/1600x900/?${encodeURIComponent(promo.DESTINO)}`)
     } finally {
       setIsLoadingImage(false)
     }
@@ -126,22 +80,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     ]
     const centralCities = ["brasília", "goiânia", "cuiabá", "campo grande", "bonito", "caldas novas"]
     const northCities = ["manaus", "belém", "palmas", "rio branco", "porto velho", "boa vista", "macapá"]
-    const internationalCities = [
-      "orlando",
-      "miami",
-      "nova york",
-      "cancún",
-      "buenos aires",
-      "santiago",
-      "lisboa",
-      "madrid",
-      "barcelona",
-      "paris",
-      "roma",
-      "londres",
-      "tóquio",
-      "dubai",
-    ]
 
     const dest = destination.toLowerCase()
 
@@ -150,7 +88,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
-    if (internationalCities.some((city) => dest.includes(city.toLowerCase()))) return "Internacional"
 
     return "Brasil"
   }
@@ -222,14 +159,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
-  // Format the installment value for display
-  const getInstallmentValue = () => {
-    if (isNaN(baseValue)) {
-      return "0,00"
-    }
-    return baseValue.toFixed(2).replace(".", ",")
-  }
-
   return (
     <div className="flex flex-col items-center">
       <div className="mb-4 flex gap-4">
@@ -272,12 +201,12 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             </div>
           )}
           {/* Template overlay with higher z-index */}
-          <div className="absolute inset-0 w-[1080px] h-[1920px] z-10">
+          <div className="absolute inset-0 w-[1080px] h-[1920px] font-neo z-10">
             {/* Background template image */}
             <img src="/assets/LAYOUTFINAL2.png" alt="Promo Template" className="w-full h-full object-cover" />
 
             {/* Text Overlay */}
-            <div className="absolute inset-0 font-neo">
+            <div className="absolute inset-0">
               {/* Region Tag */}
               <div className="absolute top-[270px] right-[70px] text-[#002043] text-5xl font-black">
                 {getRegion(promo.DESTINO)}
@@ -300,7 +229,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
               <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl font-black">R$</div>
               <div className="absolute top-[605px] left-[600px] text-[#002043] text-[126px] font-black">
-                {getInstallmentValue()}
+                {baseValue.toFixed(2).replace(".", ",")}
               </div>
               <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px] font-medium">
                 no cartão e {parcelas - 1}x no boleto sem juros.

@@ -1,118 +1,129 @@
 "use client"
 import { useState } from "react"
+import type React from "react"
+
+import { Loader2 } from "lucide-react"
 import { PromoImageGenerator } from "./PromoImageGenerator"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
 
 interface PromoImageBulkGeneratorProps {
   promos: any[]
 }
 
 export function PromoImageBulkGenerator({ promos }: PromoImageBulkGeneratorProps) {
-  const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [destinationFilter, setDestinationFilter] = useState("all")
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(null)
+  const [filteredPromos, setFilteredPromos] = useState<any[]>([])
+  const [isFiltering, setIsFiltering] = useState(false)
 
-  // Get unique destinations for filter
-  const uniqueDestinations = [...new Set(promos.map((promo) => promo.DESTINO))].sort()
+  // Get unique destinations
+  const destinations = [...new Set(promos.map((promo) => promo.DESTINO))].sort()
 
-  // Filter promos based on search and destination
-  const filteredPromos = promos.filter((promo) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      promo.DESTINO?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      promo.HOTEL?.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleDestinationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const destination = e.target.value
+    setSelectedDestination(destination || null)
 
-    const matchesDestination = destinationFilter === "all" || promo.DESTINO === destinationFilter
-
-    return matchesSearch && matchesDestination
-  })
-
-  // Get selected promo
-  const selectedPromo = selectedPromoId ? promos.find((promo) => promo.id === selectedPromoId) : filteredPromos[0]
+    if (destination) {
+      setIsFiltering(true)
+      const filtered = promos.filter((promo) => promo.DESTINO === destination)
+      setFilteredPromos(filtered)
+      setIsFiltering(false)
+    } else {
+      setFilteredPromos([])
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar promoções..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="w-full md:w-64">
-          <Select value={destinationFilter} onValueChange={setDestinationFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Todos os destinos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os destinos</SelectItem>
-              {uniqueDestinations.map((destination) => (
-                <SelectItem key={destination} value={destination}>
+    <div>
+      <div className="mb-6">
+        <p className="text-gray-600 mb-4 font-mon">
+          Selecione um destino para gerar imagens promocionais. Você pode gerar e baixar imagens para cada promoção
+          individualmente.
+        </p>
+
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="w-full md:w-1/3">
+            <label className="block text-primary-blue font-mon font-medium mb-2">Selecione o destino</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              value={selectedDestination || ""}
+              onChange={handleDestinationChange}
+            >
+              <option value="">Selecione um destino</option>
+              {destinations.map((destination) => (
+                <option key={destination} value={destination}>
                   {destination}
-                </SelectItem>
+                </option>
               ))}
-            </SelectContent>
-          </Select>
+            </select>
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="single" className="w-full">
-        <TabsList className="mb-6 bg-gray-100 p-1 rounded-lg">
-          <TabsTrigger value="single" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
-            Gerador Individual
-          </TabsTrigger>
-          <TabsTrigger value="list" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
-            Lista de Promoções
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="single">
-          {selectedPromo ? (
-            <PromoImageGenerator 
-              promo={selectedPromo} 
-              format="defaultFormat" 
-              onGenerated={() => console.log("Image generated")} 
-              onGenerating={() => console.log("Generating image")} 
-            />
-          ) : (
-            <div className="text-center py-12 text-gray-500">Nenhuma promoção disponível para gerar imagem.</div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="list">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredPromos.map((promo) => (
-              <Card
-                key={promo.id}
-                className={`cursor-pointer transition-all ${selectedPromoId === promo.id ? "ring-2 ring-primary-blue" : "hover:shadow-md"}`}
-                onClick={() => setSelectedPromoId(promo.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="font-bold text-lg text-primary-blue">{promo.DESTINO}</div>
-                  <div className="text-gray-600">{promo.HOTEL}</div>
-                  <div className="text-sm text-gray-500">{promo.DATA_FORMATADA}</div>
-                  <div className="mt-2 font-semibold text-second-blue">
-                    {promo.PARCELAS}x R$ {promo.VALOR}
+      {isFiltering ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+          <span className="ml-2 text-gray-600 font-mon">Filtrando promoções...</span>
+        </div>
+      ) : selectedDestination && filteredPromos.length === 0 ? (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 text-yellow-700 font-mon">
+          <p>Nenhuma promoção encontrada para o destino selecionado.</p>
+        </div>
+      ) : filteredPromos.length > 0 ? (
+        <div className="space-y-8">
+          {filteredPromos.map((promo) => (
+            <div key={promo.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-primary-blue mb-4 font-mon">
+                {promo.DESTINO} - {promo.HOTEL}
+              </h3>
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="w-full md:w-1/2">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <h4 className="text-md font-medium text-gray-700 mb-2 font-mon">Detalhes da Promoção</h4>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <p>
+                        <span className="font-medium">Destino:</span> {promo.DESTINO}
+                      </p>
+                      <p>
+                        <span className="font-medium">Hotel:</span> {promo.HOTEL}
+                      </p>
+                      <p>
+                        <span className="font-medium">Data:</span> {promo.DATA_FORMATADA}
+                      </p>
+                      <p>
+                        <span className="font-medium">Noites:</span> {promo.NUMERO_DE_NOITES}
+                      </p>
+                      <p>
+                        <span className="font-medium">Regime:</span>{" "}
+                        {promo.ALL_INCLUSIVE
+                          ? "All Inclusive"
+                          : promo.PENSAO_COMPLETA
+                            ? "Pensão Completa"
+                            : promo.MEIA_PENSAO
+                              ? "Meia Pensão"
+                              : promo.COM_CAFE
+                                ? "Com Café"
+                                : "Sem Café"}
+                      </p>
+                      <p>
+                        <span className="font-medium">Saída:</span>{" "}
+                        {promo.CG && promo.SP
+                          ? "Campo Grande e São Paulo"
+                          : promo.CG
+                            ? "Campo Grande"
+                            : promo.SP
+                              ? "São Paulo"
+                              : "Não especificado"}
+                      </p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {filteredPromos.length === 0 && (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                Nenhuma promoção encontrada com os filtros atuais.
+                </div>
+                <div className="w-full md:w-1/2">
+                  <PromoImageGenerator promo={promo} />
+                </div>
               </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
