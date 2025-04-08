@@ -1,31 +1,38 @@
-import type { Metadata } from "next"
+"use client"
+import { useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../api/auth/[...nextauth]/options"
-import AdminDashboard from "@/components/admin/AdminDashboard"
+import AdminDashboardContent from "@/components/admin/AdminDashboardContent"
+import { DashboardLayout } from "@/components/layouts/DashboardLayout"
 
-export const metadata: Metadata = {
-  title: "Painel Administrativo | Donatti Turismo",
-  description: "Gerencie usuários, promoções e estatísticas da Donatti Turismo.",
-}
+export default function AdminPage() {
+  const { data: session, status } = useSession()
 
-export default async function AdminPage() {
-  // Check if user is authenticated and is admin
-  const session = await getServerSession(authOptions)
+  useEffect(() => {
+    // If not authenticated, redirect to login
+    if (status === "unauthenticated") {
+      redirect("/login")
+    }
 
-  // If not authenticated, redirect to login
-  if (!session) {
-    redirect("/login")
+    // If not admin, redirect to appropriate area
+    if (session?.user?.role !== "admin") {
+      redirect("/agent")
+    }
+  }, [status, session])
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return <div>Loading...</div>
   }
 
-  // If not admin, redirect to appropriate area
-  if (session.user.role !== "admin") {
-    redirect("/agent")
+  // Only render content when authenticated and is admin
+  if (!session || session.user.role !== "admin") {
+    return null
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <AdminDashboard user={session.user} />
-    </main>
+    <DashboardLayout user={session.user}>
+      <AdminDashboardContent user={session.user} />
+    </DashboardLayout>
   )
 }
