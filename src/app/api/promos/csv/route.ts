@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Combine headers and rows
-    const csvContent = [headers.join(","), ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(","))].join("\n")
+    const csvContent = [headers.join(","), ...rows.map((row: (string | number)[]) => row.map((cell) => `"${String(cell)}"`).join(","))].join("\n")
 
     // Set filename based on type
     let filename = "promos-lemonde-todas.csv"
