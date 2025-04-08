@@ -92,3 +92,32 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Fonte Neo Sans para o gerador de promoções */
+@font-face {
+  font-family: "Neo Sans";
+  src: url("/fonts/NeoSans.woff2") format("woff2"), url("/fonts/NeoSans.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Neo Sans";
+  src: url("/fonts/NeoSans-Bold.woff2") format("woff2"), url("/fonts/NeoSans-Bold.woff") format("woff");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Neo Sans";
+  src: url("/fonts/NeoSans-Black.woff2") format("woff2"), url("/fonts/NeoSans-Black.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-neo {
+  font-family: "Neo Sans", Arial, sans-serif;
+}

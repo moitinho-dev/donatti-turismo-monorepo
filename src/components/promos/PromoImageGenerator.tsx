@@ -46,6 +46,20 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         "Foz do Iguaçu": "cataratas do iguaçu brasil",
         Maceió: "maceió praia cidade brasil",
         "João Pessoa": "joão pessoa praia cidade brasil",
+        Orlando: "orlando disney world",
+        Miami: "miami beach florida",
+        "Nova York": "new york city skyline",
+        Cancún: "cancun mexico beach resort",
+        "Buenos Aires": "buenos aires argentina city",
+        Santiago: "santiago chile city",
+        Lisboa: "lisbon portugal city",
+        Madrid: "madrid spain city",
+        Barcelona: "barcelona spain sagrada familia",
+        Paris: "paris france eiffel tower",
+        Roma: "rome italy colosseum",
+        Londres: "london england big ben",
+        Tóquio: "tokyo japan city",
+        Dubai: "dubai uae burj khalifa",
       }
 
       for (const [city, term] of Object.entries(cityTerms)) {
@@ -68,11 +82,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         const randomIndex = Math.floor(Math.random() * data.results.length)
         setDestinationImage(data.results[randomIndex].urls.regular)
       } else {
-        setError("Não foi possível encontrar imagens para este destino")
+        // Fallback to a default Unsplash image if no results
+        setDestinationImage(`https://source.unsplash.com/1600x900/?${encodeURIComponent(searchQuery)}`)
       }
     } catch (err) {
       console.error("Error fetching destination image:", err)
       setError("Erro ao buscar imagem do destino")
+      // Fallback to a default Unsplash image if API fails
+      setDestinationImage(`https://source.unsplash.com/1600x900/?${encodeURIComponent(promo.DESTINO)}`)
     } finally {
       setIsLoadingImage(false)
     }
@@ -106,6 +123,22 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     ]
     const centralCities = ["brasília", "goiânia", "cuiabá", "campo grande", "bonito", "caldas novas"]
     const northCities = ["manaus", "belém", "palmas", "rio branco", "porto velho", "boa vista", "macapá"]
+    const internationalCities = [
+      "orlando",
+      "miami",
+      "nova york",
+      "cancún",
+      "buenos aires",
+      "santiago",
+      "lisboa",
+      "madrid",
+      "barcelona",
+      "paris",
+      "roma",
+      "londres",
+      "tóquio",
+      "dubai",
+    ]
 
     const dest = destination.toLowerCase()
 
@@ -114,6 +147,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
+    if (internationalCities.some((city) => dest.includes(city.toLowerCase()))) return "Internacional"
 
     return "Brasil"
   }
@@ -235,12 +269,12 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             </div>
           )}
           {/* Template overlay with higher z-index */}
-          <div className="absolute inset-0 w-[1080px] h-[1920px] font-neo z-10">
+          <div className="absolute inset-0 w-[1080px] h-[1920px] z-10">
             {/* Background template image */}
             <img src="/assets/LAYOUTFINAL2.png" alt="Promo Template" className="w-full h-full object-cover" />
 
             {/* Text Overlay */}
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 font-neo">
               {/* Region Tag */}
               <div className="absolute top-[270px] right-[70px] text-[#002043] text-5xl font-black">
                 {getRegion(promo.DESTINO)}

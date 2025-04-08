@@ -96,7 +96,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <div className="flex h-screen overflow-hidden bg-gray-50">
+      <div className="flex h-screen w-full overflow-hidden bg-gray-50">
         <Sidebar className="border-r border-gray-200">
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link href="/" className="flex items-center">
@@ -110,7 +110,13 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                 />
               </div>
               <div className="sm:hidden">
-                <Image src={LogoIcon || "/placeholder.svg"} alt="Donatti Turismo" className="h-8 w-auto" />
+                <Image
+                  src={LogoIcon || "/placeholder.svg"}
+                  alt="Donatti Turismo"
+                  width={40}
+                  height={40}
+                  className="h-8 w-auto"
+                />
               </div>
             </Link>
             <SidebarTrigger className="md:hidden" />
@@ -142,8 +148,12 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                   </SidebarMenuItem>
 
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Gerador de Imagens">
-                      <Link href="#">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname?.includes("imagens") || pathname?.includes("images")}
+                      tooltip="Gerador de Imagens"
+                    >
+                      <Link href={isAdmin ? "/admin?tab=images" : "/agent?tab=imagens"}>
                         <ImageIcon className="h-4 w-4" />
                         <span>Gerador de Imagens</span>
                       </Link>
@@ -152,8 +162,8 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
 
                   {isAdmin && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="Usuários">
-                        <Link href="#">
+                      <SidebarMenuButton asChild isActive={pathname?.includes("users")} tooltip="Usuários">
+                        <Link href="/admin?tab=users">
                           <Users className="h-4 w-4" />
                           <span>Usuários</span>
                         </Link>
@@ -163,8 +173,8 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
 
                   {isAdmin && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="Banco de Dados">
-                        <Link href="#">
+                      <SidebarMenuButton asChild isActive={pathname?.includes("data")} tooltip="Banco de Dados">
+                        <Link href="/admin?tab=data">
                           <Database className="h-4 w-4" />
                           <span>Banco de Dados</span>
                         </Link>
@@ -279,7 +289,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-4 md:p-6 w-full">{children}</main>
+          <main className="flex-1 overflow-auto p-4 md:p-6 w-full max-w-full">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>

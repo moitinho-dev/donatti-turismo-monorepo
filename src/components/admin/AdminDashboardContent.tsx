@@ -1,5 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
+import type React from "react"
+
 import { useRouter, useSearchParams } from "next/navigation"
 import { UsersList } from "./UsersList"
 import { UserForm } from "./UserForm"
@@ -10,10 +12,13 @@ import { PromoStats } from "../promos/PromoStats"
 import { DateRangePicker } from "../promos/DateRangePicker"
 import { CSVExport } from "../promos/CSVExport"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, FileText, BarChart2, Users, Database, ImageIcon } from "lucide-react"
+import { Loader2, FileText, BarChart2, Users, Database, ImageIcon, Plus, Search, MapPin } from "lucide-react"
 import { PromoImageBulkGenerator } from "../promos/PromoImageBulkGenerator"
 import { DataMigration } from "../promos/DataMigration"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface User {
   id: string
@@ -42,11 +47,18 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
     to: undefined,
   })
   const [promos, setPromos] = useState<any[]>([])
+  const [filteredPromos, setFilteredPromos] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([])
   const [userStats, setUserStats] = useState<any[]>([])
   const [stats, setStats] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [destinationFilter, setDestinationFilter] = useState("all")
+  const [uniqueDestinations, setUniqueDestinations] = useState<string[]>([])
+  const [userSearchTerm, setUserSearchTerm] = useState("")
+  const [userRoleFilter, setUserRoleFilter] = useState("all")
 
   // Update tab when URL parameter changes
   useEffect(() => {
@@ -62,6 +74,62 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
     fetchUserStats()
     fetchStats()
   }, [])
+
+  // Extract unique destinations when promos change
+  useEffect(() => {
+    if (promos.length > 0) {
+      const destinations = [...new Set(promos.map((promo) => promo.DESTINO))].sort()
+      setUniqueDestinations(destinations)
+    }
+  }, [promos])
+
+  // Filter promos when search term or destination filter changes
+  useEffect(() => {
+    if (promos.length > 0) {
+      let filtered = [...promos]
+
+      // Apply search filter
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase()
+        filtered = filtered.filter(
+          (promo) => promo.DESTINO?.toLowerCase().includes(term) || promo.HOTEL?.toLowerCase().includes(term),
+        )
+      }
+
+      // Apply destination filter
+      if (destinationFilter && destinationFilter !== "all") {
+        filtered = filtered.filter((promo) => promo.DESTINO === destinationFilter)
+      }
+
+      setFilteredPromos(filtered)
+    } else {
+      setFilteredPromos([])
+    }
+  }, [promos, searchTerm, destinationFilter])
+
+  // Filter users when search term or role filter changes
+  useEffect(() => {
+    if (users.length > 0) {
+      let filtered = [...users]
+
+      // Apply search filter
+      if (userSearchTerm) {
+        const term = userSearchTerm.toLowerCase()
+        filtered = filtered.filter(
+          (user) => user.name?.toLowerCase().includes(term) || user.email?.toLowerCase().includes(term),
+        )
+      }
+
+      // Apply role filter
+      if (userRoleFilter && userRoleFilter !== "all") {
+        filtered = filtered.filter((user) => user.role === userRoleFilter)
+      }
+
+      setFilteredUsers(filtered)
+    } else {
+      setFilteredUsers([])
+    }
+  }, [users, userSearchTerm, userRoleFilter])
 
   const fetchPromos = async () => {
     setIsLoading(true)
@@ -79,6 +147,7 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
       if (!response.ok) throw new Error("Failed to fetch promos")
       const data = await response.json()
       setPromos(data)
+      setFilteredPromos(data)
     } catch (err) {
       console.error("Error fetching promos:", err)
       setError("Erro ao buscar promoções")
@@ -94,6 +163,7 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
       if (!response.ok) throw new Error("Failed to fetch users")
       const data = await response.json()
       setUsers(data)
+      setFilteredUsers(data)
     } catch (err) {
       console.error("Error fetching users:", err)
       setError("Erro ao buscar usuários")
@@ -142,6 +212,12 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
     router.push("/admin?tab=add-user")
   }
 
+  const handleAddPromoClick = () => {
+    setSelectedPromo(null)
+    setActiveTab("add-promo")
+    router.push("/admin?tab=add-promo")
+  }
+
   const handleFormSubmitSuccess = () => {
     fetchPromos()
     fetchStats()
@@ -164,7 +240,12 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
 
   const handleClearFilters = () => {
     setDateRange({ from: undefined, to: undefined })
+    setSearchTerm("")
+    setDestinationFilter("all")
+    setUserSearchTerm("")
+    setUserRoleFilter("all")
     fetchPromos()
+    fetchUsers()
   }
 
   const handleTabChange = (value: string) => {
@@ -172,10 +253,26 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
     router.push(`/admin?tab=${value}`)
   }
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+  }
+
+  const handleDestinationFilterChange = (value: string) => {
+    setDestinationFilter(value)
+  }
+
+  const handleUserSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserSearchTerm(e.target.value)
+  }
+
+  const handleUserRoleFilterChange = (value: string) => {
+    setUserRoleFilter(value)
+  }
+
   return (
     <div className="space-y-6 w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <DateRangePicker
             dateRange={dateRange}
             onDateRangeChange={handleDateRangeChange}
@@ -184,42 +281,47 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
 
           {promos.length > 0 && <CSVExport dateRange={dateRange} />}
         </div>
+
+        {activeTab === "promos" && (
+          <Button
+            onClick={handleAddPromoClick}
+            className="flex items-center gap-2 bg-primary-blue hover:bg-second-blue text-white"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nova Promoção</span>
+          </Button>
+        )}
+
+        {activeTab === "users" && (
+          <Button
+            onClick={handleAddUserClick}
+            className="flex items-center gap-2 bg-primary-blue hover:bg-second-blue text-white"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Novo Usuário</span>
+          </Button>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-6 bg-gray-100 p-1 rounded-lg overflow-x-auto flex whitespace-nowrap">
-          <TabsTrigger
-            value="dashboard"
-            className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
-          >
+          <TabsTrigger value="dashboard" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
             <BarChart2 className="h-4 w-4 mr-2" />
             <span>Dashboard</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="users"
-            className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
-          >
+          <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
             <Users className="h-4 w-4 mr-2" />
             <span>Usuários</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="promos"
-            className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
-          >
+          <TabsTrigger value="promos" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
             <FileText className="h-4 w-4 mr-2" />
             <span>Promoções</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="images"
-            className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
-          >
+          <TabsTrigger value="images" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
             <ImageIcon className="h-4 w-4 mr-2" />
             <span>Gerador de Imagens</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="data"
-            className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
-          >
+          <TabsTrigger value="data" className="data-[state=active]:bg-white data-[state=active]:text-primary-blue">
             <Database className="h-4 w-4 mr-2" />
             <span>Banco de Dados</span>
           </TabsTrigger>
@@ -229,16 +331,14 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-              <span className="ml-2 text-gray-600 font-mon">Carregando dados...</span>
+              <span className="ml-2 text-gray-600">Carregando dados...</span>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl font-bold text-primary-blue font-mon">
-                      Desempenho dos Agentes
-                    </CardTitle>
+                    <CardTitle className="text-xl font-bold text-primary-blue">Desempenho dos Agentes</CardTitle>
                     <CardDescription>Estatísticas de atividade dos agentes de turismo</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -248,9 +348,7 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl font-bold text-primary-blue font-mon">
-                      Estatísticas de Promoções
-                    </CardTitle>
+                    <CardTitle className="text-xl font-bold text-primary-blue">Estatísticas de Promoções</CardTitle>
                     <CardDescription>Visão geral das promoções cadastradas</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -266,10 +364,49 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-              <span className="ml-2 text-gray-600 font-mon">Carregando usuários...</span>
+              <span className="ml-2 text-gray-600">Carregando usuários...</span>
             </div>
           ) : (
-            <UsersList users={users} onEdit={handleEditUser} onRefresh={fetchUsers} />
+            <>
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar usuários..."
+                    value={userSearchTerm}
+                    onChange={handleUserSearchChange}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="w-full md:w-64">
+                  <Select value={userRoleFilter} onValueChange={handleUserRoleFilterChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Todos os perfis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os perfis</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="agent">Agente</SelectItem>
+                      <SelectItem value="user">Usuário</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <UsersList users={filteredUsers} onEdit={handleEditUser} onRefresh={fetchUsers} />
+
+              {filteredUsers.length === 0 && !isLoading && (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                  <h3 className="text-lg font-medium text-gray-900">Nenhum usuário encontrado</h3>
+                  <p className="text-gray-500 mt-1">
+                    {userSearchTerm || userRoleFilter !== "all"
+                      ? "Tente ajustar seus filtros de busca"
+                      : "Adicione seu primeiro usuário clicando no botão 'Novo Usuário'"}
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 
@@ -277,12 +414,52 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-              <span className="ml-2 text-gray-600 font-mon">Carregando promoções...</span>
+              <span className="ml-2 text-gray-600">Carregando promoções...</span>
             </div>
           ) : (
             <>
               {promos.length > 0 && <PromoStats stats={stats} />}
-              <PromosList promos={promos} onEdit={handleEditPromo} onDelete={fetchPromos} />
+
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar promoções..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="w-full md:w-64">
+                  <Select value={destinationFilter} onValueChange={handleDestinationFilterChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Todos os destinos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os destinos</SelectItem>
+                      {uniqueDestinations.map((destination) => (
+                        <SelectItem key={destination} value={destination}>
+                          {destination}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <PromosList promos={filteredPromos} onEdit={handleEditPromo} onDelete={fetchPromos} />
+
+              {filteredPromos.length === 0 && !isLoading && (
+                <div className="text-center py-8">
+                  <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                  <h3 className="text-lg font-medium text-gray-900">Nenhuma promoção encontrada</h3>
+                  <p className="text-gray-500 mt-1">
+                    {searchTerm || destinationFilter !== "all"
+                      ? "Tente ajustar seus filtros de busca"
+                      : "Adicione sua primeira promoção clicando no botão 'Nova Promoção'"}
+                  </p>
+                </div>
+              )}
             </>
           )}
         </TabsContent>
@@ -290,9 +467,7 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
         <TabsContent value="images">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-primary-blue font-mon">
-                Gerador de Imagens Promocionais
-              </CardTitle>
+              <CardTitle className="text-xl font-bold text-primary-blue">Gerador de Imagens Promocionais</CardTitle>
               <CardDescription>Crie imagens para suas promoções de viagens</CardDescription>
             </CardHeader>
             <CardContent>
@@ -304,7 +479,7 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
         <TabsContent value="data">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-primary-blue font-mon">Gerenciamento de Dados</CardTitle>
+              <CardTitle className="text-xl font-bold text-primary-blue">Gerenciamento de Dados</CardTitle>
               <CardDescription>Inicialização e migração de dados</CardDescription>
             </CardHeader>
             <CardContent>
@@ -316,7 +491,7 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
         <TabsContent value="add-user">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-primary-blue font-mon">
+              <CardTitle className="text-xl font-bold text-primary-blue">
                 {selectedUser ? "Editar Usuário" : "Adicionar Novo Usuário"}
               </CardTitle>
               <CardDescription>
@@ -329,10 +504,22 @@ export default function AdminDashboardContent({ user }: AdminDashboardContentPro
           </Card>
         </TabsContent>
 
+        <TabsContent value="add-promo">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-primary-blue">Adicionar Nova Promoção</CardTitle>
+              <CardDescription>Cadastre uma nova promoção no sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PromoForm promo={null} onSuccess={handleFormSubmitSuccess} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="edit-promo">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-primary-blue font-mon">Editar Promoção</CardTitle>
+              <CardTitle className="text-xl font-bold text-primary-blue">Editar Promoção</CardTitle>
               <CardDescription>Atualize os detalhes da promoção selecionada</CardDescription>
             </CardHeader>
             <CardContent>
