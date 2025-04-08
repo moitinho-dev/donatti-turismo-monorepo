@@ -132,6 +132,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         ...prev,
         VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
         VALORTOTAL: numericValue.toFixed(2).replace(".", ","), // Store the total value
+        PARCELAS: parcelasNum.toString(),
       }))
     }
   }
