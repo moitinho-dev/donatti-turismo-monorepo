@@ -1,19 +1,22 @@
 import type { Config } from "tailwindcss"
-const config: Config = {
+
+const config = {
   darkMode: ["class"],
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,mdx}",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
   ],
+  prefix: "",
   theme: {
-    screens: {
-      xs: "360px", // Personalizado para telas menores
-      sm: "420px", // Personalizado para telas pequenas
-      md: "768px", // Personalizado para telas médias
-      lg: "992px", // Personalizado para telas grandes
-      xl: "1500px", // Personalizado para telas extra grandes
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
     },
     extend: {
       colors: {
@@ -25,10 +28,12 @@ const config: Config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          blue: "#0F52BA", // Custom primary blue color
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+          blue: "#6495ED", // Custom secondary blue color
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -50,36 +55,37 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        "primary-blue": "#1D3153",
-        "second-blue": "#337D9D",
-        "primary-orange": "#FEB100",
-        "primary-yellow": "#FED400",
-        "primary-gray": "#F0F0F0",
-        "sidebar-primary": "#1D3153",
-        "sidebar-primary-foreground": "#FFFFFF",
-        "custom-muted": "#F0F0F0",
-        "custom-muted-foreground": "#6B7280",
-        "custom-background": "#FFFFFF",
-        "custom-foreground": "#1D3153",
-        "donatti-blue": "#002043",
-        "donatti-yellow": "#f5a406",
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      fontFamily: {
-        blo: ["BLOVERLY"],
-        bsf: ["BetterSignatureFont"],
-        mon: ["Montserrat"],
-        neo: ["Neo Sans W1G", "sans-serif"],
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
       },
       animation: {
-        "spin-slow": "spin 3s linear infinite",
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/forms")],
-}
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config
+
 export default config
