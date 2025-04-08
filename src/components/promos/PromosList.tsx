@@ -26,6 +26,7 @@ interface PromoData {
   HOTEL: string
   DATA_FORMATADA: string
   VALOR: string
+  VALORTOTAL: string
   COM_CAFE?: boolean
   SEM_CAFE?: boolean
   MEIA_PENSAO?: boolean
