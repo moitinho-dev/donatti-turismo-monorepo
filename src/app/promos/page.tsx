@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../api/auth/[...nextauth]/options"
-import PromosDashboard from "@/components/promos/PromosDashboard"
+import PromosDashboard from "../../components/promos/PromosDashboard"
 
 export const metadata: Metadata = {
   title: "Gerenciador de Promoções | Donatti Turismo",

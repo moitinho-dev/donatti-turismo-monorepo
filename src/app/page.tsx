@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
-import { FifthSection } from "@/components/fifthsection/FifthSection"
-import { FooterSection } from "@/components/footer/FooterSection"
-import { FourthSection } from "@/components/fourthsection/FourthSection"
-import { Header } from "@/components/header/Header"
-import { HeroSection } from "@/components/hero/HeroSection"
-import { ThirdSection } from "@/components/thirdsection/ThirdSection"
-import { FeatureSection } from "@/components/features/FeatureSection"
+import { FifthSection } from "../components/fifthsection/FifthSection"
+import { FooterSection } from "../components/footer/FooterSection"
+import { FourthSection } from "../components/fourthsection/FourthSection"
+import { Header } from "../components/header/Header"
+import { HeroSection } from "../components/hero/HeroSection"
+import { ThirdSection } from "../components/thirdsection/ThirdSection"
+import { FeatureSection } from "../components/features/FeatureSection"
 
 // Enhanced SEO metadata
 export const metadata: Metadata = {

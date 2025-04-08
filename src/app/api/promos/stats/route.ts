@@ -3,12 +3,12 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import { redis, REDIS_KEYS } from "../../../../lib/redis"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions)
@@ -23,18 +23,18 @@ export async function GET(req: NextRequest) {
     const totalPromos = promos.length
 
     // Unique destinations - using Array.from instead of spread operator
-    const destinations = new Set(promos.map((promo) => promo.DESTINO))
+    const destinations = new Set(promos.map((promo: { DESTINO: string }) => promo.DESTINO))
     const uniqueDestinations = destinations.size
 
     // Average value
-    const totalValue = promos.reduce((sum, promo) => {
+    const totalValue = promos.reduce((sum: number, promo: { VALOR: string }) => {
       const value = Number.parseFloat(promo.VALOR) * 2 * 15
       return sum + (isNaN(value) ? 0 : value)
     }, 0)
     const averageValue = totalPromos > 0 ? totalValue / totalPromos : 0
 
     // Average nights
-    const totalNights = promos.reduce((sum, promo) => {
+    const totalNights = promos.reduce((sum: number, promo: { NUMERO_DE_NOITES: string }) => {
       const nights = Number.parseInt(promo.NUMERO_DE_NOITES, 10)
       return sum + (isNaN(nights) ? 0 : nights)
     }, 0)
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     // Most popular destination
     const destinationCounts: Record<string, number> = promos.reduce(
-      (counts, promo) => {
+      (counts: Record<string, number>, promo: { DESTINO: string }) => {
         const dest = promo.DESTINO
         counts[dest] = (counts[dest] || 0) + 1
         return counts
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
     }))
 
     // Count promos per day
-    promos.forEach((promo) => {
+    promos.forEach((promo: { createdAt: string; id: string }) => {
       try {
         const createdAt = new Date(promo.createdAt)
         if (isNaN(createdAt.getTime())) {

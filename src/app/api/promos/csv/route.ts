@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import { redis, REDIS_KEYS } from "../../../../lib/redis"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
@@ -23,7 +23,25 @@ export async function GET(req: NextRequest) {
     const endDate = url.searchParams.get("endDate")
 
     // Get promos from Redis
-    const promos = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
+    interface Promo {
+      id: string
+      createdAt: string
+      DESTINO: string
+      HOTEL: string
+      DATA_FORMATADA: string
+      VALOR: string
+      PARCELAS?: string
+      ALL_INCLUSIVE?: boolean
+      PENSAO_COMPLETA?: boolean
+      MEIA_PENSAO?: boolean
+      COM_CAFE?: boolean
+      SEM_CAFE?: boolean
+      NUMERO_DE_NOITES: number
+      CG?: boolean
+      SP?: boolean
+    }
+
+    const promos = (await redis.get<Promo[]>(REDIS_KEYS.PROMOS)) || []
 
     // Filter promos based on type
     let filteredPromos = promos
@@ -34,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     if (type === "today") {
       // Filter promos created today
-      filteredPromos = promos.filter((promo) => {
+      filteredPromos = promos.filter((promo: Promo) => {
         const createdAt = new Date(promo.createdAt)
         return createdAt >= today && createdAt < tomorrow
       })
@@ -44,7 +62,7 @@ export async function GET(req: NextRequest) {
       const end = new Date(endDate)
       end.setDate(end.getDate() + 1) // Include the end date
 
-      filteredPromos = promos.filter((promo) => {
+      filteredPromos = promos.filter((promo: Promo) => {
         const createdAt = new Date(promo.createdAt as string)
         return createdAt >= start && createdAt < end
       })
@@ -64,7 +82,7 @@ export async function GET(req: NextRequest) {
       "Aeroporto de Saída",
     ]
 
-    const rows = filteredPromos.map((promo) => {
+    const rows = filteredPromos.map((promo: Promo) => {
       // Format creation date
       const createdAt = new Date(promo.createdAt)
       const formattedCreatedAt = format(createdAt, "dd/MM/yyyy HH:mm", { locale: ptBR })
@@ -104,7 +122,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Combine headers and rows
-    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(","))].join("\n")
+    const csvContent = [headers.join(","), ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(","))].join("\n")
 
     // Set filename based on type
     let filename = "promos-lemonde-todas.csv"

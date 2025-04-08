@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { initializeRedis } from "@/lib/redis"
+import { initializeRedis } from "../../../lib/redis"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"

@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     // If ID is provided, return specific promo
     if (id) {
-      const promo = promosData.find((p) => p.id === id)
+      const promo = promosData.find((p: { id: string }) => p.id === id)
       if (!promo) {
         return NextResponse.json({ error: "Promoção não encontrada" }, { status: 404 })
       }
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       const start = new Date(startDate).getTime()
       const end = new Date(endDate).getTime()
 
-      filteredPromos = filteredPromos.filter((promo) => {
+      filteredPromos = filteredPromos.filter((promo: { createdAt: string }) => {
         const createdAt = new Date(promo.createdAt as string).getTime()
         return createdAt >= start && createdAt <= end
       })
@@ -75,15 +75,15 @@ export async function GET(req: NextRequest) {
 
     // Filter by user ID if provided and user is admin
     if (userId && session.user.role === "admin") {
-      filteredPromos = filteredPromos.filter((promo) => promo.createdBy === userId)
+      filteredPromos = filteredPromos.filter((promo: { createdBy: string }) => promo.createdBy === userId)
     }
     // If user is agent, only show their own promos
     else if (session.user.role === "agent") {
-      filteredPromos = filteredPromos.filter((promo) => promo.createdBy === session.user.id)
+      filteredPromos = filteredPromos.filter((promo: { createdBy: string }) => promo.createdBy === session.user.id)
     }
 
     // Sort by creation date (newest first)
-    filteredPromos.sort((a, b) => {
+    filteredPromos.sort((a: { createdAt: string }, b: { createdAt: string }) => {
       return new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime()
     })
 
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     if (isNewPromo) {
       promosData.push(promoData)
     } else {
-      const index = promosData.findIndex((p) => p.id === promoId)
+      const index = promosData.findIndex((p: { id: string }) => p.id === promoId)
       if (index !== -1) {
         // Preserve the original creator when updating
         const originalCreatedBy = promosData[index].createdBy
@@ -179,7 +179,7 @@ export async function DELETE(req: NextRequest) {
     const promosData = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
 
     // Check if promo exists
-    const promo = promosData.find((p) => p.id === id)
+    const promo = promosData.find((p: { id: string }) => p.id === id)
     if (!promo) {
       return NextResponse.json({ error: "Promoção não encontrada" }, { status: 404 })
     }
@@ -190,7 +190,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Delete promo
-    const updatedPromos = promosData.filter((p) => p.id !== id)
+    const updatedPromos = promosData.filter((p: { id: string }) => p.id !== id)
 
     // Update Redis
     await redis.set(REDIS_KEYS.PROMOS, updatedPromos)
