@@ -89,7 +89,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
 
-    return "Brasil"
+    return "Exterior"
   }
 
   // Get regime de alimentação
