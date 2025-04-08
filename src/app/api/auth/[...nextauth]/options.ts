@@ -1,7 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials"
 import type { NextAuthOptions, DefaultSession } from "next-auth"
-import { redis, REDIS_KEYS } from "@/lib/redis"
-import type { User } from "@/types/user"
+import { redis, REDIS_KEYS } from "../../../../lib/redis"
+import type { User } from "../../../../types/user"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -70,12 +70,12 @@ export const authOptions: NextAuthOptions = {
 
           // Find user by email and password
           const user = users.find(
-            (u) => u.email === credentials.email && u.password === credentials.password && u.active,
+            (u: User) => u.email === credentials.email && u.password === credentials.password && u.active,
           )
 
           if (user) {
             // Update last login
-            const updatedUsers = users.map((u) => {
+            const updatedUsers = users.map((u: User) => {
               if (u.id === user.id) {
                 return {
                   ...u,
