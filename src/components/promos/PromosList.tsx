@@ -15,7 +15,10 @@ import {
   Users,
   Utensils,
   Plane,
+  Clock,
 } from "lucide-react"
+import { format, formatDistanceToNow } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { PromoImageGeneratorModal } from "./PromoImageGeneratorModal"
 
 interface PromoData {
@@ -45,104 +48,6 @@ interface PromosListProps {
   onDelete: () => void
 }
 
-// Fix the date formatting to use local timezone
-// Replace the formatRelativeDate function with this improved version
-const formatRelativeDate = (dateString: string) => {
-  try {
-    // Parse the UTC date and convert to local timezone
-    const date = new Date(dateString)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-
-    // Compare dates by setting time to midnight for accurate day comparison
-    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const localYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
-
-    if (localDate.getTime() === localToday.getTime()) {
-      return "Hoje"
-    } else if (localDate.getTime() === localYesterday.getTime()) {
-      return "Ontem"
-    } else {
-      return date.toLocaleDateString("pt-BR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    }
-  } catch (error) {
-    console.error("Error formatting relative date:", error)
-    return "Data desconhecida"
-  }
-}
-
-// Also update the formatDate function for consistent timezone handling
-const formatDate = (dateString: string) => {
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) {
-      return "Data inválida"
-    }
-    return date.toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  } catch (error) {
-    console.error("Error formatting date:", error)
-    return "Data inválida"
-  }
-}
-
-// Update the groupPromosByDate function to use local dates
-const groupPromosByDate = (promos: PromoData[]) => {
-  const groups: { [key: string]: PromoData[] } = {}
-
-  promos.forEach((promo) => {
-    if (!promo.createdAt) {
-      const unknownGroup = "unknown"
-      if (!groups[unknownGroup]) groups[unknownGroup] = []
-      groups[unknownGroup].push(promo)
-      return
-    }
-
-    // Convert UTC date to local date and use as group key
-    const date = new Date(promo.createdAt)
-    const localDateStr = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split("T")[0]
-
-    if (!groups[localDateStr]) {
-      groups[localDateStr] = []
-    }
-    groups[localDateStr].push(promo)
-  })
-
-  // Sort dates in descending order (newest first)
-  return Object.entries(groups)
-    .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-    .map(([date, promos]) => ({ date, promos }))
-}
-
-// Modificar a função para calcular valores por pessoa
-const calculateValues = (promo: PromoData) => {
-  const baseValue = Number.parseFloat(promo.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
-  if (isNaN(baseValue)) return { total: "0,00", perPerson: "0,00", installment: "0,00" }
-
-  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
-  const totalValue = baseValue * parcelas * 2
-  const perPersonValue = totalValue / 2
-  const installmentValue = perPersonValue / parcelas
-
-  return {
-    total: totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    perPerson: perPersonValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    installment: installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-  }
-}
-
 export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDestino, setSelectedDestino] = useState<string | null>(null)
@@ -153,28 +58,119 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
 
   const { deletePromo, isLoading } = usePromo()
 
-  const parseCurrencyValue = (value: string) => {
-    if (!value) {
-      return "0,00"
+  // Format date with local timezone
+  const formatDate = (dateString: string) => {
+    try {
+      // Parse the ISO date string
+      const date = new Date(dateString)
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Data inválida"
+      }
+
+      // Format the date in local timezone
+      return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR })
+    } catch (error) {
+      console.error("Error formatting date:", error, dateString)
+      return "Data inválida"
     }
-
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const valueAfterCalculation = numericValue * 15 * 2
-
-    return valueAfterCalculation.toFixed(2).replace(".", ",")
   }
 
-  const getInstallmentValue = (value: string) => {
-    if (!value) {
-      return "0,00"
+  // Format relative date (today, yesterday, etc.)
+  const formatRelativeDate = (dateString: string) => {
+    try {
+      // Parse the ISO date string
+      const date = new Date(dateString)
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Data inválida"
+      }
+
+      // Get today and yesterday dates in local timezone
+      const today = new Date()
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+
+      // Compare dates in local timezone
+      const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      const yesterdayDay = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+      if (dateDay.getTime() === todayDay.getTime()) {
+        return "Hoje"
+      } else if (dateDay.getTime() === yesterdayDay.getTime()) {
+        return "Ontem"
+      } else {
+        return format(date, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+      }
+    } catch (error) {
+      console.error("Error formatting relative date:", error, dateString)
+      return "Data inválida"
     }
+  }
 
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const installmentValue = (numericValue * 2 * 15) / 15
+  // Format time ago
+  const formatTimeAgo = (dateString: string) => {
+    try {
+      // Parse the ISO date string
+      const date = new Date(dateString)
 
-    return installmentValue.toFixed(2).replace(".", ",")
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return ""
+      }
+
+      // Format as time ago
+      return formatDistanceToNow(date, { addSuffix: true, locale: ptBR })
+    } catch (error) {
+      console.error("Error formatting time ago:", error, dateString)
+      return ""
+    }
+  }
+
+  // Group promos by date
+  const groupPromosByDate = (promos: PromoData[]) => {
+    const groups: { [key: string]: PromoData[] } = {}
+
+    promos.forEach((promo) => {
+      if (!promo.createdAt) return
+
+      // Convert UTC date to local date
+      const date = new Date(promo.createdAt)
+      const localDate = new Date(date.getTime())
+
+      // Use local date for grouping
+      const dateKey = format(localDate, "yyyy-MM-dd")
+
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
+      }
+      groups[dateKey].push(promo)
+    })
+
+    // Sort dates in descending order (newest first)
+    return Object.entries(groups)
+      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+      .map(([date, promos]) => ({ date, promos }))
+  }
+
+  // Calculate values for a promo
+  const calculateValues = (promo: PromoData) => {
+    const baseValue = Number.parseFloat(promo.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
+    if (isNaN(baseValue)) return { total: "0,00", perPerson: "0,00", installment: "0,00" }
+
+    const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
+    const totalValue = baseValue * parcelas * 2
+    const perPersonValue = totalValue / 2
+    const installmentValue = perPersonValue / parcelas
+
+    return {
+      total: totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      perPerson: perPersonValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      installment: installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    }
   }
 
   const getRegimeAlimentacao = (promo: PromoData): string => {
@@ -266,34 +262,32 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
       <div className="p-4 border-b">
         <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="flex flex-col md:flex-row gap-4 flex-grow">
-            <div className="relative flex-grow">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar promoções..."
-                className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          <div className="relative flex-grow">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
+            <input
+              type="text"
+              placeholder="Buscar promoções..."
+              className="pl-10 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-            <div className="w-full md:w-64">
-              <select
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                value={selectedDestino || ""}
-                onChange={(e) => setSelectedDestino(e.target.value || null)}
-              >
-                <option value="">Todos os destinos</option>
-                {destinos.map((destino) => (
-                  <option key={destino} value={destino}>
-                    {destino}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="w-full md:w-64">
+            <select
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent"
+              value={selectedDestino || ""}
+              onChange={(e) => setSelectedDestino(e.target.value || null)}
+            >
+              <option value="">Todos os destinos</option>
+              {destinos.map((destino) => (
+                <option key={destino} value={destino}>
+                  {destino}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -347,8 +341,8 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center">
-                              <MapPin className="h-4 w-4 text-primary-blue mr-2" />
-                              <span className="font-medium text-primary-blue">{promo.DESTINO}</span>
+                              <MapPin className="h-4 w-4 text-donatti-blue mr-2" />
+                              <span className="font-medium text-donatti-blue">{promo.DESTINO}</span>
                               <span className="mx-2 text-gray-400">•</span>
                               <Hotel className="h-4 w-4 text-gray-500 mr-1" />
                               <span className="text-gray-700">{promo.HOTEL}</span>
@@ -374,13 +368,20 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
                                 <Plane className="h-3 w-3 mr-1" />
                                 {getAeroportoSaida(promo)}
                               </span>
+
+                              {promo.createdAt && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {formatTimeAgo(promo.createdAt)}
+                                </span>
+                              )}
                             </div>
                           </div>
 
                           <div className="flex flex-col items-end">
                             <div className="text-right">
                               <div className="text-sm text-gray-500">Valor total:</div>
-                              <div className="text-lg font-bold text-primary-blue">R$ {values.total}</div>
+                              <div className="text-lg font-bold text-donatti-blue">R$ {values.total}</div>
                             </div>
 
                             <div className="flex gap-4 mt-1 text-sm">

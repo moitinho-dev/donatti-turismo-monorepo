@@ -122,8 +122,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   }
 
   const updatePerPersonInstallmentValue = (totalValue: string, parcelas: string) => {
-    const cleanedValue = totalValue.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+    // Remove currency symbol and non-numeric characters except decimal separator
+    const cleanedValue = totalValue
+      .replace(/[^\d.,]/g, "")
+      .replace(".", "")
+      .replace(",", ".")
+    const numericValue = Number.parseFloat(cleanedValue)
+
     if (!isNaN(numericValue)) {
       const parcelasNum = Number.parseInt(parcelas, 10)
       const perPersonValue = numericValue / 2 // Value per person (total / 2)
@@ -212,33 +217,18 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
-  // Improve the value formatting in the form
-  // Replace the handleAmountChange function with this improved version
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.target
-    const oldValue = input.value
-    const oldSelectionStart = input.selectionStart || 0
+    const value = input.value
 
-    // Count how many non-digit characters are before the cursor
-    const prefixLength = oldValue.substring(0, oldSelectionStart).replace(/\d/g, "").length
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, "")
 
-    // Remove all non-digits (but keep track of whether there was a leading 'R$')
-    const hasPrefix = oldValue.startsWith("R$")
-    const rawValue = oldValue.replace(/\D/g, "")
+    // Convert to number and format as currency
+    const amount = Number(numericValue) / 100
 
-    if (rawValue === "") {
-      setFormattedAmount("")
-      setFormData((prev) => ({
-        ...prev,
-        VALOR: "",
-        VALORTOTAL: "",
-      }))
-      return
-    }
-
-    // Convert to number and format
-    const numericValue = Number.parseInt(rawValue, 10) / 100
-    const formatted = numericValue.toLocaleString("pt-BR", {
+    // Format as Brazilian currency
+    const formatted = amount.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
@@ -247,48 +237,23 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
     setFormattedAmount(formatted)
 
-    // Update formData with the total value and per-person installment value
+    // Update form data with the total value and per-person installment value
     const parcelasNum = Number.parseInt(formData.PARCELAS || "10", 10)
-    const perPersonValue = numericValue / 2 // Total value / 2 for per person
+    const perPersonValue = amount / 2 // Total value / 2 for per person
     const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
 
     setFormData((prev) => ({
       ...prev,
       VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
-      VALORTOTAL: numericValue.toFixed(2).replace(".", ","),
+      VALORTOTAL: amount.toFixed(2).replace(".", ","),
     }))
 
-    // Calculate new cursor position
+    // Set cursor position after the formatted value
     setTimeout(() => {
-      // If we're adding a character, move cursor right
-      // If we're deleting a character, keep cursor in same relative position
-      const newValue = input.value
-      const newRawValue = newValue.replace(/\D/g, "")
-
-      // Calculate how many digits were before the cursor
-      const oldDigitsBeforeCursor = oldValue.substring(0, oldSelectionStart).replace(/\D/g, "").length
-
-      // Find where those same digits end in the new string
-      let newPosition = 0
-      let countDigits = 0
-
-      for (let i = 0; i < newValue.length; i++) {
-        if (/\d/.test(newValue[i])) {
-          countDigits++
-        }
-        if (countDigits === oldDigitsBeforeCursor) {
-          newPosition = i + 1
-          break
-        }
+      if (input) {
+        const position = formatted.length
+        input.setSelectionRange(position, position)
       }
-
-      // If we didn't find enough digits, position at end
-      if (countDigits < oldDigitsBeforeCursor) {
-        newPosition = newValue.length
-      }
-
-      // Set the cursor position
-      input.setSelectionRange(newPosition, newPosition)
     }, 0)
   }
 
@@ -362,8 +327,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
   // Calculate total value
   const getTotalValue = () => {
-    const cleanedValue = formattedAmount.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+    // Remove currency symbol and non-numeric characters except decimal separator
+    const cleanedValue = formattedAmount
+      .replace(/[^\d.,]/g, "")
+      .replace(".", "")
+      .replace(",", ".")
+    const numericValue = Number.parseFloat(cleanedValue)
 
     if (isNaN(numericValue)) {
       return "R$ 0,00"
@@ -379,8 +348,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
   // Calculate per person value
   const getPerPersonValue = () => {
-    const cleanedValue = formattedAmount.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+    // Remove currency symbol and non-numeric characters except decimal separator
+    const cleanedValue = formattedAmount
+      .replace(/[^\d.,]/g, "")
+      .replace(".", "")
+      .replace(",", ".")
+    const numericValue = Number.parseFloat(cleanedValue)
 
     if (isNaN(numericValue)) {
       return "R$ 0,00"
@@ -398,8 +371,8 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
   // Calculate per person installment value
   const getInstallmentValue = () => {
-    const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+    const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "").replace(",", ".")
+    const numericValue = Number.parseFloat(cleanedValue)
 
     if (isNaN(numericValue)) {
       return "R$ 0,00"
@@ -416,7 +389,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-8">
-        <h2 className="text-xl font-semibold text-primary-blue mb-6 font-mon">
+        <h2 className="text-xl font-semibold text-donatti-blue mb-6 font-mon">
           {promo ? "Editar Promoção" : "Adicionar Nova Promoção"}
         </h2>
 
@@ -435,12 +408,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <MapPin className="h-4 w-4" />
                 Destino <span className="text-red-500">*</span>
               </label>
               <input
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 type="text"
                 id="DESTINO"
                 value={formData.DESTINO}
@@ -451,12 +424,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <Hotel className="h-4 w-4" />
                 Hotel <span className="text-red-500">*</span>
               </label>
               <input
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 type="text"
                 id="HOTEL"
                 value={formData.HOTEL}
@@ -469,13 +442,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <Calendar className="h-4 w-4" />
                 Data de Ida <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 id="DE"
                 value={deDate}
                 onChange={handleDeDateChange}
@@ -484,13 +457,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <Calendar className="h-4 w-4" />
                 Data de Volta <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 id="ATE"
                 value={ateDate}
                 onChange={handleAteDateChange}
@@ -502,12 +475,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
             {/* Parcelas first */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <CreditCard className="h-4 w-4" />
                 Parcelas <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 id="PARCELAS"
                 value={formData.PARCELAS}
                 onChange={(e) => handleChange("PARCELAS", e.target.value)}
@@ -523,7 +496,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
             {/* Valor (total package value) */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <DollarSign className="h-4 w-4" />
                 Valor Total <span className="text-red-500">*</span>
               </label>
@@ -533,7 +506,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                 name="amount"
                 inputMode="numeric"
                 type="text"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 id="VALOR"
                 value={formattedAmount}
                 onChange={handleAmountChange}
@@ -543,14 +516,14 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
                 <Users className="h-4 w-4" />
                 Número de Noites <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 inputMode="numeric"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
                 id="NUMERO_DE_NOITES"
                 value={formData.NUMERO_DE_NOITES}
                 onChange={(e) => handleChange("NUMERO_DE_NOITES", e.target.value)}
@@ -562,11 +535,11 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
           {/* Resumo dos valores */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h3 className="text-md font-semibold text-primary-blue mb-3 font-mon">Resumo dos Valores</h3>
+            <h3 className="text-md font-semibold text-donatti-blue mb-3 font-mon">Resumo dos Valores</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-3 rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-500 font-mon">Valor Total:</p>
-                <p className="text-lg font-bold text-primary-blue font-mon">{getTotalValue()}</p>
+                <p className="text-lg font-bold text-donatti-blue font-mon">{getTotalValue()}</p>
               </div>
               <div className="bg-white p-3 rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-500 font-mon">Valor por Pessoa:</p>
@@ -574,7 +547,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
               </div>
               <div className="bg-white p-3 rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-500 font-mon">Valor da Parcela (por pessoa):</p>
-                <p className="text-lg font-bold text-primary-orange font-mon">
+                <p className="text-lg font-bold text-donatti-yellow font-mon">
                   {formData.PARCELAS}x de {getInstallmentValue()}
                 </p>
               </div>
@@ -582,12 +555,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
           </div>
 
           <div className="mb-6">
-            <label className="flex items-center gap-2 text-primary-blue font-mon font-medium mb-2">
+            <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium mb-2">
               <Utensils className="h-4 w-4" />
               Regime de Alimentação <span className="text-red-500">*</span>
             </label>
             <select
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
               id="REGIME_ALIMENTACAO"
               value={regimeAlimentacao}
               onChange={(e) => handleChangeRegimeAlimentacao(e.target.value)}
@@ -603,7 +576,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
           </div>
 
           <div className="mb-8">
-            <label className="flex items-center gap-2 text-primary-blue font-mon font-medium mb-2">
+            <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium mb-2">
               <Plane className="h-4 w-4" />
               Aeroporto de Saída
             </label>
@@ -612,7 +585,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                 <input
                   type="checkbox"
                   id="CG"
-                  className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
+                  className="h-4 w-4 rounded text-donatti-blue focus:ring-donatti-blue"
                   checked={formData.CG}
                   onChange={() => handleChange("CG", !formData.CG)}
                 />
@@ -625,7 +598,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                 <input
                   type="checkbox"
                   id="SP"
-                  className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
+                  className="h-4 w-4 rounded text-donatti-blue focus:ring-donatti-blue"
                   checked={formData.SP}
                   onChange={() => handleChange("SP", !formData.SP)}
                 />
@@ -649,7 +622,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
             <button
               type="submit"
-              className="px-6 py-3 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors font-mon font-medium flex items-center justify-center min-w-[160px]"
+              className="px-6 py-3 bg-donatti-blue text-white rounded-md hover:bg-donatti-blue/90 transition-colors font-mon font-medium flex items-center justify-center min-w-[160px]"
               disabled={isLoading}
             >
               {isLoading ? (
