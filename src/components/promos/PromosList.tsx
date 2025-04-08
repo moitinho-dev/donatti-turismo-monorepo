@@ -46,20 +46,22 @@ interface PromosListProps {
 }
 
 // Fix the date formatting to use local timezone
-// Replace the formatRelativeDate function with this improved version
 const formatRelativeDate = (dateString: string) => {
   try {
-    // Parse the UTC date and convert to local timezone
+    // Parse the date string and convert to local date
     const date = new Date(dateString)
+
+    // Get today and yesterday dates in local timezone
     const today = new Date()
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
 
-    // Compare dates by setting time to midnight for accurate day comparison
+    // Format all dates to remove time component for comparison
     const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
     const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const localYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
 
+    // Compare the dates
     if (localDate.getTime() === localToday.getTime()) {
       return "Hoje"
     } else if (localDate.getTime() === localYesterday.getTime()) {
@@ -110,8 +112,9 @@ const groupPromosByDate = (promos: PromoData[]) => {
       return
     }
 
-    // Convert UTC date to local date and use as group key
+    // Convert date to local date string for grouping
     const date = new Date(promo.createdAt)
+    // Format as YYYY-MM-DD in local timezone
     const localDateStr = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split("T")[0]
 
     if (!groups[localDateStr]) {

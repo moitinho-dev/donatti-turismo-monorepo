@@ -129,7 +129,11 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                 <SidebarMenu>
                   {isAdmin && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={isActive("/admin")} tooltip="Dashboard">
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive("/admin") && !pathname.includes("?tab=")}
+                        tooltip="Dashboard"
+                      >
                         <Link href="/admin">
                           <BarChart2 className="h-4 w-4" />
                           <span>Dashboard</span>
@@ -139,7 +143,11 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                   )}
 
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive("/agent") || isActive("/promos")} tooltip="Promoções">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={(isActive("/agent") && !pathname.includes("?tab=")) || pathname.includes("?tab=promos")}
+                      tooltip="Promoções"
+                    >
                       <Link href={isAdmin ? "/admin?tab=promos" : "/agent?tab=promos"}>
                         <FileText className="h-4 w-4" />
                         <span>Promoções</span>
@@ -150,7 +158,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname?.includes("imagens") || pathname?.includes("images")}
+                      isActive={pathname?.includes("tab=imagens") || pathname?.includes("tab=images")}
                       tooltip="Gerador de Imagens"
                     >
                       <Link href={isAdmin ? "/admin?tab=images" : "/agent?tab=imagens"}>
@@ -162,7 +170,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
 
                   {isAdmin && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={pathname?.includes("users")} tooltip="Usuários">
+                      <SidebarMenuButton asChild isActive={pathname?.includes("tab=users")} tooltip="Usuários">
                         <Link href="/admin?tab=users">
                           <Users className="h-4 w-4" />
                           <span>Usuários</span>
@@ -173,7 +181,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
 
                   {isAdmin && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={pathname?.includes("data")} tooltip="Banco de Dados">
+                      <SidebarMenuButton asChild isActive={pathname?.includes("tab=data")} tooltip="Banco de Dados">
                         <Link href="/admin?tab=data">
                           <Database className="h-4 w-4" />
                           <span>Banco de Dados</span>
@@ -191,20 +199,22 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
               <SidebarGroupLabel>Links Rápidos</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  {isAdmin && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip="Área do Agente">
+                        <Link href="/agent">
+                          <User className="h-4 w-4" />
+                          <span>Área do Agente</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Site Principal">
                       <Link href="/">
                         <Home className="h-4 w-4" />
                         <span>Site Principal</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Configurações">
-                      <Link href="#">
-                        <Settings className="h-4 w-4" />
-                        <span>Configurações</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

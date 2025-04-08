@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
-import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from "date-fns"
+import { format, subDays, eachDayOfInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     const today = new Date()
     const thirtyDaysAgo = subDays(today, 30)
 
-    // Add this helper function at the beginning of the GET function
+    // Helper function for safe date handling
     const safeDate = (date: Date | null): Date => {
       if (!date || isNaN(date.getTime())) {
         return new Date(0) // Return epoch time as fallback
@@ -69,7 +69,6 @@ export async function GET(req: NextRequest) {
       return date
     }
 
-    // Then update the daily stats calculation
     // Create array of all days in the interval
     const daysInterval = eachDayOfInterval({
       start: safeDate(thirtyDaysAgo),
@@ -83,18 +82,27 @@ export async function GET(req: NextRequest) {
       count: 0,
     }))
 
-    // Count promos per day
+    // Count promos per day - with improved date handling
     promos.forEach((promo) => {
       try {
+        if (!promo.createdAt) return
+
         const createdAt = new Date(promo.createdAt)
         if (isNaN(createdAt.getTime())) {
           console.error("Invalid date in promo:", promo.id)
           return
         }
 
-        const dayIndex = dailyCounts.findIndex(
-          (day) => createdAt >= startOfDay(new Date(day.date)) && createdAt <= endOfDay(new Date(day.date)),
-        )
+        // Convert to local date for comparison
+        const localCreatedAt = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate())
+
+        const dayIndex = dailyCounts.findIndex((day) => {
+          const dayDate = new Date(day.date)
+          const startOfDayDate = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate())
+          const endOfDayDate = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 23, 59, 59, 999)
+
+          return localCreatedAt >= startOfDayDate && localCreatedAt <= endOfDayDate
+        })
 
         if (dayIndex !== -1) {
           dailyCounts[dayIndex].count++
