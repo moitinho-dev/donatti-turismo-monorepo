@@ -135,12 +135,6 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
-
-        <div className="mt-6 text-center text-xs text-gray-500">
-          <p>Para fins de demonstração, use:</p>
-          <p className="mt-1">Email: admin@donatti.com</p>
-          <p>Senha: lemonde123</p>
-        </div>
       </div>
     </div>
   )
