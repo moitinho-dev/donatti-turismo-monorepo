@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { nanoid } from "nanoid"
 import { z } from "zod"
-import { redis, REDIS_KEYS } from "../../../lib/redis"
-import type { User } from "../../../types/user"
+import { redis, REDIS_KEYS } from "@/lib/redis"
+import type { User } from "@/types/user"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     // If ID is provided, return specific user
     if (id) {
-      const user = usersData.find((u: User) => u.id === id)
+      const user = usersData.find((u) => u.id === id)
       if (!user) {
         return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
       }
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Return all users without passwords
-    const usersWithoutPasswords = usersData.map(({ password, ...user }: User) => user)
+    const usersWithoutPasswords = usersData.map(({ password, ...user }) => user)
     return NextResponse.json(usersWithoutPasswords)
   } catch (error) {
     console.error("Error fetching users:", error)
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const usersData = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
 
     // Check if email already exists
-    const emailExists = usersData.some((u: User) => u.email === userData.email && (!userData.id || u.id !== userData.id))
+    const emailExists = usersData.some((u) => u.email === userData.email && (!userData.id || u.id !== userData.id))
     if (emailExists) {
       return NextResponse.json({ error: "Email já está em uso" }, { status: 400 })
     }
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     if (isNewUser) {
       usersData.push(completeUserData)
     } else {
-      const index = usersData.findIndex((u: User) => u.id === userId)
+      const index = usersData.findIndex((u) => u.id === userId)
       if (index !== -1) {
         usersData[index] = completeUserData
       } else {
@@ -163,14 +163,14 @@ export async function DELETE(req: NextRequest) {
     const usersData = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
 
     // Check if user exists
-    const index = usersData.findIndex((u: User) => u.id === id)
+    const index = usersData.findIndex((u) => u.id === id)
     if (index === -1) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     // Don't allow deleting the last admin
     if (usersData[index].role === "admin") {
-      const adminCount = usersData.filter((u: User) => u.role === "admin").length
+      const adminCount = usersData.filter((u) => u.role === "admin").length
       if (adminCount <= 1) {
         return NextResponse.json({ error: "Não é possível excluir o último administrador" }, { status: 400 })
       }

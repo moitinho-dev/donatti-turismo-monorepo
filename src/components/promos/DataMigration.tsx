@@ -1,8 +1,8 @@
 "use client"
 import { useState } from "react"
-import { Button } from "../../components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Loader2, Upload, Check, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export function DataMigration() {
   const [isLoading, setIsLoading] = useState(false)

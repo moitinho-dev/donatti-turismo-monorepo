@@ -10,6 +10,7 @@ import { PromoForm } from "../promos/PromoForm"
 import { PromoStats } from "../promos/PromoStats"
 import { DateRangePicker } from "../promos/DateRangePicker"
 import { CSVExport } from "../promos/CSVExport"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Plus, FileText, BarChart2, Users, UserPlus, Edit } from "lucide-react"
 
 interface User {
@@ -23,7 +24,6 @@ interface AdminDashboardProps {
   user: User
 }
 
-// Melhorar o design do dashboard administrativo
 export default function AdminDashboard({ user }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [selectedPromo, setSelectedPromo] = useState<any>(null)
@@ -139,6 +139,8 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
     // If both dates are selected, filter promos
     if (range.from && range.to) {
+      const startDateStr = range.from.toISOString().split("T")[0]
+      const endDateStr = range.to.toISOString().split("T")[0]
       fetchPromos()
     } else {
       fetchPromos()
@@ -155,7 +157,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <AdminHeader user={user} onSignOut={handleSignOut} />
 
       <div className="container mx-auto px-4 py-8">
@@ -165,7 +167,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
             <p className="text-gray-600 font-mon">Gerencie usuários, promoções e visualize estatísticas do sistema</p>
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button
               onClick={handleAddUserClick}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors font-mon"
@@ -191,162 +193,109 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
           onClearFilters={handleClearFilters}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-3 space-y-6">
-            <div className="bg-card rounded-lg shadow-md p-4">
-              <nav className="space-y-1">
-                <button
-                  onClick={() => setActiveTab("dashboard")}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                    activeTab === "dashboard" ? "bg-primary-blue text-white" : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <BarChart2 className="h-4 w-4" />
-                  <span>Dashboard</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab("users")}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                    activeTab === "users" ? "bg-primary-blue text-white" : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Usuários</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab("promos")}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                    activeTab === "promos" ? "bg-primary-blue text-white" : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Promoções</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab("add-promo")}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                    activeTab === "add-promo" ? "bg-primary-blue text-white" : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Nova Promoção</span>
-                </button>
-                <button
-                  onClick={handleAddUserClick}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                    activeTab === "add-user" ? "bg-primary-blue text-white" : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Novo Usuário</span>
-                </button>
-                {activeTab === "edit-promo" && (
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-primary-blue text-white">
-                    <Edit className="h-4 w-4" />
-                    <span>Editar Promoção</span>
-                  </button>
-                )}
-              </nav>
-            </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
+          <TabsList className="mb-8 bg-gray-100 p-1 rounded-lg overflow-x-auto flex whitespace-nowrap">
+            <TabsTrigger
+              value="dashboard"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <BarChart2 className="h-4 w-4 mr-2" />
+              <span>Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="users"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              <span>Usuários</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="promos"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              <span>Promoções</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="add-promo"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span>Nova Promoção</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="add-user"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              <span>{selectedUser ? "Editar Usuário" : "Adicionar Usuário"}</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="edit-promo"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              <span>Editar Promoção</span>
+            </TabsTrigger>
+          </TabsList>
 
-            {stats && (
-              <div className="bg-card rounded-lg shadow-md p-4">
-                <h3 className="font-semibold text-sm text-gray-500 mb-3">Resumo</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Total de Promoções</span>
-                    <span className="font-semibold text-primary-blue">{stats.overall.totalPromos}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Destinos Únicos</span>
-                    <span className="font-semibold text-second-blue">{stats.overall.uniqueDestinations}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Valor Médio</span>
-                    <span className="font-semibold text-primary-orange">
-                      {stats.overall.averageValue.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </span>
-                  </div>
+          <TabsContent value="dashboard" className="space-y-6">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+                <span className="ml-2 text-gray-600 font-mon">Carregando dados...</span>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Desempenho dos Agentes</h2>
+                  <UserStats userStats={userStats} />
                 </div>
-              </div>
-            )}
-          </div>
 
-          <div className="md:col-span-9">
-            {activeTab === "dashboard" && (
-              <div className="space-y-6">
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-                    <span className="ml-2 text-gray-600 font-mon">Carregando dados...</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="bg-card rounded-lg shadow-md p-6">
-                      <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Desempenho dos Agentes</h2>
-                      <UserStats userStats={userStats} />
-                    </div>
-
-                    <div className="bg-card rounded-lg shadow-md p-6">
-                      <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Estatísticas de Promoções</h2>
-                      <PromoStats stats={stats} detailed />
-                    </div>
-                  </>
-                )}
-              </div>
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Estatísticas de Promoções</h2>
+                  <PromoStats stats={stats} detailed />
+                </div>
+              </>
             )}
+          </TabsContent>
 
-            {activeTab === "users" && (
-              <div className="bg-card rounded-lg shadow-md">
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-                    <span className="ml-2 text-gray-600 font-mon">Carregando usuários...</span>
-                  </div>
-                ) : (
-                  <UsersList users={users} onEdit={handleEditUser} onRefresh={fetchUsers} />
-                )}
+          <TabsContent value="users">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+                <span className="ml-2 text-gray-600 font-mon">Carregando usuários...</span>
               </div>
+            ) : (
+              <UsersList users={users} onEdit={handleEditUser} onRefresh={fetchUsers} />
             )}
+          </TabsContent>
 
-            {activeTab === "promos" && (
-              <div className="space-y-4">
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-                    <span className="ml-2 text-gray-600 font-mon">Carregando promoções...</span>
-                  </div>
-                ) : (
-                  <>
-                    {promos.length > 0 && <PromoStats stats={stats} />}
-                    <PromosList promos={promos} onEdit={handleEditPromo} onDelete={fetchPromos} />
-                  </>
-                )}
+          <TabsContent value="promos">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+                <span className="ml-2 text-gray-600 font-mon">Carregando promoções...</span>
               </div>
+            ) : (
+              <>
+                {promos.length > 0 && <PromoStats stats={stats} />}
+                <PromosList promos={promos} onEdit={handleEditPromo} onDelete={fetchPromos} />
+              </>
             )}
+          </TabsContent>
 
-            {activeTab === "add-user" && (
-              <div className="bg-card rounded-lg shadow-md">
-                <UserForm user={selectedUser} onSuccess={handleFormSubmitSuccess} />
-              </div>
-            )}
+          <TabsContent value="add-user">
+            <UserForm user={selectedUser} onSuccess={handleFormSubmitSuccess} />
+          </TabsContent>
 
-            {activeTab === "edit-promo" && (
-              <div className="bg-card rounded-lg shadow-md">
-                <PromoForm promo={selectedPromo} onSuccess={handleFormSubmitSuccess} />
-              </div>
-            )}
-
-            {activeTab === "add-promo" && (
-              <div className="bg-card rounded-lg shadow-md">
-                <PromoForm promo={null} onSuccess={handleFormSubmitSuccess} />
-              </div>
-            )}
-          </div>
-        </div>
+          <TabsContent value="edit-promo">
+            <PromoForm promo={selectedPromo} onSuccess={handleFormSubmitSuccess} />
+          </TabsContent>
+          <TabsContent value="add-promo">
+            <PromoForm promo={null} onSuccess={handleFormSubmitSuccess} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

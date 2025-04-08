@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
-import { redis, REDIS_KEYS } from "../../../../lib/redis"
-import type { User, UserStats } from "../../../../types/user"
+import { redis, REDIS_KEYS } from "@/lib/redis"
+import type { User, UserStats } from "@/types/user"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions)
@@ -44,16 +44,16 @@ export async function GET() {
 
     // Calculate stats for each user
     const userStats: UserStats[] = users
-      .filter((user: User) => user.active) // Only include active users
-      .map((user: User) => {
+      .filter((user) => user.active) // Only include active users
+      .map((user) => {
         // Update the sorting of sessions and promos
         // Get last login
-        const userSessions = sessions.filter((session: any) => session.userId === user.id)
+        const userSessions = sessions.filter((session) => session.userId === user.id)
         let lastLoginDate = user.lastLogin
 
         if (userSessions.length > 0) {
           // Sort safely
-          const sortedSessions = userSessions.sort((a: any, b: any) => {
+          const sortedSessions = userSessions.sort((a, b) => {
             const dateA = safeParseDate(a.loginTime)
             const dateB = safeParseDate(b.loginTime)
 
@@ -70,11 +70,11 @@ export async function GET() {
         }
 
         // Get last promo date - similar safe sorting
-        const userPromos = promos.filter((promo: any) => promo.createdBy === user.id)
+        const userPromos = promos.filter((promo) => promo.createdBy === user.id)
         let lastPromoDate = undefined
 
         if (userPromos.length > 0) {
-          const sortedPromos = userPromos.sort((a: any, b: any) => {
+          const sortedPromos = userPromos.sort((a, b) => {
             const dateA = safeParseDate(a.createdAt)
             const dateB = safeParseDate(b.createdAt)
 

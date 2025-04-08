@@ -9,13 +9,7 @@ interface UserFormProps {
 }
 
 export function UserForm({ user, onSuccess }: UserFormProps) {
-  const [formData, setFormData] = useState<{
-    id: string
-    name: string
-    email: string
-    password: string
-    role: string
-  }>({
+  const [formData, setFormData] = useState({
     id: "",
     name: "",
     email: "",
@@ -53,7 +47,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
 
     // Validate required fields
     const requiredFields = ["name", "email", "role"]
-    const missingFields = requiredFields.filter((field) => !(formData as any)[field])
+    const missingFields = requiredFields.filter((field) => !formData[field])
 
     // Also require password for new users
     if (!user && !formData.password) {
@@ -80,12 +74,9 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
 
     try {
       setIsLoading(true)
-      // Prepare data for API
-      const userData: Partial<typeof formData> = { ...formData }
 
-      if (user && !userData.password) {
-        delete userData.password
-      }
+      // Prepare data for API
+      const userData = { ...formData }
 
       // If editing and password is empty, remove it from the request
       if (user && !userData.password) {

@@ -117,7 +117,7 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
   return (
     <div className={`${detailed ? "" : "mb-8"}`}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card p-4 rounded-lg shadow-sm border-l-4 border-primary-blue">
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-primary-blue">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-blue-100 mr-4">
               <Calendar className="h-6 w-6 text-primary-blue" />
@@ -129,7 +129,7 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-lg shadow-sm border-l-4 border-second-blue">
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-second-blue">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-blue-100 mr-4">
               <MapPin className="h-6 w-6 text-second-blue" />
@@ -141,7 +141,7 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-lg shadow-sm border-l-4 border-primary-orange">
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-primary-orange">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-yellow-100 mr-4">
               <DollarSign className="h-6 w-6 text-primary-orange" />
@@ -155,7 +155,7 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-lg shadow-sm border-l-4 border-primary-yellow">
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-primary-yellow">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-yellow-100 mr-4">
               <Users className="h-6 w-6 text-primary-yellow" />
@@ -172,7 +172,7 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
 
       {detailed && (
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-card p-6 rounded-lg shadow-sm">
+          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-primary-blue mb-4 font-mon flex items-center">
               <TrendingUp className="h-5 w-5 mr-2" />
               Promoções nos Últimos 30 Dias
@@ -182,7 +182,7 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
             </div>
           </div>
 
-          <div className="bg-card p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-primary-blue mb-4 font-mon">Destino Mais Popular</h3>
 
             <div className="flex items-center mb-4">

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react"
 import type React from "react"
 
-import { usePromo } from "../../hooks/usePromo"
+import { usePromo } from "@/hooks/usePromo"
 import { MapPin, Hotel, Calendar, DollarSign, Users, Utensils, Plane, Loader2, Save, X, CreditCard } from "lucide-react"
 
 interface PromoFormProps {
@@ -212,13 +212,12 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
-  // Melhorar a formatação de valores monetários
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.target
     const cursorPosition = input.selectionStart // Store cursor position
-    const inputValue = input.value.replace(/\D/g, "") // Remove all non-digits
+    let inputValue = input.value.replace(/[^\d]/g, "") // Remove all non-digits
 
-    // Handle empty input
+    // Convert the raw input into a number (assuming the last two digits are cents)
     if (inputValue.length === 0) {
       setFormattedAmount("")
       setFormData((prev) => ({
@@ -229,13 +228,20 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       return
     }
 
-    // Convert to cents (numeric value)
-    const cents = Number.parseInt(inputValue, 10)
-    if (isNaN(cents)) return
+    // Treat the input as a number of cents
+    const numericValue = Number.parseInt(inputValue, 10) / 100
+    if (isNaN(numericValue)) {
+      setFormattedAmount("")
+      setFormData((prev) => ({
+        ...prev,
+        VALOR: "",
+        VALORTOTAL: "",
+      }))
+      return
+    }
 
-    // Convert cents to reais with proper formatting
-    const reais = cents / 100
-    const formatted = reais.toLocaleString("pt-BR", {
+    // Format the numeric value as currency
+    const formatted = numericValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
@@ -246,23 +252,20 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
     // Update formData with the total value and per-person installment value
     const parcelasNum = Number.parseInt(formData.PARCELAS || "10", 10)
-    const perPersonValue = reais / 2 // Total value / 2 for per person
+    const perPersonValue = numericValue / 2 // Total value / 2 for per person
     const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
 
     setFormData((prev) => ({
       ...prev,
       VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
-      VALORTOTAL: reais.toFixed(2).replace(".", ","),
+      VALORTOTAL: numericValue.toFixed(2).replace(".", ","),
     }))
 
     // Adjust cursor position
     setTimeout(() => {
       const newLength = formatted.length
       const oldLength = input.value.length
-      const newPosition = Math.max(
-        0,
-        Math.min(newLength, cursorPosition ? cursorPosition + (newLength - oldLength) : newLength),
-      )
+      const newPosition = cursorPosition! + (newLength - oldLength)
       input.setSelectionRange(newPosition, newPosition)
     }, 0)
   }
@@ -274,7 +277,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
     // Validate required fields
     const requiredFields = ["DESTINO", "HOTEL", "DATA_FORMATADA", "VALOR", "NUMERO_DE_NOITES"]
-    const missingFields = requiredFields.filter((field) => !formData[field as keyof typeof formData])
+    const missingFields = requiredFields.filter((field) => !formData[field])
 
     if (missingFields.length > 0) {
       setFormError(`Campos obrigatórios não preenchidos: ${missingFields.join(", ")}`)

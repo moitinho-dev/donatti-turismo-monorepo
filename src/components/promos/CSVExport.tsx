@@ -2,8 +2,8 @@
 import { useState } from "react"
 import { Download, Calendar, FileText } from "lucide-react"
 import { format } from "date-fns"
-import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
-import { Button } from "../../components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button"
 
 interface CSVExportProps {
   dateRange: {

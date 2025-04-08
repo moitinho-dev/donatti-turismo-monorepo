@@ -1,6 +1,6 @@
 "use client"
 import { createContext, useContext, type ReactNode } from "react"
-import { usePromo } from "../hooks/usePromo"
+import { usePromo } from "@/hooks/usePromo"
 
 // Create context
 const PromoContext = createContext<ReturnType<typeof usePromo> | undefined>(undefined)
