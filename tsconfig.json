@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".", // Added to ensure paths work correctly
     "target": "es2015",
     "lib": [
       "dom",
