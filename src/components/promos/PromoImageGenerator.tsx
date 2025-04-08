@@ -15,7 +15,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const templateRef = useRef<HTMLDivElement>(null)
 
   // Calculate values
-  const baseValue = Number.parseFloat(promo.VALOR)
+  const baseValue = Number.parseFloat(promo.VALOR.replace(",", ".")) // Per-person installment value
   const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
 
   // Fetch destination image when component mounts or destination changes
@@ -31,10 +31,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setError(null)
 
     try {
-      // Adicionar termos específicos para melhorar a busca de imagens
       let searchQuery = promo.DESTINO
 
-      // Adicionar termos específicos para cidades para melhorar os resultados
       const cityTerms = {
         "Porto Alegre": "cidade porto alegre brasil skyline",
         "Rio de Janeiro": "rio de janeiro cidade cristo",
@@ -50,7 +48,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         "João Pessoa": "joão pessoa praia cidade brasil",
       }
 
-      // Verificar se o destino está na lista de termos específicos
       for (const [city, term] of Object.entries(cityTerms)) {
         if (promo.DESTINO.includes(city)) {
           searchQuery = term
@@ -58,7 +55,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         }
       }
 
-      // Adicionar um parâmetro de página aleatório para evitar repetição
       const randomPage = Math.floor(Math.random() * 5) + 1
       const response = await fetch(`/api/image-search?query=${encodeURIComponent(searchQuery)}&page=${randomPage}`)
 
@@ -69,7 +65,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       const data = await response.json()
 
       if (data.results && data.results.length > 0) {
-        // Escolher uma imagem aleatória dos resultados
         const randomIndex = Math.floor(Math.random() * data.results.length)
         setDestinationImage(data.results[randomIndex].urls.regular)
       } else {
@@ -190,13 +185,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
-  // Calculate the installment value
+  // Format the installment value for display
   const getInstallmentValue = () => {
-    if (isNaN(baseValue) || parcelas === 0) {
+    if (isNaN(baseValue)) {
       return "0,00"
     }
-
-    // Usar o valor real da parcela individual
     return baseValue.toFixed(2).replace(".", ",")
   }
 
