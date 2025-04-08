@@ -1,159 +1,125 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
 
-// Unsplash API credentials
-const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || ""
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const query = searchParams.get("query")
+  const page = searchParams.get("page") || "1"
+  const perPage = searchParams.get("perPage") || "10"
 
-export async function GET(request: NextRequest) {
+  if (!query) {
+    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
+  }
+
   try {
-    // Get the search query from URL parameters
-    const searchParams = request.nextUrl.searchParams
-    const query = searchParams.get("query")
-    const page = searchParams.get("page") || "1" // Add page parameter for variety
-
-    if (!query) {
-      return NextResponse.json({ error: "Search query is required" }, { status: 400 })
-    }
-
-    // Enhance the search query to get better destination images
+    // Add more specific search terms for better results
     let enhancedQuery = query
 
-    // Extract the main destination name (remove any descriptive text)
-    const destinationName = query.split(" ")[0]
+    // Add country context for Brazilian cities
+    if (
+      query.toLowerCase().includes("rio de janeiro") ||
+      query.toLowerCase().includes("são paulo") ||
+      query.toLowerCase().includes("curitiba") ||
+      query.toLowerCase().includes("florianópolis") ||
+      query.toLowerCase().includes("salvador") ||
+      query.toLowerCase().includes("recife") ||
+      query.toLowerCase().includes("fortaleza") ||
+      query.toLowerCase().includes("porto alegre") ||
+      query.toLowerCase().includes("fortaleza") ||
+      query.toLowerCase().includes("porto alegre") ||
+      query.toLowerCase().includes("natal") ||
+      query.toLowerCase().includes("manaus") ||
+      query.toLowerCase().includes("brasília") ||
+      query.toLowerCase().includes("belo horizonte")
+    ) {
+      // Add Brazil to the search query for better results
+      enhancedQuery = `${query} Brazil travel destination landmark`
 
-    // Add specific terms for better travel/destination images
-    if (query.toLowerCase().includes("cidade") || query.toLowerCase().includes("city")) {
-      enhancedQuery = `${destinationName} city skyline tourism`
-    } else if (query.toLowerCase().includes("praia") || query.toLowerCase().includes("beach")) {
-      enhancedQuery = `${destinationName} beach tourism vacation`
-    } else {
-      // Default enhancement for destinations
-      enhancedQuery = `${destinationName} tourism landmark travel destination`
-    }
-
-    // Add specific enhancements for popular Brazilian destinations
-    const brazilianDestinations: Record<string, string> = {
-      rio: "Rio de Janeiro Christ Redeemer Copacabana",
-      "são paulo": "São Paulo Avenida Paulista skyline",
-      salvador: "Salvador Bahia Pelourinho historic",
-      fortaleza: "Fortaleza beach Ceará",
-      recife: "Recife Pernambuco historic",
-      natal: "Natal Rio Grande do Norte beaches",
-      "porto alegre": "Porto Alegre Rio Grande do Sul",
-      curitiba: "Curitiba Jardim Botânico Paraná",
-      manaus: "Manaus Amazon Opera House",
-      brasília: "Brasília Cathedral Congress",
-      florianópolis: "Florianópolis beaches Santa Catarina",
-      gramado: "Gramado Rio Grande do Sul tourism",
-      "porto seguro": "Porto Seguro Bahia beaches",
-      maceió: "Maceió Alagoas beaches",
-      "joão pessoa": "João Pessoa Paraíba beaches",
-      "campo grande": "Campo Grande Mato Grosso do Sul",
-    }
-
-    // Check if the query contains any of the Brazilian destinations
-    for (const [destination, enhancement] of Object.entries(brazilianDestinations)) {
-      if (query.toLowerCase().includes(destination.toLowerCase())) {
-        enhancedQuery = enhancement
-        break
+      // Add specific landmarks for major cities
+      if (query.toLowerCase().includes("rio de janeiro")) {
+        // Randomize between different landmarks to get variety
+        const landmarks = ["Christ the Redeemer", "Copacabana Beach", "Ipanema", "Sugarloaf Mountain", "Lapa"]
+        const randomLandmark = landmarks[Math.floor(Math.random() * landmarks.length)]
+        enhancedQuery = `Rio de Janeiro Brazil ${randomLandmark} travel destination`
+      } else if (query.toLowerCase().includes("são paulo")) {
+        const landmarks = ["Paulista Avenue", "Ibirapuera Park", "MASP", "Municipal Market", "Liberdade"]
+        const randomLandmark = landmarks[Math.floor(Math.random() * landmarks.length)]
+        enhancedQuery = `São Paulo Brazil ${randomLandmark} travel destination`
+      } else if (query.toLowerCase().includes("curitiba")) {
+        const landmarks = [
+          "Botanical Garden",
+          "Oscar Niemeyer Museum",
+          "Wire Opera House",
+          "Tangua Park",
+          "Historic Center",
+        ]
+        const randomLandmark = landmarks[Math.floor(Math.random() * landmarks.length)]
+        enhancedQuery = `Curitiba Brazil ${randomLandmark} travel destination`
+      } else if (query.toLowerCase().includes("florianópolis")) {
+        const landmarks = [
+          "Joaquina Beach",
+          "Lagoa da Conceição",
+          "Jurerê Beach",
+          "Barra da Lagoa",
+          "Santo Antônio de Lisboa",
+        ]
+        const randomLandmark = landmarks[Math.floor(Math.random() * landmarks.length)]
+        enhancedQuery = `Florianópolis Brazil ${randomLandmark} travel destination`
       }
+    } else if (query.toLowerCase().includes("beach") || query.toLowerCase().includes("praia")) {
+      enhancedQuery = `${query} beautiful tropical beach vacation destination`
+    } else if (query.toLowerCase().includes("mountain") || query.toLowerCase().includes("montanha")) {
+      enhancedQuery = `${query} scenic mountain landscape travel destination`
+    } else {
+      // For other destinations, add travel context
+      enhancedQuery = `${query} travel tourism destination landmark`
     }
 
-    // If we have an Unsplash API key, use it
-    if (UNSPLASH_ACCESS_KEY) {
-      const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(enhancedQuery)}&per_page=10&page=${page}&orientation=landscape&content_filter=high`,
+    // Add randomization parameter to get different images each time
+    const randomParam = Math.floor(Math.random() * 1000)
+
+    // Use Unsplash API to search for images
+    const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY
+    const response = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(enhancedQuery)}&page=${page}&per_page=${perPage}&random=${randomParam}`,
+      {
+        headers: {
+          Authorization: `Client-ID ${unsplashAccessKey}`,
+        },
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(`Unsplash API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    // If no results, try a more generic search
+    if (data.results.length === 0) {
+      const fallbackQuery = `${query} travel destination`
+      const fallbackResponse = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(fallbackQuery)}&page=${page}&per_page=${perPage}`,
         {
           headers: {
-            Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+            Authorization: `Client-ID ${unsplashAccessKey}`,
           },
         },
       )
 
-      if (!response.ok) {
-        throw new Error(`Unsplash API error: ${response.statusText}`)
+      if (!fallbackResponse.ok) {
+        throw new Error(`Unsplash API error: ${fallbackResponse.status}`)
       }
 
-      const data = await response.json()
-
-      // Randomize results to avoid repetition
-      const shuffledResults = [...data.results].sort(() => 0.5 - Math.random())
-
-      return NextResponse.json({
-        results: shuffledResults.slice(0, 5),
-        originalQuery: query,
-        enhancedQuery: enhancedQuery,
-      })
+      const fallbackData = await fallbackResponse.json()
+      return NextResponse.json(fallbackData)
     }
-    // Fallback to Pexels API if no Unsplash key
-    else {
-      const PEXELS_API_KEY = process.env.PEXELS_API_KEY || ""
 
-      if (PEXELS_API_KEY) {
-        const response = await fetch(
-          `https://api.pexels.com/v1/search?query=${encodeURIComponent(enhancedQuery)}&per_page=5&orientation=landscape`,
-          {
-            headers: {
-              Authorization: PEXELS_API_KEY,
-            },
-          },
-        )
-
-        if (!response.ok) {
-          throw new Error(`Pexels API error: ${response.statusText}`)
-        }
-
-        const data = await response.json()
-
-        // Transform Pexels response to match Unsplash format
-        const transformedData = {
-          results: data.photos.map((photo: any) => ({
-            id: photo.id,
-            urls: {
-              raw: photo.src.original,
-              full: photo.src.original,
-              regular: photo.src.large,
-              small: photo.src.medium,
-              thumb: photo.src.small,
-            },
-            user: {
-              name: photo.photographer,
-              links: {
-                html: photo.photographer_url,
-              },
-            },
-          })),
-          originalQuery: query,
-          enhancedQuery: enhancedQuery,
-        }
-
-        return NextResponse.json(transformedData)
-      }
-
-      // If no API keys are available, use a fallback with placeholder images
-      return NextResponse.json({
-        results: [
-          {
-            id: "fallback1",
-            urls: {
-              regular: `https://source.unsplash.com/1600x900/?${encodeURIComponent(enhancedQuery)}`,
-            },
-            user: {
-              name: "Unsplash",
-              links: {
-                html: "https://unsplash.com",
-              },
-            },
-          },
-        ],
-        originalQuery: query,
-        enhancedQuery: enhancedQuery,
-      })
-    }
+    return NextResponse.json(data)
   } catch (error) {
-    console.error("Error in image search API:", error)
+    console.error("Error searching for images:", error)
     return NextResponse.json({ error: "Failed to search for images" }, { status: 500 })
   }
 }

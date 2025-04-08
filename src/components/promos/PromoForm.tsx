@@ -1,645 +1,394 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 
-import { usePromo } from "@/hooks/usePromo"
-import { MapPin, Hotel, Calendar, DollarSign, Users, Utensils, Plane, Loader2, Save, X, CreditCard } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Loader2, Calendar, DollarSign, Hotel, MapPin, Utensils, Plane, Moon } from "lucide-react"
 
 interface PromoFormProps {
-  promo?: any
+  promo: any
   onSuccess: () => void
 }
 
 export function PromoForm({ promo, onSuccess }: PromoFormProps) {
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     id: "",
-    DESTINO: "",
-    HOTEL: "",
-    DE: "",
-    ATE: "",
-    MES_DE: "",
-    MES_ATE: "",
-    ANO: "",
-    VALOR: "", // Will store the per-person installment value
-    VALORTOTAL: "", // Will store the total package value
-    PARCELAS: "10", // Default number of parcels
-    COM_CAFE: false,
-    SEM_CAFE: false,
-    MEIA_PENSAO: false,
-    PENSAO_COMPLETA: false,
-    ALL_INCLUSIVE: false,
-    NUMERO_DE_NOITES: "",
-    SP: false,
-    CG: false,
-    AEREO: false,
-    DATA_FORMATADA: "",
+    destino: "",
+    hotel: "",
+    dataIda: "",
+    dataVolta: "",
+    noites: "",
+    valorTotal: "",
+    parcelas: "10",
+    regimeAlimentacao: "",
+    aeroportoSaida: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formattedValue, setFormattedValue] = useState("")
 
-  const [formattedAmount, setFormattedAmount] = useState("") // Stores the formatted total package value (for display)
-  const [regimeAlimentacao, setRegimeAlimentacao] = useState("")
-  const [formError, setFormError] = useState<string | null>(null)
-  const [formSuccess, setFormSuccess] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [deDate, setDeDate] = useState("")
-  const [ateDate, setAteDate] = useState("")
-  const amountInputRef = useRef<HTMLInputElement>(null) // Ref to manage cursor position
-
-  const { savePromo, isLoading: isSaving } = usePromo()
-
-  // Initialize form with promo data if editing
   useEffect(() => {
     if (promo) {
-      setFormData((prev) => ({
+      const dataIdaFormatted = promo.dataIda ? new Date(promo.dataIda).toISOString().split("T")[0] : ""
+      const dataVoltaFormatted = promo.dataVolta ? new Date(promo.dataVolta).toISOString().split("T")[0] : ""
+
+      setFormData({
         id: promo.id || "",
-        DESTINO: promo.DESTINO || "",
-        HOTEL: promo.HOTEL || "",
-        DE: "",
-        ATE: "",
-        MES_DE: "",
-        MES_ATE: "",
-        ANO: "",
-        VALOR: promo.VALOR || "",
-        VALORTOTAL: promo.VALORTOTAL || "", // Load the total value
-        PARCELAS: promo.PARCELAS || "10",
-        COM_CAFE: promo.COM_CAFE || false,
-        SEM_CAFE: promo.SEM_CAFE || false,
-        MEIA_PENSAO: promo.MEIA_PENSAO || false,
-        PENSAO_COMPLETA: promo.PENSAO_COMPLETA || false,
-        ALL_INCLUSIVE: promo.ALL_INCLUSIVE || false,
-        NUMERO_DE_NOITES: promo.NUMERO_DE_NOITES || "",
-        SP: promo.SP || false,
-        CG: promo.CG || false,
-        AEREO: promo.AEREO || false,
-        DATA_FORMATADA: promo.DATA_FORMATADA || "",
-      }))
+        destino: promo.destino || "",
+        hotel: promo.hotel || "",
+        dataIda: dataIdaFormatted,
+        dataVolta: dataVoltaFormatted,
+        noites: promo.noites?.toString() || "",
+        valorTotal: promo.valorTotal?.toString() || "",
+        parcelas: promo.parcelas?.toString() || "10",
+        regimeAlimentacao: promo.regimeAlimentacao || "",
+        aeroportoSaida: promo.aeroportoSaida || "",
+      })
 
-      // Set formatted amount (total value for display)
-      if (promo.VALORTOTAL) {
-        const totalValue = Number.parseFloat(promo.VALORTOTAL.replace(",", "."))
-        if (!isNaN(totalValue)) {
-          setFormattedAmount(
-            totalValue.toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }),
-          )
-        }
-      } else if (promo.VALOR && promo.PARCELAS) {
-        const perPersonInstallment = Number.parseFloat(promo.VALOR.replace(",", "."))
-        const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
-        const totalValue = perPersonInstallment * parcelas * 2 // Total value for two people
-        setFormattedAmount(
-          totalValue.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
-        )
+      // Format the value for display
+      if (promo.valorTotal) {
+        const numericValue = Number.parseFloat(promo.valorTotal)
+        setFormattedValue(numericValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
       }
-
-      // Set regime alimentacao
-      if (promo.ALL_INCLUSIVE) setRegimeAlimentacao("ALL_INCLUSIVE")
-      else if (promo.PENSAO_COMPLETA) setRegimeAlimentacao("PENSAO_COMPLETA")
-      else if (promo.MEIA_PENSAO) setRegimeAlimentacao("MEIA_PENSAO")
-      else if (promo.COM_CAFE) setRegimeAlimentacao("COM_CAFE")
-      else if (promo.SEM_CAFE) setRegimeAlimentacao("SEM_CAFE")
     }
   }, [promo])
 
-  const handleChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
 
-    // If changing the number of parcels, recalculate the per-person installment value
-    if (field === "PARCELAS" && typeof value === "string" && formattedAmount) {
-      updatePerPersonInstallmentValue(formattedAmount, value)
+    if (name === "valorTotal") {
+      // Handle currency formatting
+      // Remove non-numeric characters
+      const numericValue = value.replace(/\D/g, "")
+
+      // Convert to a number with 2 decimal places
+      const floatValue = numericValue ? Number.parseFloat(numericValue) / 100 : 0
+
+      // Format for display
+      setFormattedValue(floatValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+
+      // Store the actual numeric value
+      setFormData((prev) => ({ ...prev, [name]: floatValue.toString() }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
     }
-  }
 
-  const updatePerPersonInstallmentValue = (totalValue: string, parcelas: string) => {
-    // Remove currency symbol and non-numeric characters except decimal separator
-    const cleanedValue = totalValue
-      .replace(/[^\d.,]/g, "")
-      .replace(".", "")
-      .replace(",", ".")
-    const numericValue = Number.parseFloat(cleanedValue)
-
-    if (!isNaN(numericValue)) {
-      const parcelasNum = Number.parseInt(parcelas, 10)
-      const perPersonValue = numericValue / 2 // Value per person (total / 2)
-      const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
-      setFormData((prev) => ({
-        ...prev,
-        VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
-        VALORTOTAL: numericValue.toFixed(2).replace(".", ","), // Store the total value
-        PARCELAS: parcelasNum.toString(),
-      }))
-    }
-  }
-
-  const handleChangeRegimeAlimentacao = (valor: string) => {
-    setRegimeAlimentacao(valor)
-
-    setFormData((prev) => {
-      const updated = {
-        ...prev,
-        COM_CAFE: false,
-        SEM_CAFE: false,
-        MEIA_PENSAO: false,
-        PENSAO_COMPLETA: false,
-        ALL_INCLUSIVE: false,
-      }
-
-      if (valor === "COM_CAFE") updated.COM_CAFE = true
-      else if (valor === "SEM_CAFE") updated.SEM_CAFE = true
-      else if (valor === "MEIA_PENSAO") updated.MEIA_PENSAO = true
-      else if (valor === "PENSAO_COMPLETA") updated.PENSAO_COMPLETA = true
-      else if (valor === "ALL_INCLUSIVE") updated.ALL_INCLUSIVE = true
-
-      return updated
-    })
-  }
-
-  const handleDeDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dateValue = e.target.value
-    setDeDate(dateValue)
-
-    if (dateValue) {
-      const [year, month, day] = dateValue.split("-")
-
-      setFormData((prev) => ({
-        ...prev,
-        DE: day,
-        MES_DE: month,
-        ANO: year,
-      }))
-
-      setFormData((prevFormData) => {
-        return updateDataFormatada(day, prevFormData.ATE, month, prevFormData.MES_ATE, year, prevFormData)
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
       })
     }
   }
 
-  const handleAteDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dateValue = e.target.value
-    setAteDate(dateValue)
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
 
-    if (dateValue) {
-      const [year, month, day] = dateValue.split("-")
+    if (!formData.destino) newErrors.destino = "Destino é obrigatório"
+    if (!formData.hotel) newErrors.hotel = "Hotel é obrigatório"
+    if (!formData.dataIda) newErrors.dataIda = "Data de ida é obrigatória"
+    if (!formData.dataVolta) newErrors.dataVolta = "Data de volta é obrigatória"
+    if (!formData.noites) newErrors.noites = "Número de noites é obrigatório"
+    if (!formData.valorTotal) newErrors.valorTotal = "Valor total é obrigatório"
+    if (!formData.parcelas) newErrors.parcelas = "Número de parcelas é obrigatório"
 
-      setFormData((prev) => ({
-        ...prev,
-        ATE: day,
-        MES_ATE: month,
-        ANO: year,
-      }))
+    // Check if dataVolta is after dataIda
+    if (formData.dataIda && formData.dataVolta) {
+      const dataIda = new Date(formData.dataIda)
+      const dataVolta = new Date(formData.dataVolta)
 
-      setFormData((prevFormData) => {
-        return updateDataFormatada(prevFormData.DE, day, prevFormData.MES_DE, month, year, prevFormData)
-      })
-    }
-  }
-
-  const updateDataFormatada = (de: string, ate: string, mesDE: string, mesATE: string, ano: string, prev: any) => {
-    if (de && ate && mesDE && mesATE && ano) {
-      const dataFormatada = `${de}/${mesDE} até ${ate}/${mesATE} de ${ano}`
-
-      return {
-        ...prev,
-        DATA_FORMATADA: dataFormatada,
+      if (dataVolta < dataIda) {
+        newErrors.dataVolta = "Data de volta deve ser posterior à data de ida"
       }
     }
-    return prev
-  }
 
-  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const input = event.target
-    const value = input.value
-
-    // Remove all non-numeric characters
-    const numericValue = value.replace(/\D/g, "")
-
-    // Convert to number and format as currency
-    const amount = Number(numericValue) / 100
-
-    // Format as Brazilian currency
-    const formatted = amount.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-
-    setFormattedAmount(formatted)
-
-    // Update form data with the total value and per-person installment value
-    const parcelasNum = Number.parseInt(formData.PARCELAS || "10", 10)
-    const perPersonValue = amount / 2 // Total value / 2 for per person
-    const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
-
-    setFormData((prev) => ({
-      ...prev,
-      VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
-      VALORTOTAL: amount.toFixed(2).replace(".", ","),
-    }))
-
-    // Set cursor position after the formatted value
-    setTimeout(() => {
-      if (input) {
-        const position = formatted.length
-        input.setSelectionRange(position, position)
-      }
-    }, 0)
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFormError(null)
-    setFormSuccess(null)
 
-    // Validate required fields
-    const requiredFields = ["DESTINO", "HOTEL", "DATA_FORMATADA", "VALOR", "NUMERO_DE_NOITES"]
-    const missingFields = requiredFields.filter((field) => !formData[field])
+    if (!validateForm()) return
 
-    if (missingFields.length > 0) {
-      setFormError(`Campos obrigatórios não preenchidos: ${missingFields.join(", ")}`)
-      return
-    }
-
-    if (!regimeAlimentacao) {
-      setFormError("Por favor, selecione um regime de alimentação")
-      return
-    }
+    setIsSubmitting(true)
 
     try {
-      setIsLoading(true)
-      await savePromo(formData)
-      setFormSuccess(formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!")
+      const response = await fetch("/api/promos", {
+        method: formData.id ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
 
-      if (!formData.id) {
-        resetForm()
-      }
+      if (!response.ok) throw new Error("Failed to save promo")
 
-      setTimeout(() => {
-        onSuccess()
-      }, 1500)
-    } catch (error) {
-      setFormError("Erro ao salvar promoção. Por favor, tente novamente.")
+      onSuccess()
+    } catch (err) {
+      console.error("Error saving promo:", err)
+      alert("Erro ao salvar promoção")
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
-  }
-
-  const resetForm = () => {
-    setFormData({
-      id: "",
-      DESTINO: "",
-      HOTEL: "",
-      DE: "",
-      ATE: "",
-      MES_DE: "",
-      MES_ATE: "",
-      ANO: "",
-      VALOR: "",
-      VALORTOTAL: "",
-      PARCELAS: "10",
-      COM_CAFE: false,
-      SEM_CAFE: false,
-      MEIA_PENSAO: false,
-      PENSAO_COMPLETA: false,
-      ALL_INCLUSIVE: false,
-      NUMERO_DE_NOITES: "",
-      SP: false,
-      CG: false,
-      AEREO: false,
-      DATA_FORMATADA: "",
-    })
-    setFormattedAmount("")
-    setRegimeAlimentacao("")
-    setDeDate("")
-    setAteDate("")
-  }
-
-  // Calculate total value
-  const getTotalValue = () => {
-    // Remove currency symbol and non-numeric characters except decimal separator
-    const cleanedValue = formattedAmount
-      .replace(/[^\d.,]/g, "")
-      .replace(".", "")
-      .replace(",", ".")
-    const numericValue = Number.parseFloat(cleanedValue)
-
-    if (isNaN(numericValue)) {
-      return "R$ 0,00"
-    }
-
-    return numericValue.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  // Calculate per person value
-  const getPerPersonValue = () => {
-    // Remove currency symbol and non-numeric characters except decimal separator
-    const cleanedValue = formattedAmount
-      .replace(/[^\d.,]/g, "")
-      .replace(".", "")
-      .replace(",", ".")
-    const numericValue = Number.parseFloat(cleanedValue)
-
-    if (isNaN(numericValue)) {
-      return "R$ 0,00"
-    }
-
-    const perPersonValue = numericValue / 2
-
-    return perPersonValue.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  // Calculate per person installment value
-  const getInstallmentValue = () => {
-    const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "").replace(",", ".")
-    const numericValue = Number.parseFloat(cleanedValue)
-
-    if (isNaN(numericValue)) {
-      return "R$ 0,00"
-    }
-
-    return numericValue.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-8">
-        <h2 className="text-xl font-semibold text-donatti-blue mb-6 font-mon">
-          {promo ? "Editar Promoção" : "Adicionar Nova Promoção"}
-        </h2>
-
-        {formError && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 font-mon">
-            <p>{formError}</p>
-          </div>
-        )}
-
-        {formSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 font-mon">
-            <p>{formSuccess}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
-                <MapPin className="h-4 w-4" />
-                Destino <span className="text-red-500">*</span>
-              </label>
-              <input
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                type="text"
-                id="DESTINO"
-                value={formData.DESTINO}
-                onChange={(e) => handleChange("DESTINO", e.target.value)}
-                placeholder="Ex: Rio de Janeiro"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
-                <Hotel className="h-4 w-4" />
-                Hotel <span className="text-red-500">*</span>
-              </label>
-              <input
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                type="text"
-                id="HOTEL"
-                value={formData.HOTEL}
-                onChange={(e) => handleChange("HOTEL", e.target.value)}
-                placeholder="Ex: Grand Hotel"
-                required
-              />
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="destino" className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              Destino <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="destino"
+              name="destino"
+              value={formData.destino}
+              onChange={handleChange}
+              className={`w-full px-4 py-2 border ${errors.destino ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
+              placeholder="Ex: Rio de Janeiro"
+            />
+            {errors.destino && <p className="mt-1 text-sm text-red-500">{errors.destino}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
+          <div>
+            <label htmlFor="hotel" className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Hotel className="h-4 w-4" />
+              Hotel <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="hotel"
+              name="hotel"
+              value={formData.hotel}
+              onChange={handleChange}
+              className={`w-full px-4 py-2 border ${errors.hotel ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
+              placeholder="Ex: Grand Hotel"
+            />
+            {errors.hotel && <p className="mt-1 text-sm text-red-500">{errors.hotel}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="dataIda" className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
                 Data de Ida <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="DE"
-                value={deDate}
-                onChange={handleDeDateChange}
-                required
+                id="dataIda"
+                name="dataIda"
+                value={formData.dataIda}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border ${errors.dataIda ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
               />
+              {errors.dataIda && <p className="mt-1 text-sm text-red-500">{errors.dataIda}</p>}
             </div>
 
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
+            <div>
+              <label
+                htmlFor="dataVolta"
+                className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"
+              >
                 <Calendar className="h-4 w-4" />
                 Data de Volta <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="ATE"
-                value={ateDate}
-                onChange={handleAteDateChange}
-                required
+                id="dataVolta"
+                name="dataVolta"
+                value={formData.dataVolta}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border ${errors.dataVolta ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
               />
+              {errors.dataVolta && <p className="mt-1 text-sm text-red-500">{errors.dataVolta}</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
-            {/* Parcelas first */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
-                <CreditCard className="h-4 w-4" />
-                Parcelas <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="PARCELAS"
-                value={formData.PARCELAS}
-                onChange={(e) => handleChange("PARCELAS", e.target.value)}
-                required
-              >
-                <option value="10">10x</option>
-                <option value="12">12x</option>
-                <option value="15">15x</option>
-                <option value="18">18x</option>
-              </select>
-              <p className="text-xs text-gray-500 font-mon">Número de parcelas para dividir o valor</p>
-            </div>
-
-            {/* Valor (total package value) */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
-                <DollarSign className="h-4 w-4" />
-                Valor Total <span className="text-red-500">*</span>
-              </label>
-              <input
-                ref={amountInputRef}
-                placeholder="R$ 0,00"
-                name="amount"
-                inputMode="numeric"
-                type="text"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="VALOR"
-                value={formattedAmount}
-                onChange={handleAmountChange}
-                required
-              />
-              <p className="text-xs text-gray-500 font-mon">Valor total do pacote para duas pessoas</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium">
-                <Users className="h-4 w-4" />
-                Número de Noites <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="NUMERO_DE_NOITES"
-                value={formData.NUMERO_DE_NOITES}
-                onChange={(e) => handleChange("NUMERO_DE_NOITES", e.target.value)}
-                placeholder="Ex: 5"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Resumo dos valores */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h3 className="text-md font-semibold text-donatti-blue mb-3 font-mon">Resumo dos Valores</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500 font-mon">Valor Total:</p>
-                <p className="text-lg font-bold text-donatti-blue font-mon">{getTotalValue()}</p>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500 font-mon">Valor por Pessoa:</p>
-                <p className="text-lg font-bold text-second-blue font-mon">{getPerPersonValue()}</p>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500 font-mon">Valor da Parcela (por pessoa):</p>
-                <p className="text-lg font-bold text-donatti-yellow font-mon">
-                  {formData.PARCELAS}x de {getInstallmentValue()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium mb-2">
+          <div>
+            <label
+              htmlFor="regimeAlimentacao"
+              className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"
+            >
               <Utensils className="h-4 w-4" />
-              Regime de Alimentação <span className="text-red-500">*</span>
+              Regime de Alimentação
             </label>
             <select
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-donatti-blue focus:border-transparent bg-white text-gray-800 font-mon"
-              id="REGIME_ALIMENTACAO"
-              value={regimeAlimentacao}
-              onChange={(e) => handleChangeRegimeAlimentacao(e.target.value)}
-              required
+              id="regimeAlimentacao"
+              name="regimeAlimentacao"
+              value={formData.regimeAlimentacao}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue"
             >
               <option value="">Selecione...</option>
-              <option value="COM_CAFE">Com Café</option>
-              <option value="SEM_CAFE">Sem Café</option>
-              <option value="ALL_INCLUSIVE">All Inclusive</option>
-              <option value="MEIA_PENSAO">Meia Pensão</option>
-              <option value="PENSAO_COMPLETA">Pensão Completa</option>
+              <option value="Café da Manhã">Café da Manhã</option>
+              <option value="Meia Pensão">Meia Pensão</option>
+              <option value="Pensão Completa">Pensão Completa</option>
+              <option value="All Inclusive">All Inclusive</option>
+              <option value="Sem Alimentação">Sem Alimentação</option>
             </select>
           </div>
 
-          <div className="mb-8">
-            <label className="flex items-center gap-2 text-donatti-blue font-mon font-medium mb-2">
+          <div>
+            <label
+              htmlFor="aeroportoSaida"
+              className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"
+            >
               <Plane className="h-4 w-4" />
               Aeroporto de Saída
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white">
-                <input
-                  type="checkbox"
-                  id="CG"
-                  className="h-4 w-4 rounded text-donatti-blue focus:ring-donatti-blue"
-                  checked={formData.CG}
-                  onChange={() => handleChange("CG", !formData.CG)}
-                />
-                <label htmlFor="CG" className="text-gray-800 font-mon">
-                  Campo Grande
-                </label>
-              </div>
+            <input
+              type="text"
+              id="aeroportoSaida"
+              name="aeroportoSaida"
+              value={formData.aeroportoSaida}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue"
+              placeholder="Ex: São Paulo"
+            />
+          </div>
+        </div>
 
-              <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white">
-                <input
-                  type="checkbox"
-                  id="SP"
-                  className="h-4 w-4 rounded text-donatti-blue focus:ring-donatti-blue"
-                  checked={formData.SP}
-                  onChange={() => handleChange("SP", !formData.SP)}
-                />
-                <label htmlFor="SP" className="text-gray-800 font-mon">
-                  São Paulo
-                </label>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="noites" className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Moon className="h-4 w-4" />
+              Número de Noites <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              id="noites"
+              name="noites"
+              value={formData.noites}
+              onChange={handleChange}
+              min="1"
+              className={`w-full px-4 py-2 border ${errors.noites ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
+              placeholder="Ex: 5"
+            />
+            {errors.noites && <p className="mt-1 text-sm text-red-500">{errors.noites}</p>}
+          </div>
+
+          <div>
+            <label
+              htmlFor="valorTotal"
+              className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"
+            >
+              <DollarSign className="h-4 w-4" />
+              Valor Total <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
+              <input
+                type="text"
+                id="valorTotal"
+                name="valorTotal"
+                value={formattedValue}
+                onChange={handleChange}
+                className={`w-full pl-10 pr-4 py-2 border ${errors.valorTotal ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
+                placeholder="0,00"
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Valor total do pacote para duas pessoas.</p>
+            {errors.valorTotal && <p className="mt-1 text-sm text-red-500">{errors.valorTotal}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="parcelas" className="block text-sm font-medium text-gray-700 mb-1">
+              Parcelas <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="parcelas"
+              name="parcelas"
+              value={formData.parcelas}
+              onChange={handleChange}
+              className={`w-full px-4 py-2 border ${errors.parcelas ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-donatti-blue`}
+            >
+              <option value="1">1x</option>
+              <option value="2">2x</option>
+              <option value="3">3x</option>
+              <option value="4">4x</option>
+              <option value="5">5x</option>
+              <option value="6">6x</option>
+              <option value="7">7x</option>
+              <option value="8">8x</option>
+              <option value="9">9x</option>
+              <option value="10">10x</option>
+              <option value="11">11x</option>
+              <option value="12">12x</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">Número de parcelas para dividir o valor.</p>
+            {errors.parcelas && <p className="mt-1 text-sm text-red-500">{errors.parcelas}</p>}
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg mt-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Resumo dos Valores</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Valor Total:</span>
+                <span className="text-sm font-medium">
+                  R${" "}
+                  {formData.valorTotal
+                    ? Number.parseFloat(formData.valorTotal).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    : "0,00"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Valor por Pessoa:</span>
+                <span className="text-sm font-medium">
+                  R${" "}
+                  {formData.valorTotal
+                    ? (Number.parseFloat(formData.valorTotal) / 2).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    : "0,00"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Valor da Parcela (por pessoa):</span>
+                <span className="text-sm font-medium">
+                  {formData.parcelas && formData.valorTotal
+                    ? `${formData.parcelas}x de R$ ${(Number.parseFloat(formData.valorTotal) / 2 / Number.parseInt(formData.parcelas)).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : "0x de R$ 0,00"}
+                </span>
               </div>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-6 py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-mon font-medium flex items-center justify-center"
-              disabled={isLoading}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Limpar
-            </button>
-
-            <button
-              type="submit"
-              className="px-6 py-3 bg-donatti-blue text-white rounded-md hover:bg-donatti-blue/90 transition-colors font-mon font-medium flex items-center justify-center min-w-[160px]"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {promo ? "Atualizar" : "Adicionar"}
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
+
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-4 py-2 bg-donatti-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-70 flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Salvando...</span>
+            </>
+          ) : (
+            <span>{formData.id ? "Atualizar" : "Adicionar"} Promoção</span>
+          )}
+        </button>
+      </div>
+    </form>
   )
 }

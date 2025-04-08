@@ -51,7 +51,7 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         "primary-blue": "#1D3153",
-        "second-blue": "#337D9D",
+        "second-blue": "#0056CC",
         "primary-orange": "#FEB100",
         "primary-yellow": "#FED400",
         "primary-gray": "#F0F0F0",
@@ -61,8 +61,9 @@ const config: Config = {
         "custom-muted-foreground": "#6B7280",
         "custom-background": "#FFFFFF",
         "custom-foreground": "#1D3153",
-        "donatti-blue": "#002043",
+        "donatti-blue": "#0047AB",
         "donatti-yellow": "#f5a406",
+        "donatti-gold": "#FFD700",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -72,11 +73,15 @@ const config: Config = {
       fontFamily: {
         blo: ["BLOVERLY"],
         bsf: ["BetterSignatureFont"],
-        mon: ["Montserrat"],
+        mon: ["var(--font-montserrat)"],
         neo: ["Neo Sans W1G", "sans-serif"],
       },
       animation: {
         "spin-slow": "spin 3s linear infinite",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
     },
   },
