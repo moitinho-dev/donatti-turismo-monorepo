@@ -10,6 +10,7 @@ import { Loader2, Plus, FileText, BarChart2, ImageIcon } from "lucide-react"
 import { PromoImageBulkGenerator } from "../promos/PromoImageBulkGenerator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useSearchParams, useRouter } from "next/navigation"
 
 interface User {
   id: string
@@ -20,10 +21,16 @@ interface User {
 
 interface AgentDashboardContentProps {
   user: User
+  isAddingNew?: boolean
+  setIsAddingNew?: (value: boolean) => void
 }
 
-export default function AgentDashboardContent({ user }: AgentDashboardContentProps) {
-  const [activeTab, setActiveTab] = useState("promos")
+export default function AgentDashboardContent({ user, isAddingNew, setIsAddingNew }: AgentDashboardContentProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab")
+
+  const [activeTab, setActiveTab] = useState(tabParam || "promos")
   const [selectedPromo, setSelectedPromo] = useState<any>(null)
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -36,6 +43,13 @@ export default function AgentDashboardContent({ user }: AgentDashboardContentPro
   const [stats, setStats] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Update tab when URL parameter changes
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
 
   // Fetch initial data
   useEffect(() => {
@@ -81,17 +95,26 @@ export default function AgentDashboardContent({ user }: AgentDashboardContentPro
   const handleEditPromo = (promo: any) => {
     setSelectedPromo(promo)
     setActiveTab("adicionar")
+    router.push("/agent?tab=adicionar")
   }
 
   const handleAddNewClick = () => {
     setSelectedPromo(null)
     setActiveTab("adicionar")
+    router.push("/agent?tab=adicionar")
+    if (setIsAddingNew) {
+      setIsAddingNew(true)
+    }
   }
 
   const handleFormSubmitSuccess = () => {
     fetchPromos()
     fetchStats()
     setActiveTab("promos")
+    router.push("/agent?tab=promos")
+    if (setIsAddingNew) {
+      setIsAddingNew(false)
+    }
   }
 
   const handleDateRangeChange = (range: { from: Date | undefined; to: Date | undefined }) => {
@@ -110,8 +133,13 @@ export default function AgentDashboardContent({ user }: AgentDashboardContentPro
     fetchPromos()
   }
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+    router.push(`/agent?tab=${value}`)
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <DateRangePicker
@@ -132,7 +160,7 @@ export default function AgentDashboardContent({ user }: AgentDashboardContentPro
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-6 bg-gray-100 p-1 rounded-lg overflow-x-auto flex whitespace-nowrap">
           <TabsTrigger
             value="promos"

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import type React from "react"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { signOut } from "next-auth/react"
@@ -58,11 +58,11 @@ interface UserType {
 interface DashboardLayoutProps {
   user: UserType
   children: React.ReactNode
-  onAddNew?: () => void
 }
 
-export function DashboardLayout({ user, children, onAddNew }: DashboardLayoutProps) {
+export function DashboardLayout({ user, children }: DashboardLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
   const [defaultOpen, setDefaultOpen] = useState(true)
 
@@ -81,6 +81,14 @@ export function DashboardLayout({ user, children, onAddNew }: DashboardLayoutPro
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/login" })
+  }
+
+  const handleAddNew = () => {
+    if (pathname?.includes("/admin")) {
+      router.push("/admin?tab=add-promo")
+    } else {
+      router.push("/agent?tab=adicionar")
+    }
   }
 
   const isAdmin = user?.role === "admin"
@@ -232,7 +240,7 @@ export function DashboardLayout({ user, children, onAddNew }: DashboardLayoutPro
           </SidebarFooter>
         </Sidebar>
 
-        <SidebarInset className="flex flex-col">
+        <SidebarInset className="flex flex-col w-full">
           <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
               <SidebarTrigger className="mr-4" />
@@ -242,16 +250,14 @@ export function DashboardLayout({ user, children, onAddNew }: DashboardLayoutPro
             </div>
 
             <div className="flex items-center gap-3">
-              {onAddNew && (
-                <Button
-                  onClick={onAddNew}
-                  className="flex items-center gap-2 bg-primary-blue hover:bg-second-blue text-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Nova Promoção</span>
-                  <span className="sm:hidden">Novo</span>
-                </Button>
-              )}
+              <Button
+                onClick={handleAddNew}
+                className="flex items-center gap-2 bg-primary-blue hover:bg-second-blue text-white"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nova Promoção</span>
+                <span className="sm:hidden">Novo</span>
+              </Button>
 
               <div className="md:hidden">
                 <DropdownMenu>
@@ -273,7 +279,7 @@ export function DashboardLayout({ user, children, onAddNew }: DashboardLayoutPro
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+          <main className="flex-1 overflow-auto p-4 md:p-6 w-full">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>

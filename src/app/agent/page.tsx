@@ -1,27 +1,34 @@
-import type { Metadata } from "next"
+"use client"
+import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../api/auth/[...nextauth]/options"
 import AgentDashboardContent from "@/components/agent/AgentDashboardContent"
 import { DashboardLayout } from "@/components/layouts/DashboardLayout"
 
-export const metadata: Metadata = {
-  title: "Painel do Agente | Donatti Turismo",
-  description: "Gerencie as promoções de viagens e pacotes turísticos da Donatti Turismo.",
-}
+export default function AgentPage() {
+  const { data: session, status } = useSession()
+  const [isAddingNew, setIsAddingNew] = useState(false)
 
-export default async function AgentPage() {
-  // Check if user is authenticated
-  const session = await getServerSession(authOptions)
+  useEffect(() => {
+    // If not authenticated, redirect to login
+    if (status === "unauthenticated") {
+      redirect("/login")
+    }
+  }, [status])
 
-  // If not authenticated, redirect to login
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return <div>Loading...</div>
+  }
+
+  // Only render content when authenticated
   if (!session) {
-    redirect("/login")
+    return null
   }
 
   return (
-    <DashboardLayout user={session.user} onAddNew={() => {}}>
-      <AgentDashboardContent user={session.user} />
+    <DashboardLayout user={session.user}>
+      <AgentDashboardContent user={session.user} isAddingNew={isAddingNew} setIsAddingNew={setIsAddingNew} />
     </DashboardLayout>
   )
 }

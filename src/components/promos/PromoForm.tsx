@@ -216,11 +216,17 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   // Replace the handleAmountChange function with this improved version
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.target
-    const cursorPosition = input.selectionStart // Store cursor position
-    const inputValue = input.value.replace(/[^\d]/g, "") // Remove all non-digits
+    const oldValue = input.value
+    const oldSelectionStart = input.selectionStart || 0
 
-    // Convert the raw input into a number (assuming the last two digits are cents)
-    if (inputValue.length === 0) {
+    // Count how many non-digit characters are before the cursor
+    const prefixLength = oldValue.substring(0, oldSelectionStart).replace(/\d/g, "").length
+
+    // Remove all non-digits (but keep track of whether there was a leading 'R$')
+    const hasPrefix = oldValue.startsWith("R$")
+    const rawValue = oldValue.replace(/\D/g, "")
+
+    if (rawValue === "") {
       setFormattedAmount("")
       setFormData((prev) => ({
         ...prev,
@@ -230,19 +236,8 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       return
     }
 
-    // Treat the input as a number of cents
-    const numericValue = Number.parseInt(inputValue, 10) / 100
-    if (isNaN(numericValue)) {
-      setFormattedAmount("")
-      setFormData((prev) => ({
-        ...prev,
-        VALOR: "",
-        VALORTOTAL: "",
-      }))
-      return
-    }
-
-    // Format the numeric value as currency
+    // Convert to number and format
+    const numericValue = Number.parseInt(rawValue, 10) / 100
     const formatted = numericValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -263,11 +258,36 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       VALORTOTAL: numericValue.toFixed(2).replace(".", ","),
     }))
 
-    // Adjust cursor position
+    // Calculate new cursor position
     setTimeout(() => {
-      const newLength = formatted.length
-      const oldLength = input.value.length
-      const newPosition = cursorPosition! + (newLength - oldLength)
+      // If we're adding a character, move cursor right
+      // If we're deleting a character, keep cursor in same relative position
+      const newValue = input.value
+      const newRawValue = newValue.replace(/\D/g, "")
+
+      // Calculate how many digits were before the cursor
+      const oldDigitsBeforeCursor = oldValue.substring(0, oldSelectionStart).replace(/\D/g, "").length
+
+      // Find where those same digits end in the new string
+      let newPosition = 0
+      let countDigits = 0
+
+      for (let i = 0; i < newValue.length; i++) {
+        if (/\d/.test(newValue[i])) {
+          countDigits++
+        }
+        if (countDigits === oldDigitsBeforeCursor) {
+          newPosition = i + 1
+          break
+        }
+      }
+
+      // If we didn't find enough digits, position at end
+      if (countDigits < oldDigitsBeforeCursor) {
+        newPosition = newValue.length
+      }
+
+      // Set the cursor position
       input.setSelectionRange(newPosition, newPosition)
     }, 0)
   }
