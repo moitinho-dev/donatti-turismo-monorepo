@@ -31,9 +31,36 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setError(null)
 
     try {
+      // Adicionar termos específicos para melhorar a busca de imagens
+      let searchQuery = promo.DESTINO
+
+      // Adicionar termos específicos para cidades para melhorar os resultados
+      const cityTerms = {
+        "Porto Alegre": "cidade porto alegre brasil skyline",
+        "Rio de Janeiro": "rio de janeiro cidade cristo",
+        "São Paulo": "são paulo avenida paulista cidade",
+        Natal: "natal praia cidade brasil",
+        Fortaleza: "fortaleza praia cidade brasil",
+        Recife: "recife cidade brasil",
+        Salvador: "salvador bahia pelourinho cidade",
+        Florianópolis: "florianópolis praia cidade brasil",
+        Gramado: "gramado cidade brasil",
+        "Foz do Iguaçu": "cataratas do iguaçu brasil",
+        Maceió: "maceió praia cidade brasil",
+        "João Pessoa": "joão pessoa praia cidade brasil",
+      }
+
+      // Verificar se o destino está na lista de termos específicos
+      for (const [city, term] of Object.entries(cityTerms)) {
+        if (promo.DESTINO.includes(city)) {
+          searchQuery = term
+          break
+        }
+      }
+
       // Adicionar um parâmetro de página aleatório para evitar repetição
       const randomPage = Math.floor(Math.random() * 5) + 1
-      const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&page=${randomPage}`)
+      const response = await fetch(`/api/image-search?query=${encodeURIComponent(searchQuery)}&page=${randomPage}`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch destination image")
@@ -169,7 +196,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       return "0,00"
     }
 
-    // Mostrar o valor exato da parcela por pessoa
+    // Usar o valor real da parcela individual
     return baseValue.toFixed(2).replace(".", ",")
   }
 

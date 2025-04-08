@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic"
 // Unsplash API credentials
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || ""
 
+// Melhorar a API de busca de imagens para obter resultados mais relevantes
 export async function GET(request: NextRequest) {
   try {
     // Get the search query from URL parameters
@@ -17,10 +18,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Search query is required" }, { status: 400 })
     }
 
+    // Melhorar a consulta para obter imagens mais relevantes
+    const enhancedQuery = `${query} travel destination city landscape`
+
     // If we have an Unsplash API key, use it
     if (UNSPLASH_ACCESS_KEY) {
       const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&page=${page}&orientation=landscape&content_filter=high`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(enhancedQuery)}&per_page=10&page=${page}&orientation=landscape&content_filter=high`,
         {
           headers: {
             Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
 
       if (PEXELS_API_KEY) {
         const response = await fetch(
-          `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
+          `https://api.pexels.com/v1/search?query=${encodeURIComponent(enhancedQuery)}&per_page=5&orientation=landscape`,
           {
             headers: {
               Authorization: PEXELS_API_KEY,
@@ -90,7 +94,7 @@ export async function GET(request: NextRequest) {
           {
             id: "fallback1",
             urls: {
-              regular: `https://source.unsplash.com/1600x900/?${encodeURIComponent(query)}`,
+              regular: `https://source.unsplash.com/1600x900/?${encodeURIComponent(enhancedQuery)}`,
             },
             user: {
               name: "Unsplash",

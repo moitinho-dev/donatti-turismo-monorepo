@@ -195,7 +195,8 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
-  // Corrigir a função handleAmountChange para processar corretamente o valor digitado
+  // Corrigir o problema de cálculo de valores
+  // Modificar a função handleAmountChange para processar corretamente o valor total
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value
     setFormattedAmount(inputValue)
@@ -322,7 +323,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     setAteDate("")
   }
 
-  // Corrigir a função getTotalValue para calcular corretamente o valor total
+  // Corrigir as funções de cálculo para exibição
   const getTotalValue = () => {
     const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
     const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
@@ -362,7 +363,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     })
   }
 
-  // Calculate installment value for display
+  // Garantir que o número de parcelas seja respeitado no resumo
   const getInstallmentValue = () => {
     const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
     const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
