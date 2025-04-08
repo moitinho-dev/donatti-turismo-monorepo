@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { signOut } from "next-auth/react"
-import { AdminHeader } from "./AdminHeader.tsx"
+import { AdminHeader } from "./AdminHeader"
 import { UsersList } from "./UsersList"
 import { UserForm } from "./UserForm"
 import { UserStats } from "./UserStats"
