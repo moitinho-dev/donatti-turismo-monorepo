@@ -215,82 +215,47 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   // Improve the value formatting in the form
   // Replace the handleAmountChange function with this improved version
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const input = event.target
-    const oldValue = input.value
-    const oldSelectionStart = input.selectionStart || 0
+    const inputValue = event.target.value
+    const formattedValue = formatCurrencyValue(inputValue)
+    const parsedValue = parseCurrencyValue(inputValue)
 
-    // Count how many non-digit characters are before the cursor
-    const prefixLength = oldValue.substring(0, oldSelectionStart).replace(/\d/g, "").length
+    setFormattedAmount(formattedValue)
+    setFormData((prev) => ({
+      ...prev,
+      VALOR:parsedValue ,
+      VALORTOTAL: inputValue
+    }))
+  }
 
-    // Remove all non-digits (but keep track of whether there was a leading 'R$')
-    const hasPrefix = oldValue.startsWith("R$")
-    const rawValue = oldValue.replace(/\D/g, "")
+  const parseCurrencyValue = (value: string) => {
+    const cleanedValue = value.replace(/[^\d,.-]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
 
-    if (rawValue === "") {
-      setFormattedAmount("")
-      setFormData((prev) => ({
-        ...prev,
-        VALOR: "",
-        VALORTOTAL: "",
-      }))
-      return
+    if (isNaN(numericValue)) {
+      return "0.00"
     }
 
-    // Convert to number and format
-    const numericValue = Number.parseInt(rawValue, 10) / 100
-    const formatted = numericValue.toLocaleString("pt-BR", {
+    const parcelas = Number.parseInt(formData.PARCELAS || "10", 10)
+    const valueAfterCalculation = ((numericValue * 10) / 2 / parcelas).toFixed(2)
+    return valueAfterCalculation
+  }
+
+  const formatCurrencyValue = (value: string) => {
+    const formattedValue = value.replace(/[^\d]/g, "")
+    const numberValue = Number.parseFloat(formattedValue) / 100
+
+    if (isNaN(numberValue)) {
+      return "R$ 0,00"
+    }
+
+    return numberValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
-
-    setFormattedAmount(formatted)
-
-    // Update formData with the total value and per-person installment value
-    const parcelasNum = Number.parseInt(formData.PARCELAS || "10", 10)
-    const perPersonValue = numericValue / 2 // Total value / 2 for per person
-    const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
-
-    setFormData((prev) => ({
-      ...prev,
-      VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
-      VALORTOTAL: numericValue.toFixed(2).replace(".", ","),
-    }))
-
-    // Calculate new cursor position
-    setTimeout(() => {
-      // If we're adding a character, move cursor right
-      // If we're deleting a character, keep cursor in same relative position
-      const newValue = input.value
-      const newRawValue = newValue.replace(/\D/g, "")
-
-      // Calculate how many digits were before the cursor
-      const oldDigitsBeforeCursor = oldValue.substring(0, oldSelectionStart).replace(/\D/g, "").length
-
-      // Find where those same digits end in the new string
-      let newPosition = 0
-      let countDigits = 0
-
-      for (let i = 0; i < newValue.length; i++) {
-        if (/\d/.test(newValue[i])) {
-          countDigits++
-        }
-        if (countDigits === oldDigitsBeforeCursor) {
-          newPosition = i + 1
-          break
-        }
-      }
-
-      // If we didn't find enough digits, position at end
-      if (countDigits < oldDigitsBeforeCursor) {
-        newPosition = newValue.length
-      }
-
-      // Set the cursor position
-      input.setSelectionRange(newPosition, newPosition)
-    }, 0)
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
