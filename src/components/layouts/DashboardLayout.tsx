@@ -140,7 +140,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
 
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/agent") || isActive("/promos")} tooltip="Promoções">
-                      <Link href={isAdmin ? "/agent" : "/promos"}>
+                      <Link href={isAdmin ? "/admin?tab=promos" : "/agent?tab=promos"}>
                         <FileText className="h-4 w-4" />
                         <span>Promoções</span>
                       </Link>
