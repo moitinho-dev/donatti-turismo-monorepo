@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../api/auth/[...nextauth]/options"
-import AgentDashboard from "../../components/agent/AgentDashboard"
+import AgentDashboard from "@/components/agent/AgentDashboard"
 
 export const metadata: Metadata = {
   title: "Painel do Agente | Donatti Turismo",

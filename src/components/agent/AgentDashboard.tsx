@@ -7,7 +7,7 @@ import { PromoForm } from "../promos/PromoForm"
 import { PromoStats } from "../promos/PromoStats"
 import { DateRangePicker } from "../promos/DateRangePicker"
 import { CSVExport } from "../promos/CSVExport"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Plus, FileText, BarChart2, Image } from "lucide-react"
 import { PromoImageBulkGenerator } from "../promos/PromoImageBulkGenerator"
 
