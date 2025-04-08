@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { nanoid } from "nanoid"
 import { z } from "zod"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import { redis, REDIS_KEYS } from "../../../lib/redis"
 
 // Add this line to mark the route as dynamic
 export const dynamic = "force-dynamic"
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     if (isNewPromo) {
       promoData.createdAt = now
       promoData.createdBy = session.user.id
-      promoData.createdByName = session.user.name
+      promoData.createdByName = session.user.name ?? "Unknown"
     }
     promoData.updatedAt = now
     promoData.id = promoId

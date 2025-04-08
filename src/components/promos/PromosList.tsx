@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { usePromo } from "@/hooks/usePromo"
+import { usePromo } from "../../hooks/usePromo"
 import {
   Calendar,
   MapPin,
@@ -61,37 +61,63 @@ const formatDate = (dateString: string) => {
   }
 }
 
-// Adicionar função para formatar data relativa
+// Modificar a função formatRelativeDate para considerar o fuso horário local
 const formatRelativeDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
+  try {
+    // Converter a data UTC para o fuso horário local
+    const date = new Date(dateString)
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    const today = new Date()
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
 
-  if (date.toDateString() === today.toDateString()) {
-    return "Hoje"
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return "Ontem"
-  } else {
-    return new Date(date).toLocaleDateString("pt-BR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+    // Converter para formato YYYY-MM-DD para comparação
+    const dateStr = localDate.toISOString().split("T")[0]
+    const todayStr = localToday.toISOString().split("T")[0]
+
+    // Calcular ontem
+    const yesterday = new Date(localToday)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split("T")[0]
+
+    if (dateStr === todayStr) {
+      return "Hoje"
+    } else if (dateStr === yesterdayStr) {
+      return "Ontem"
+    } else {
+      return new Date(localDate).toLocaleDateString("pt-BR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    }
+  } catch (error) {
+    console.error("Error formatting relative date:", error, dateString)
+    return "Data inválida"
   }
 }
 
-// Modificar a função para agrupar promos por data
+// Modificar a função groupPromosByDate para considerar o fuso horário local
 const groupPromosByDate = (promos: PromoData[]) => {
   const groups: { [key: string]: PromoData[] } = {}
 
   promos.forEach((promo) => {
-    const date = promo.createdAt ? new Date(promo.createdAt).toISOString().split("T")[0] : "unknown"
-    if (!groups[date]) {
-      groups[date] = []
+    if (!promo.createdAt) {
+      const defaultGroup = "unknown"
+      if (!groups[defaultGroup]) groups[defaultGroup] = []
+      groups[defaultGroup].push(promo)
+      return
     }
-    groups[date].push(promo)
+
+    // Converter a data UTC para o fuso horário local
+    const date = new Date(promo.createdAt)
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    const dateKey = localDate.toISOString().split("T")[0]
+
+    if (!groups[dateKey]) {
+      groups[dateKey] = []
+    }
+    groups[dateKey].push(promo)
   })
 
   // Sort dates in descending order (newest first)
@@ -117,6 +143,22 @@ const calculateValues = (promo: PromoData) => {
   }
 }
 
+const getRegimeAlimentacao = (promo: PromoData) => {
+  if (promo.COM_CAFE) return "Café da manhã"
+  if (promo.SEM_CAFE) return "Sem café da manhã"
+  if (promo.MEIA_PENSAO) return "Meia pensão"
+  if (promo.PENSAO_COMPLETA) return "Pensão completa"
+  if (promo.ALL_INCLUSIVE) return "All inclusive"
+  return "Não informado"
+}
+
+const getAeroportoSaida = (promo: PromoData) => {
+  if (promo.SP) return "São Paulo"
+  if (promo.CG) return "Campo Grande"
+  return "Não informado"
+}
+
+// Melhorar o design da lista de promoções
 export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDestino, setSelectedDestino] = useState<string | null>(null)
@@ -126,46 +168,6 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   const [selectedPromoForImage, setSelectedPromoForImage] = useState<PromoData | null>(null)
 
   const { deletePromo, isLoading } = usePromo()
-
-  const parseCurrencyValue = (value: string) => {
-    if (!value) {
-      return "0,00"
-    }
-
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const valueAfterCalculation = numericValue * 15 * 2
-
-    return valueAfterCalculation.toFixed(2).replace(".", ",")
-  }
-
-  const getInstallmentValue = (value: string) => {
-    if (!value) {
-      return "0,00"
-    }
-
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const installmentValue = (numericValue * 2 * 15) / 15
-
-    return installmentValue.toFixed(2).replace(".", ",")
-  }
-
-  const getRegimeAlimentacao = (promo: PromoData): string => {
-    if (promo.ALL_INCLUSIVE) return "All Inclusive"
-    if (promo.PENSAO_COMPLETA) return "Pensão Completa"
-    if (promo.MEIA_PENSAO) return "Meia Pensão"
-    if (promo.COM_CAFE) return "Com Café"
-    if (promo.SEM_CAFE) return "Sem Café"
-    return "Não especificado"
-  }
-
-  const getAeroportoSaida = (promo: PromoData): string => {
-    if (promo.CG && promo.SP) return "Campo Grande e São Paulo"
-    if (promo.CG) return "Campo Grande"
-    if (promo.SP) return "São Paulo"
-    return "Não especificado"
-  }
 
   // Get unique destinations for filter
   const destinos = [...new Set(promos.map((promo) => promo.DESTINO))].sort()
@@ -237,7 +239,7 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="bg-card rounded-lg shadow-md overflow-hidden">
       <div className="p-4 border-b">
         <div className="flex flex-col md:flex-row gap-4 justify-between">
           <div className="flex flex-col md:flex-row gap-4 flex-grow">
@@ -310,13 +312,13 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
                   </div>
                 </div>
 
-                <div className="space-y-2 mt-2">
+                <div className="space-y-2 mt-2 px-4">
                   {promos.map((promo) => {
                     const values = calculateValues(promo)
                     return (
                       <div
                         key={promo.id}
-                        className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                        className="bg-card p-3 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
                       >
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div className="flex-1">
