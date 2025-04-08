@@ -20,4 +20,3 @@ export function Container({ children }: Props) {
 export function ImageContainer({ children }: Props) {
   return <div className="">{children}</div>
 }
-

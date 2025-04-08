@@ -36,4 +36,3 @@ const Hero: HeroContent[] = [
 ]
 
 export default Hero
-

@@ -180,4 +180,3 @@ async function initializeRedisIfNeeded() {
     console.log("Redis initialized with default users")
   }
 }
-

@@ -87,4 +87,3 @@ export function FeatureSection() {
     </section>
   )
 }
-

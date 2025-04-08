@@ -70,4 +70,3 @@ export function CSVExport({ dateRange }: CSVExportProps) {
     </Popover>
   )
 }
-

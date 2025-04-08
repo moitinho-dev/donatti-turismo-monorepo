@@ -456,4 +456,3 @@ const PromosForm: React.FC<PromosFormProps> = ({ updateData }) => {
 }
 
 export default PromosForm
-

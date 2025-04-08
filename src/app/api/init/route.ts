@@ -28,4 +28,3 @@ export async function GET() {
     return NextResponse.json({ error: "Error initializing Redis" }, { status: 500 })
   }
 }
-

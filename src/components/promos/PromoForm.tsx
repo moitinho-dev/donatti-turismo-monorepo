@@ -553,4 +553,3 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     </div>
   )
 }
-

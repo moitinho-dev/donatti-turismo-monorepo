@@ -10,4 +10,3 @@ export function PersonIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
-

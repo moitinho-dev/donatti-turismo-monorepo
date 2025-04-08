@@ -9,4 +9,3 @@ export function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
-

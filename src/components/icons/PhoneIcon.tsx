@@ -11,4 +11,3 @@ export function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
-

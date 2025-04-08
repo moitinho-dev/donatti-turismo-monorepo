@@ -233,4 +233,3 @@ export default function AgentDashboard({ user }: AgentDashboardProps) {
     </div>
   )
 }
-

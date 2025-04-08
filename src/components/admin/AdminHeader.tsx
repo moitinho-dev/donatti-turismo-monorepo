@@ -2,7 +2,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, User, LogOut, Home, BarChart2 } from "lucide-react"
+import { Menu, X, User, LogOut, Home, BarChart2, FileText } from "lucide-react"
 import Logo from "../../../public/assets/logo-preto.png"
 import LogoIcon from "../../../public/assets/logo-icon-preto.png"
 
@@ -41,6 +41,14 @@ export function AdminHeader({ user, onSignOut }: AdminHeaderProps) {
           >
             <BarChart2 className="h-4 w-4 mr-1" />
             Dashboard
+          </Link>
+
+          <Link
+            href="/agent"
+            className="text-gray-600 hover:text-primary-blue transition-colors font-mon flex items-center"
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            Área do Agente
           </Link>
 
           <Link href="/" className="text-gray-600 hover:text-primary-blue transition-colors font-mon flex items-center">
@@ -121,4 +129,3 @@ export function AdminHeader({ user, onSignOut }: AdminHeaderProps) {
     </header>
   )
 }
-

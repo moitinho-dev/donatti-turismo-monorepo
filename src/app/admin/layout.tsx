@@ -14,4 +14,3 @@ export default function AdminLayout({
 }) {
   return <AdminLayoutClient>{children}</AdminLayoutClient>
 }
-

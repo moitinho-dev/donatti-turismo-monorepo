@@ -261,4 +261,3 @@ export function UsersList({ users, onEdit, onRefresh }: UsersListProps) {
     </div>
   )
 }
-

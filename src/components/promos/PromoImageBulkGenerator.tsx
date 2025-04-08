@@ -127,4 +127,3 @@ export function PromoImageBulkGenerator({ promos }: PromoImageBulkGeneratorProps
     </div>
   )
 }
-

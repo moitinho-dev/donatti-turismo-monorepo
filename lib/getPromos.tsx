@@ -3,4 +3,3 @@ export default async function getPromos() {
   if (!res.ok) throw new Error("Erro ao buscar dados")
   return res.json()
 }
-

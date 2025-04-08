@@ -11,7 +11,7 @@ import { PromoStats } from "../promos/PromoStats"
 import { DateRangePicker } from "../promos/DateRangePicker"
 import { CSVExport } from "../promos/CSVExport"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Plus, FileText, BarChart2, Users, UserPlus } from "lucide-react"
+import { Loader2, Plus, FileText, BarChart2, Users, UserPlus, Edit } from "lucide-react"
 
 interface User {
   id: string
@@ -175,6 +175,13 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
               <UserPlus className="h-4 w-4" />
               <span>Novo Usuário</span>
             </button>
+            <button
+              onClick={() => setActiveTab("add-promo")}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors font-mon"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nova Promoção</span>
+            </button>
 
             <CSVExport dateRange={dateRange} />
           </div>
@@ -210,6 +217,13 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
               <span>Promoções</span>
             </TabsTrigger>
             <TabsTrigger
+              value="add-promo"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span>Nova Promoção</span>
+            </TabsTrigger>
+            <TabsTrigger
               value="add-user"
               className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
             >
@@ -220,7 +234,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
               value="edit-promo"
               className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" />
               <span>Editar Promoção</span>
             </TabsTrigger>
           </TabsList>
@@ -278,9 +292,11 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
           <TabsContent value="edit-promo">
             <PromoForm promo={selectedPromo} onSuccess={handleFormSubmitSuccess} />
           </TabsContent>
+          <TabsContent value="add-promo">
+            <PromoForm promo={null} onSuccess={handleFormSubmitSuccess} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
   )
 }
-

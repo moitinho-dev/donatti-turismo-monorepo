@@ -27,4 +27,3 @@ export function PromoImageGeneratorModal({ isOpen, onClose, promo }: PromoImageG
     </Dialog>
   )
 }
-

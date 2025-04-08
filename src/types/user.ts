@@ -19,4 +19,3 @@ export interface UserStats {
   lastPromoDate?: string
   lastLoginDate?: string
 }
-

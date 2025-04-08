@@ -21,4 +21,3 @@ const Third: ThirdContent[] = [
 ]
 
 export default Third // Exportando o array de objetos para uso em outros lugares do código
-

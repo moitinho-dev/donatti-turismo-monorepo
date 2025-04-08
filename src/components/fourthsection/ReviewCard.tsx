@@ -69,4 +69,3 @@ const ReviewCard = ({ testimonial }: Props) => {
 }
 
 export default ReviewCard
-

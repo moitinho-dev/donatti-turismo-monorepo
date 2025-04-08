@@ -120,4 +120,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar estatísticas" }, { status: 500 })
   }
 }
-

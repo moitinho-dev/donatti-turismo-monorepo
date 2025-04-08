@@ -52,4 +52,3 @@ export function Header() {
     </motion.header>
   )
 }
-

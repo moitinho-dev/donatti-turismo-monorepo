@@ -204,4 +204,3 @@ const PromosList: React.FC<PromosListProps> = ({ promos = [] }) => {
 }
 
 export default PromosList
-

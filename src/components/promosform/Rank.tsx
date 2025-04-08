@@ -9,4 +9,3 @@ const Rank = ({ updateData }: { updateData: () => void }) => {
 }
 
 export default Rank
-

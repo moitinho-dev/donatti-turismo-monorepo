@@ -14,4 +14,3 @@ export default function PromosLayout({
 }) {
   return <PromosLayoutClient>{children}</PromosLayoutClient>
 }
-

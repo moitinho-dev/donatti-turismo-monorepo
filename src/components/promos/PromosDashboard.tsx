@@ -209,4 +209,3 @@ export default function PromosDashboard({ user }: PromosDashboardProps) {
     </div>
   )
 }
-

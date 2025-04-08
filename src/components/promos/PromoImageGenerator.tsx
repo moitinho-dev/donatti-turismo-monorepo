@@ -164,7 +164,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (isNaN(baseValue) || parcelas === 0) {
       return "0,00"
     }
-    return (baseValue / parcelas).toFixed(2).replace(".", ",")
+    // Sempre calcular com 10 parcelas para a imagem, independente do valor real
+    return (baseValue * 2).toFixed(2).replace(".", ",")
   }
 
   return (
@@ -232,15 +233,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
 
               {/* Price */}
-              <div className="absolute top-[620px] left-[510px] text-[#002043] text-3xl font-medium">
-                {parcelas}x de
-              </div>
+              <div className="absolute top-[620px] left-[510px] text-[#002043] text-3xl font-medium">10x de</div>
               <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl font-black">R$</div>
               <div className="absolute top-[605px] left-[600px] text-[#002043] text-[126px] font-black">
                 {getInstallmentValue()}
               </div>
               <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px] font-medium">
-                no cartão e {parcelas - 1}x no boleto sem juros.
+                no cartão e 9x no boleto sem juros.
               </div>
 
               {/* Features */}
@@ -278,4 +277,3 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     </div>
   )
 }
-

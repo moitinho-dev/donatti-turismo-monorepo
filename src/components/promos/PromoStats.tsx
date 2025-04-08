@@ -219,4 +219,3 @@ export function PromoStats({ stats, detailed = false }: PromoStatsProps) {
     </div>
   )
 }
-

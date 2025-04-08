@@ -14,4 +14,3 @@ export default function AgentLayout({
 }) {
   return <AgentLayoutClient>{children}</AgentLayoutClient>
 }
-

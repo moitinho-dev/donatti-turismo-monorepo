@@ -65,4 +65,3 @@ export async function GET(req: Request | NextRequest, res: Response | NextRespon
     return Response.json({ error: "Erro ao obter dados da planilha.." }, { status: 500 })
   }
 }
-

@@ -179,4 +179,3 @@ export function ThirdSearchCard() {
     </motion.div>
   )
 }
-

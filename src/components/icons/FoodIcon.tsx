@@ -14,4 +14,3 @@ export function FoodIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
-

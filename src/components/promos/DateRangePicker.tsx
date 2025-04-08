@@ -94,4 +94,3 @@ export function DateRangePicker({ dateRange, onDateRangeChange, onClearFilters }
     </div>
   )
 }
-

@@ -3,4 +3,3 @@
 export function Note() {
   return <div className="font-neo">This component ensures the Neo Sans W1G font is loaded</div>
 }
-

@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     // Get the search query from URL parameters
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get("query")
+    const page = searchParams.get("page") || "1" // Add page parameter for variety
 
     if (!query) {
       return NextResponse.json({ error: "Search query is required" }, { status: 400 })
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     // If we have an Unsplash API key, use it
     if (UNSPLASH_ACCESS_KEY) {
       const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&page=${page}&orientation=landscape&content_filter=high`,
         {
           headers: {
             Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
@@ -32,7 +33,13 @@ export async function GET(request: NextRequest) {
       }
 
       const data = await response.json()
-      return NextResponse.json(data)
+
+      // Randomize results to avoid repetition
+      const shuffledResults = [...data.results].sort(() => 0.5 - Math.random())
+
+      return NextResponse.json({
+        results: shuffledResults.slice(0, 5),
+      })
     }
     // Fallback to Pexels API if no Unsplash key
     else {
@@ -100,4 +107,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to search for images" }, { status: 500 })
   }
 }
-
