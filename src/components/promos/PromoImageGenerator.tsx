@@ -31,7 +31,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setError(null)
 
     try {
-      const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}`)
+      // Adicionar um parâmetro de página aleatório para evitar repetição
+      const randomPage = Math.floor(Math.random() * 5) + 1
+      const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&page=${randomPage}`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch destination image")
@@ -40,7 +42,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       const data = await response.json()
 
       if (data.results && data.results.length > 0) {
-        setDestinationImage(data.results[0].urls.regular)
+        // Escolher uma imagem aleatória dos resultados
+        const randomIndex = Math.floor(Math.random() * data.results.length)
+        setDestinationImage(data.results[randomIndex].urls.regular)
       } else {
         setError("Não foi possível encontrar imagens para este destino")
       }
@@ -164,8 +168,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (isNaN(baseValue) || parcelas === 0) {
       return "0,00"
     }
-    // Sempre calcular com 10 parcelas para a imagem, independente do valor real
-    return (baseValue * 2).toFixed(2).replace(".", ",")
+    // Usar o valor real de parcelas e o valor por parcela individual
+    return baseValue.toFixed(2).replace(".", ",")
   }
 
   return (
@@ -233,13 +237,15 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
 
               {/* Price */}
-              <div className="absolute top-[620px] left-[510px] text-[#002043] text-3xl font-medium">10x de</div>
+              <div className="absolute top-[620px] left-[510px] text-[#002043] text-3xl font-medium">
+                {parcelas}x de
+              </div>
               <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl font-black">R$</div>
               <div className="absolute top-[605px] left-[600px] text-[#002043] text-[126px] font-black">
                 {getInstallmentValue()}
               </div>
               <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px] font-medium">
-                no cartão e 9x no boleto sem juros.
+                no cartão e {parcelas - 1}x no boleto sem juros.
               </div>
 
               {/* Features */}
