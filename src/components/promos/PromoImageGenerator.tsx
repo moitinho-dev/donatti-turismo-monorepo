@@ -5,6 +5,9 @@ import { Loader2, Download, RefreshCw } from "lucide-react"
 
 interface PromoImageGeneratorProps {
   promo: any
+  format: string
+  onGenerated: (url: string) => void
+  onGenerating: () => void
 }
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
