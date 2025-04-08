@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { BarChart2, FileText, ImageIcon, Users, Database, Home, Settings, LogOut, Menu, X } from "lucide-react"
 import { signOut } from "next-auth/react"
 import Image from "next/image"
-import Logo from "../../public/assets/logo-preto.png"
+import Logo from "../../../public/assets/logo-preto.png"
 
 interface SidebarProps {
   user?: {
