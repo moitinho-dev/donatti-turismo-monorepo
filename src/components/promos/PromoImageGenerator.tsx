@@ -143,6 +143,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         quality: 0.95,
         width: 1080,
         height: 1920,
+        fontEmbedCSS:
+          '@font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Regular.woff2") format("woff2"); font-weight: normal; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2"); font-weight: bold; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2"); font-weight: 900; font-style: normal; }',
       })
 
       template.style.transform = originalTransform
@@ -201,66 +203,84 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             </div>
           )}
           {/* Template overlay with higher z-index */}
-          <div className="absolute inset-0 w-[1080px] h-[1920px] font-neo z-10">
+          <div className="absolute inset-0 w-[1080px] h-[1920px] z-10" style={{ fontFamily: "NeoSans, sans-serif" }}>
             {/* Background template image */}
             <img src="/assets/LAYOUTFINAL2.png" alt="Promo Template" className="w-full h-full object-cover" />
 
             {/* Text Overlay */}
             <div className="absolute inset-0">
               {/* Region Tag */}
-              <div className="absolute top-[270px] right-[70px] text-[#002043] text-5xl font-black">
+              <div className="absolute top-[270px] right-[70px] text-[#002043] text-5xl" style={{ fontWeight: 900 }}>
                 {getRegion(promo.DESTINO)}
               </div>
 
               {/* Destination */}
-              <div className="absolute top-[360px] left-[480px] text-[#eab400] text-6xl font-black">{promo.DESTINO}</div>
+              <div className="absolute top-[360px] left-[480px] text-[#eab400] text-6xl" style={{ fontWeight: 900 }}>
+                {promo.DESTINO}
+              </div>
 
               {/* Hotel */}
-              <div className="absolute top-[450px] left-[480px] text-white text-4xl font-bold">{promo.HOTEL}</div>
+              <div className="absolute top-[450px] left-[480px] text-white text-4xl" style={{ fontWeight: 700 }}>
+                {promo.HOTEL}
+              </div>
 
               {/* Date */}
-              <div className="absolute top-[530px] left-[480px] text-[#eab400] text-4xl font-bold">
+              <div className="absolute top-[530px] left-[480px] text-[#eab400] text-4xl" style={{ fontWeight: 700 }}>
                 {formatDateRange()}
               </div>
 
               {/* Price */}
-              <div className="absolute top-[620px] left-[510px] text-[#002043] text-3xl font-medium">
+              <div className="absolute top-[620px] left-[510px] text-[#002043] text-3xl" style={{ fontWeight: 500 }}>
                 {parcelas}x de
               </div>
-              <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl font-black">R$</div>
-              <div className="absolute top-[605px] left-[600px] text-[#002043] text-[119px] font-black">
+              <div className="absolute top-[660px] left-[510px] text-[#002043] text-6xl" style={{ fontWeight: 900 }}>
+                R$
+              </div>
+              <div
+                className="absolute top-[605px] left-[600px] text-[#002043] text-[119px]"
+                style={{ fontWeight: 900 }}
+              >
                 {baseValue.toFixed(2).replace(".", ",")}
               </div>
-              <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px] font-medium">
+              <div className="absolute top-[760px] left-[518px] text-[#002043] text-[28px]" style={{ fontWeight: 500 }}>
                 no cartão e 10x no boleto sem juros.
               </div>
 
               {/* Features */}
-              <div className="absolute top-[835px] left-[545px] text-white text-3xl font-medium">Aéreo Ida e Volta</div>
-              <div className="absolute top-[885px] left-[545px] text-white text-3xl font-medium">Valor por pessoa</div>
-              <div className="absolute top-[935px] left-[545px] text-white text-3xl font-medium">
+              <div className="absolute top-[835px] left-[545px] text-white text-3xl" style={{ fontWeight: 500 }}>
+                Aéreo Ida e Volta
+              </div>
+              <div className="absolute top-[885px] left-[545px] text-white text-3xl" style={{ fontWeight: 500 }}>
+                Valor por pessoa
+              </div>
+              <div className="absolute top-[935px] left-[545px] text-white text-3xl" style={{ fontWeight: 500 }}>
                 {promo.NUMERO_DE_NOITES} Noites
               </div>
-              <div className="absolute top-[980px] left-[545px] text-white text-3xl font-medium">
+              <div className="absolute top-[980px] left-[545px] text-white text-3xl" style={{ fontWeight: 500 }}>
                 {getRegimeAlimentacao()}
               </div>
 
               {/* Departure */}
-              <div className="absolute top-[1070px] left-[410px] text-[#002043] text-xl font-medium">saindo de</div>
-              <div className="absolute top-[1100px] left-[410px] text-[#002043] text-xl font-bold">
+              <div className="absolute top-[1070px] left-[410px] text-[#002043] text-xl" style={{ fontWeight: 500 }}>
+                saindo de
+              </div>
+              <div className="absolute top-[1100px] left-[410px] text-[#002043] text-xl" style={{ fontWeight: 700 }}>
                 {getDepartureAirport()}
               </div>
 
               {/* Fine print */}
-              <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] font-normal max-w-[500px]">
+              <div
+                className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] max-w-[500px]"
+                style={{ fontWeight: 400 }}
+              >
                 Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.
               </div>
 
               {/* Contact */}
-              <div className="absolute top-[1250px] left-[580px] text-[#002043] text-3xl font-medium">
+              <div className="absolute top-[1250px] left-[580px] text-[#002043] text-3xl" style={{ fontWeight: 500 }}>
                 Contato e Whatsapp
               </div>
-              <div className="absolute top-[1285px] left-[580px] text-[#002043] text-3xl font-medium">
+              <div className="absolute top-[1285px] left-[580px] text-[#002043] text-3xl" style={{ fontWeight: 500 }}>
                 (67) 9 9637-2769
               </div>
             </div>
