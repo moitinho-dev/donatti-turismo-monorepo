@@ -94,25 +94,34 @@ body {
 }
 
 /* Fonte Neo Sans para o gerador de promoções */
+
 @font-face {
-  font-family: "Neo Sans";
-  src: url("/fonts/NeoSans.woff2") format("woff2"), url("/fonts/NeoSans.woff") format("woff");
+  font-family: "NeoSans";
+  src: url("/fonts/NeoSansW1G-Regular.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Neo Sans";
-  src: url("/fonts/NeoSans-Bold.woff2") format("woff2"), url("/fonts/NeoSans-Bold.woff") format("woff");
-  font-weight: bold;
+  font-family: "NeoSans";
+  src: url("/fonts/NeoSansW1G-Medium.woff2") format("woff2");
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Neo Sans";
-  src: url("/fonts/NeoSans-Black.woff2") format("woff2"), url("/fonts/NeoSans-Black.woff") format("woff");
+  font-family: "NeoSans";
+  src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "NeoSans";
+  src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2");
   font-weight: 900;
   font-style: normal;
   font-display: swap;

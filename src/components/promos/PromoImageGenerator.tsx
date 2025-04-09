@@ -213,13 +213,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
 
               {/* Destination */}
-              <div className="absolute top-[360px] left-[480px] text-[#ea823b] text-6xl font-black">{promo.DESTINO}</div>
+              <div className="absolute top-[360px] left-[480px] text-[#eab400] text-6xl font-black">{promo.DESTINO}</div>
 
               {/* Hotel */}
               <div className="absolute top-[450px] left-[480px] text-white text-4xl font-bold">{promo.HOTEL}</div>
 
               {/* Date */}
-              <div className="absolute top-[530px] left-[480px] text-[#ea823b] text-4xl font-bold">
+              <div className="absolute top-[530px] left-[480px] text-[#eab400] text-4xl font-bold">
                 {formatDateRange()}
               </div>
 
