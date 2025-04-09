@@ -97,7 +97,7 @@ body {
 
 @font-face {
   font-family: "NeoSans";
-  src: url("/fonts/NeoSansW1G-Regular.woff2") format("woff2");
+  src: url("/fonts/NeoSansW1G-Regular.otf") format("otf");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -105,7 +105,7 @@ body {
 
 @font-face {
   font-family: "NeoSans";
-  src: url("/fonts/NeoSansW1G-Medium.woff2") format("woff2");
+  src: url("/fonts/NeoSansW1G-Medium.otf") format("otf");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -113,7 +113,7 @@ body {
 
 @font-face {
   font-family: "NeoSans";
-  src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2");
+  src: url("/fonts/NeoSansW1G-Bold.otf") format("otf");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
