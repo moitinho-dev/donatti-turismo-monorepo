@@ -12,7 +12,7 @@ interface PromoImageGeneratorModalProps {
 export function PromoImageGeneratorModal({ isOpen, onClose, promo }: PromoImageGeneratorModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-xl font-semibold text-primary-blue">
             Gerar Imagem Promocional - {promo?.DESTINO}

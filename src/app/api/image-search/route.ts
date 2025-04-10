@@ -199,6 +199,8 @@ export async function GET(request: NextRequest) {
     // Get the search query from URL parameters
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get("query")
+    // Novo parâmetro para controlar o número de imagens retornadas
+    const limit = Number.parseInt(searchParams.get("limit") || "20", 10)
 
     if (!query) {
       return NextResponse.json({ error: "Search query is required" }, { status: 400 })
@@ -213,7 +215,6 @@ export async function GET(request: NextRequest) {
 
     // Try all available image APIs with fallbacks
     let allImages: any[] = []
-    let selectedImage = null
 
     // Try to get images from multiple APIs in parallel
     const apiPromises = []
@@ -264,52 +265,50 @@ export async function GET(request: NextRequest) {
     const relevantImages = filterRelevantImages(allImages, query)
     console.log(`Found ${relevantImages.length} relevant images out of ${allImages.length} total images`)
 
-    // If we have images, select one randomly
-    if (relevantImages.length > 0) {
-      const shuffledImages = shuffleArray(relevantImages)
-      const highQualityImages = shuffledImages.filter((img) => {
-        const hasHighRes =
-          (img.width && img.width >= 1920) ||
-          (img.height && img.height >= 1080) ||
-          (img.urls?.full && img.urls.full.includes("1920")) ||
-          (img.urls?.regular && img.urls.regular.includes("1600"))
-        return hasHighRes
-      })
+    // Shuffle the images to increase variety
+    const shuffledImages = shuffleArray(relevantImages)
 
-      selectedImage = highQualityImages.length > 0 ? highQualityImages[0] : shuffledImages[0]
-      console.log("Selected image:", {
-        id: selectedImage.id,
-        source: selectedImage.source,
-        width: selectedImage.width,
-        height: selectedImage.height,
-      })
-    } else {
-      console.log("No relevant images found, using fallback")
-    }
+    // Priorize high quality images
+    const highQualityImages = shuffledImages.filter((img) => {
+      const hasHighRes =
+        (img.width && img.width >= 1920) ||
+        (img.height && img.height >= 1080) ||
+        (img.urls?.full && img.urls.full.includes("1920")) ||
+        (img.urls?.regular && img.urls.regular.includes("1600"))
+      return hasHighRes
+    })
 
-    // Final fallback with placeholder images
-    if (!selectedImage) {
+    // Combine high quality images with other images, prioritizing high quality
+    const sortedImages = [...highQualityImages, ...shuffledImages.filter((img) => !highQualityImages.includes(img))]
+
+    // Limit the number of images returned
+    const limitedImages = sortedImages.slice(0, limit)
+
+    // Add fallback images if we don't have enough
+    if (limitedImages.length < limit) {
       const fallbackQuery = query.includes("Brazil") ? query : `${query} Brazil tourism`
-      selectedImage = {
-        id: "fallback",
-        urls: {
-          raw: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
-          full: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
-          regular: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
-          small: `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
-          thumb: `https://source.unsplash.com/featured/400x300/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
-        },
-        user: {
-          name: "Unsplash",
-          links: {
-            html: "https://unsplash.com",
+      for (let i = limitedImages.length; i < limit; i++) {
+        limitedImages.push({
+          id: `fallback-${i}`,
+          urls: {
+            raw: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+            full: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+            regular: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+            small: `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+            thumb: `https://source.unsplash.com/featured/400x300/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
           },
-        },
-        source: "fallback",
+          user: {
+            name: "Unsplash",
+            links: {
+              html: "https://unsplash.com",
+            },
+          },
+          source: "fallback",
+        })
       }
     }
 
-    return NextResponse.json({ results: [selectedImage] })
+    return NextResponse.json({ results: limitedImages })
   } catch (error) {
     console.error("Error in image search API:", error)
     return NextResponse.json({ error: "Failed to search for images" }, { status: 500 })
