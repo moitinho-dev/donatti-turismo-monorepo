@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { createApi } from "unsplash-js"
+import nodeFetch from "node-fetch"
 
 // Mark the route as dynamic to prevent caching
 export const dynamic = "force-dynamic"
@@ -8,6 +10,12 @@ const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || ""
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || ""
 const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY || ""
 const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY || ""
+
+// Inicializa a API do Unsplash usando a biblioteca oficial
+const unsplashApi = createApi({
+  accessKey: UNSPLASH_ACCESS_KEY,
+  fetch: nodeFetch as unknown as typeof fetch,
+})
 
 // Brazilian regions and states mapping for automatic classification
 const brazilianRegions: Record<string, string[]> = {
@@ -186,24 +194,6 @@ const imageVariations = [
   "sunset",
 ]
 
-
-
-function filterRelevantImages(images: any[], originalQuery: string): any[] {
-  const lowerQuery = originalQuery.toLowerCase();
-  return images.filter((img) => {
-    // Considerar mínimo de 500px de largura
-    if (img.width < 500) return false;
-    
-    const description = (img.description || img.alt_description || "").toLowerCase();
-    const tags = (img.tags || []).map((tag: any) => tag.title?.toLowerCase() || "");
-    
-    // Filtro menos restritivo
-    return description.includes(lowerQuery) || 
-           tags.some((tag: string) => tag.includes(lowerQuery)) ||
-           img.user.location?.toLowerCase().includes(lowerQuery);
-  });
-}
-
 export async function GET(request: NextRequest) {
   try {
     // Get the search query from URL parameters
@@ -228,14 +218,14 @@ export async function GET(request: NextRequest) {
     // Try to get images from multiple APIs in parallel
     const apiPromises = []
 
-    // 1. Freepik API
-    if (FREEPIK_API_KEY) {
-      apiPromises.push(searchFreepik(queryVariations))
+    // 1. Unsplash API (usando a biblioteca oficial)
+    if (UNSPLASH_ACCESS_KEY) {
+      apiPromises.push(searchUnsplashWithLib(queryVariations))
     }
 
-    // 2. Unsplash API
-    if (UNSPLASH_ACCESS_KEY) {
-      apiPromises.push(searchUnsplash(queryVariations))
+    // 2. Freepik API
+    if (FREEPIK_API_KEY) {
+      apiPromises.push(searchFreepik(queryVariations))
     }
 
     // 3. Pexels API
@@ -256,41 +246,67 @@ export async function GET(request: NextRequest) {
       if (result.status === "fulfilled" && result.value) {
         if (Array.isArray(result.value)) {
           allImages = [...allImages, ...result.value]
-        } else {
+        } else if (result.value) {
           allImages.push(result.value)
         }
       }
     })
 
-    allImages = filterRelevantImages(allImages, query);
-    console.log('Todas as imagens coletadas:', allImages);
-    
+    // Log the number of images collected from each source for debugging
+    const sourceCount: Record<string, number> = {}
+    allImages.forEach((img) => {
+      const source = img.source || "unknown"
+      sourceCount[source] = (sourceCount[source] || 0) + 1
+    })
+    console.log("Images collected by source:", sourceCount)
+
+    // Filter for relevant images
+    const relevantImages = filterRelevantImages(allImages, query)
+    console.log(`Found ${relevantImages.length} relevant images out of ${allImages.length} total images`)
 
     // If we have images, select one randomly
-    if (allImages.length > 0) {
-      const shuffledImages = shuffleArray(allImages);
+    if (relevantImages.length > 0) {
+      const shuffledImages = shuffleArray(relevantImages)
       const highQualityImages = shuffledImages.filter((img) => {
         const hasHighRes =
-          img.width >= 1920 ||
-          img.height >= 1080 ||
+          (img.width && img.width >= 1920) ||
+          (img.height && img.height >= 1080) ||
           (img.urls?.full && img.urls.full.includes("1920")) ||
-          (img.urls?.regular && img.urls.regular.includes("1600"));
-        return hasHighRes;
-      });
-      selectedImage = highQualityImages.length > 0 ? highQualityImages[0] : shuffledImages[0];
+          (img.urls?.regular && img.urls.regular.includes("1600"))
+        return hasHighRes
+      })
+
+      selectedImage = highQualityImages.length > 0 ? highQualityImages[0] : shuffledImages[0]
+      console.log("Selected image:", {
+        id: selectedImage.id,
+        source: selectedImage.source,
+        width: selectedImage.width,
+        height: selectedImage.height,
+      })
+    } else {
+      console.log("No relevant images found, using fallback")
     }
 
     // Final fallback with placeholder images
     if (!selectedImage) {
-      const fallbackQuery = query.includes('Brazil') ? query : `${query} Brazil`;
+      const fallbackQuery = query.includes("Brazil") ? query : `${query} Brazil tourism`
       selectedImage = {
+        id: "fallback",
         urls: {
-          regular: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}`,
+          raw: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+          full: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+          regular: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+          small: `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
+          thumb: `https://source.unsplash.com/featured/400x300/?${encodeURIComponent(fallbackQuery)}&random=${Math.random()}`,
         },
         user: {
-          name: "Fallback Image"
-        }
-      };
+          name: "Unsplash",
+          links: {
+            html: "https://unsplash.com",
+          },
+        },
+        source: "fallback",
+      }
     }
 
     return NextResponse.json({ results: [selectedImage] })
@@ -300,15 +316,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-
 // Process query to improve search results
 function processQuery(query: string): string {
-  const lowerQuery = query.toLowerCase().trim();
+  const lowerQuery = query.toLowerCase().trim()
 
   // Verifica destinos brasileiros
   for (const [destination, state] of Object.entries(brazilianDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination}, ${state.replace(/á|ã|â/g, 'a')}, Brazil`;
+      return `${destination}, ${state.replace(/á|ã|â/g, "a")}, Brazil`
     }
   }
 
@@ -316,7 +331,7 @@ function processQuery(query: string): string {
   for (const [region, states] of Object.entries(brazilianRegions)) {
     for (const state of states) {
       if (lowerQuery === state || lowerQuery.includes(state)) {
-        return `${state.replace(/á|ã|â/g, 'a')}, Brazil`;
+        return `${state.replace(/á|ã|â/g, "a")}, Brazil`
       }
     }
   }
@@ -324,23 +339,65 @@ function processQuery(query: string): string {
   // Verifica destinos internacionais
   for (const [destination, context] of Object.entries(internationalDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination}, ${context.split(" ")[0]}`;
+      return `${destination}, ${context.split(" ")[0]}`
     }
   }
 
-  return query;
+  return query
 }
 
 // Create variations of the query to increase image diversity
 function createQueryVariations(baseQuery: string): string[] {
-  const cleanQuery = baseQuery.replace(/,/g, '');
-  return [
-    cleanQuery,
-    `${cleanQuery} city`,
-    `${cleanQuery} tourism`,
-    `turismo ${cleanQuery}`,
-    `viagem ${cleanQuery}`
-  ];
+  const cleanQuery = baseQuery.replace(/,/g, "")
+  return [cleanQuery, `${cleanQuery} city`, `${cleanQuery} tourism`, `turismo ${cleanQuery}`, `viagem ${cleanQuery}`]
+}
+
+// Search Unsplash API using the official library
+async function searchUnsplashWithLib(queryVariations: string[]) {
+  try {
+    const results: any[] = []
+
+    // Use only 2 variations to avoid too many API calls
+    const limitedVariations = queryVariations.slice(0, 2)
+
+    for (const query of limitedVariations) {
+      const randomPage = Math.floor(Math.random() * 3) + 1
+
+      // Usando a biblioteca oficial do Unsplash
+      const response = await unsplashApi.search.getPhotos({
+        query,
+        page: randomPage,
+        perPage: 10,
+        orientation: "landscape",
+        orderBy: "relevant",
+      })
+
+      if (response.errors) {
+        console.error("Unsplash API errors:", response.errors)
+        continue
+      }
+
+      if (!response.response) {
+        console.error("Unsplash API returned no response")
+        continue
+      }
+
+      const { results: unsplashResults } = response.response
+
+      // Add source property to identify the API
+      const enhancedResults = unsplashResults.map((item: any) => ({
+        ...item,
+        source: "unsplash",
+      }))
+
+      results.push(...enhancedResults)
+    }
+
+    return results
+  } catch (error) {
+    console.error("Error searching Unsplash with library:", error)
+    return []
+  }
 }
 
 // Search Freepik API with multiple query variations
@@ -360,7 +417,7 @@ async function searchFreepik(queryVariations: string[]) {
         {
           headers: {
             "x-freepik-api-key": FREEPIK_API_KEY,
-            "Accept": "application/json",
+            Accept: "application/json",
           },
           cache: "no-store",
         },
@@ -400,52 +457,6 @@ async function searchFreepik(queryVariations: string[]) {
     return results
   } catch (error) {
     console.error("Error searching Freepik:", error)
-    return []
-  }
-}
-
-// Search Unsplash API with multiple query variations
-async function searchUnsplash(queryVariations: string[]) {
-  try {
-    const results: any[] = []
-
-    // Use only 2 variations to avoid too many API calls
-    const limitedVariations = queryVariations.slice(0, 2)
-
-    for (const query of limitedVariations) {
-      const randomPage = Math.floor(Math.random() * 3) + 1
-
-      const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-          query,
-        )}&per_page=5&orientation=landscape&page=${randomPage}&content_filter=high&order_by=relevant`,
-        {
-          headers: {
-            Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-          },
-          cache: "no-store",
-        },
-      )
-
-      if (!response.ok) {
-        console.error(`Unsplash API error: ${response.statusText}`)
-        continue
-      }
-
-      const data = await response.json()
-
-      // Add source property to identify the API
-      const enhancedResults = data.results.map((item: any) => ({
-        ...item,
-        source: "unsplash",
-      }))
-
-      results.push(...enhancedResults)
-    }
-
-    return results
-  } catch (error) {
-    console.error("Error searching Unsplash:", error)
     return []
   }
 }
@@ -525,8 +536,8 @@ async function searchPixabay(queryVariations: string[]) {
       const randomPage = Math.floor(Math.random() * 3) + 1
 
       const response = await fetch(
-        `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&lang=pt&per_page=5`,
-      );
+        `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&lang=pt&per_page=5&page=${randomPage}`,
+      )
 
       if (!response.ok) {
         console.error(`Pixabay API error: ${response.statusText}`)
@@ -564,6 +575,38 @@ async function searchPixabay(queryVariations: string[]) {
     console.error("Error searching Pixabay:", error)
     return []
   }
+}
+
+// Filter for relevant images
+function filterRelevantImages(images: any[], originalQuery: string): any[] {
+  if (!images || images.length === 0) return []
+
+  const lowerQuery = originalQuery.toLowerCase()
+
+  // Filtro menos restritivo para garantir que tenhamos resultados
+  return images.filter((img) => {
+    // Verificar dimensões mínimas
+    if (img.width && img.width < 500) return false
+
+    // Se não tiver URLs, não é uma imagem válida
+    if (!img.urls || !img.urls.regular) return false
+
+    // Verificar se a imagem tem alguma descrição ou tags
+    const description = (img.description || img.alt_description || "").toLowerCase()
+    const tags = Array.isArray(img.tags)
+      ? img.tags.map((tag: any) => (typeof tag === "string" ? tag : tag.title || "").toLowerCase())
+      : []
+
+    // Aceitar a imagem se tiver pelo menos alguma relação com a consulta
+    // ou se vier de uma API confiável como Unsplash ou Pexels
+    return (
+      img.source === "unsplash" ||
+      img.source === "pexels" ||
+      description.includes(lowerQuery) ||
+      tags.some((tag: string) => tag.includes(lowerQuery)) ||
+      (img.user && img.user.location && img.user.location.toLowerCase().includes(lowerQuery))
+    )
+  })
 }
 
 // Shuffle array using Fisher-Yates algorithm
