@@ -1,7 +1,7 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
 import { toPng } from "html-to-image"
-import { Loader2, Download, RefreshCw } from "lucide-react"
+import { Loader2, Download, ImageIcon } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
 
 interface PromoImageGeneratorProps {
@@ -14,6 +14,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [isLoadingImage, setIsLoadingImage] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [availableImages, setAvailableImages] = useState<any[]>([])
+  const [customSearchQuery, setCustomSearchQuery] = useState<string | null>(null)
   const templateRef = useRef<HTMLDivElement>(null)
 
   // Calculate values
@@ -26,15 +27,17 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   }, [promo.DESTINO])
 
   // Function to fetch destination images from API
-  const fetchDestinationImages = async () => {
-    if (!promo.DESTINO) return
+  const fetchDestinationImages = async (customQuery?: string) => {
+    const searchQuery = customQuery || promo.DESTINO
+    if (!searchQuery) return
 
     setIsLoadingImage(true)
     setError(null)
     setAvailableImages([])
+    setCustomSearchQuery(customQuery || null)
 
     try {
-      const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&limit=20`)
+      const response = await fetch(`/api/image-search?query=${encodeURIComponent(searchQuery)}&limit=30`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch destination images")
@@ -44,8 +47,10 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
       if (data.results && data.results.length > 0) {
         setAvailableImages(data.results)
-        // Seleciona a primeira imagem por padrão
-        setDestinationImage(data.results[0].urls.regular)
+        // Seleciona a primeira imagem por padrão se ainda não houver uma selecionada
+        if (!destinationImage) {
+          setDestinationImage(data.results[0].urls.regular)
+        }
       } else {
         setError("Não foi possível encontrar imagens para este destino")
       }
@@ -172,23 +177,25 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setDestinationImage(imageUrl)
   }
 
+  // Handle custom search
+  const handleCustomSearch = (query: string) => {
+    fetchDestinationImages(query)
+  }
+
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* Galeria de imagens */}
-      <div className="w-full md:w-1/3">
+      <div className="w-full md:w-2/5 bg-white rounded-lg shadow-sm p-4 border border-gray-100">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Selecione uma imagem de fundo</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Escolha entre as imagens disponíveis para {promo.DESTINO} ou busque novas imagens.
+          <h3 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+            <ImageIcon className="h-5 w-5 mr-2 text-primary-blue" />
+            Galeria de imagens
+          </h3>
+          <p className="text-sm text-gray-500 mb-2">
+            {customSearchQuery
+              ? `Mostrando resultados para "${customSearchQuery}"`
+              : `Escolha entre as imagens disponíveis para ${promo.DESTINO}`}
           </p>
-          <button
-            onClick={fetchDestinationImages}
-            disabled={isLoadingImage}
-            className="flex items-center gap-2 px-4 py-2 bg-second-blue text-white rounded-md hover:bg-primary-blue transition-colors disabled:opacity-50 w-full justify-center mb-4"
-          >
-            {isLoadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Buscar novas imagens
-          </button>
         </div>
 
         <ImageGallery
@@ -196,19 +203,21 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           onSelectImage={handleSelectImage}
           selectedImageUrl={destinationImage}
           isLoading={isLoadingImage}
+          onSearch={handleCustomSearch}
+          destination={promo.DESTINO}
         />
       </div>
 
       {/* Gerador de imagem */}
-      <div className="w-full md:w-2/3 flex flex-col items-center">
-        <div className="mb-4 flex gap-4">
+      <div className="w-full md:w-3/5 flex flex-col items-center">
+        <div className="mb-4 flex gap-4 w-full justify-center">
           <button
             onClick={generateImage}
             disabled={isGenerating || !destinationImage}
-            className="flex items-center gap-2 px-6 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50 font-medium"
           >
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Baixar imagem
+            {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            Baixar imagem promocional
           </button>
         </div>
         {error && (
