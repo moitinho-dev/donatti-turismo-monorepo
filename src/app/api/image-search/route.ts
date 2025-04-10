@@ -186,6 +186,15 @@ const imageVariations = [
   "sunset",
 ]
 
+function filterRelevantImages(images: any[], originalQuery: string): any[] {
+  const lowerQuery = originalQuery.toLowerCase();
+  return images.filter((img) => {
+    const description = (img.description || img.alt_description || "").toLowerCase();
+    const tags = (img.tags || []).map((tag: any) => tag.title?.toLowerCase() || "");
+    return description.includes(lowerQuery) || tags.some((tag: string) => tag.includes(lowerQuery));
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Get the search query from URL parameters
@@ -244,35 +253,32 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    allImages = filterRelevantImages(allImages, query);
+
     // If we have images, select one randomly
     if (allImages.length > 0) {
-      // Shuffle the array to increase randomness
-      const shuffledImages = shuffleArray(allImages)
-      // Prioritize high-quality images
+      const shuffledImages = shuffleArray(allImages);
       const highQualityImages = shuffledImages.filter((img) => {
-        // Check if the image has width/height properties or estimate from URLs
         const hasHighRes =
           img.width >= 1920 ||
           img.height >= 1080 ||
           (img.urls?.full && img.urls.full.includes("1920")) ||
-          (img.urls?.regular && img.urls.regular.includes("1600"))
-        return hasHighRes
-      })
-
-      selectedImage = highQualityImages.length > 0 ? highQualityImages[0] : shuffledImages[0]
+          (img.urls?.regular && img.urls.regular.includes("1600"));
+        return hasHighRes;
+      });
+      selectedImage = highQualityImages.length > 0 ? highQualityImages[0] : shuffledImages[0];
     }
 
     // Final fallback with placeholder images
     if (!selectedImage) {
-      const variation = imageVariations[Math.floor(Math.random() * imageVariations.length)]
       selectedImage = {
         id: "fallback1",
         urls: {
-          raw: `https://source.unsplash.com/1920x1080/?${encodeURIComponent(processedQuery)}+${variation}&random=${Math.random()}`,
-          full: `https://source.unsplash.com/1920x1080/?${encodeURIComponent(processedQuery)}+${variation}&random=${Math.random()}`,
-          regular: `https://source.unsplash.com/1600x900/?${encodeURIComponent(processedQuery)}+${variation}&random=${Math.random()}`,
-          small: `https://source.unsplash.com/800x600/?${encodeURIComponent(processedQuery)}+${variation}&random=${Math.random()}`,
-          thumb: `https://source.unsplash.com/400x300/?${encodeURIComponent(processedQuery)}+${variation}&random=${Math.random()}`,
+          raw: `https://source.unsplash.com/1920x1080/?${encodeURIComponent(processedQuery)}`,
+          full: `https://source.unsplash.com/1920x1080/?${encodeURIComponent(processedQuery)}`,
+          regular: `https://source.unsplash.com/1600x900/?${encodeURIComponent(processedQuery)}`,
+          small: `https://source.unsplash.com/800x600/?${encodeURIComponent(processedQuery)}`,
+          thumb: `https://source.unsplash.com/400x300/?${encodeURIComponent(processedQuery)}`,
         },
         user: {
           name: "Unsplash",
@@ -280,7 +286,7 @@ export async function GET(request: NextRequest) {
             html: "https://unsplash.com",
           },
         },
-      }
+      };
     }
 
     return NextResponse.json({ results: [selectedImage] })
@@ -292,67 +298,44 @@ export async function GET(request: NextRequest) {
 
 // Process query to improve search results
 function processQuery(query: string): string {
-  // Convert to lowercase for case-insensitive matching
-  const lowerQuery = query.toLowerCase().trim()
+  const lowerQuery = query.toLowerCase().trim();
 
-  // First check if it's a Brazilian destination
+  // Verifica destinos brasileiros
   for (const [destination, state] of Object.entries(brazilianDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      // Find which region this state belongs to
-      let region = "brazil"
-      for (const [regionName, states] of Object.entries(brazilianRegions)) {
-        if (states.some((s) => state.includes(s))) {
-          region = regionName
-          break
-        }
-      }
-
-      // Create a rich query with destination, state, region and Brazil
-      return `${destination} ${state} ${region} Brazil tourism travel destination`
+      return `${destination} ${state} Brazil`; // Apenas cidade, estado e "Brazil" para manter o foco
     }
   }
 
-  // Check if it's an international destination
-  for (const [destination, context] of Object.entries(internationalDestinations)) {
-    if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination} ${context} tourism travel destination`
-    }
-  }
-
-  // If no specific destination found, try to identify if it's a Brazilian state
+  // Verifica estados brasileiros
   for (const [region, states] of Object.entries(brazilianRegions)) {
     for (const state of states) {
       if (lowerQuery === state || lowerQuery.includes(state)) {
-        return `${lowerQuery} ${region} Brazil tourism travel destination`
+        return `${lowerQuery} ${region} Brazil`; // Apenas estado, região e "Brazil"
       }
     }
   }
 
-  // If it contains accented characters, it might be a Brazilian location
-  if (/[áàâãéèêíìîóòôõúùûç]/i.test(lowerQuery)) {
-    return `${query} Brazil tourism travel destination`
+  // Verifica destinos internacionais
+  for (const [destination, context] of Object.entries(internationalDestinations)) {
+    if (lowerQuery === destination || lowerQuery.includes(destination)) {
+      return `${destination} ${context.split(" ")[0]}`; // Apenas cidade e país
+    }
   }
 
-  // Generic enhancement for any other query
-  return `${query} tourism travel destination landscape`
+  // Default: apenas a query original com "city" para forçar busca por cidades
+  return `${lowerQuery} city`;
 }
 
 // Create variations of the query to increase image diversity
 function createQueryVariations(baseQuery: string): string[] {
-  const variations: string[] = [baseQuery]
-
-  // Add a random selection of variations to the base query
-  const numVariations = Math.min(3, imageVariations.length)
-  const selectedVariations = shuffleArray([...imageVariations]).slice(0, numVariations)
-
-  for (const variation of selectedVariations) {
-    // Don't add variations that are already in the base query
-    if (!baseQuery.toLowerCase().includes(variation.toLowerCase())) {
-      variations.push(`${baseQuery} ${variation}`)
-    }
-  }
-
-  return variations
+  const variations: string[] = [baseQuery];
+  
+  // Adiciona variações apenas se necessário, mantendo o foco no destino
+  variations.push(`${baseQuery} landmark`); // Foco em pontos turísticos
+  variations.push(`${baseQuery} skyline`);  // Foco em vistas da cidade
+  
+  return variations;
 }
 
 // Search Freepik API with multiple query variations
@@ -370,7 +353,7 @@ async function searchFreepik(queryVariations: string[]) {
       const response = await fetch(
         `https://api.freepik.com/v1/resources?term=${encodeURIComponent(
           query,
-        )}&page=${randomPage}&limit=5&filters[content_type]=photo&filters[orientation]=landscape&filters[min_width]=1920&filters[min_height]=1080`,
+        )}&page=${randomPage}&limit=5&filters[content_type]=photo&filters[orientation]=landscape&filters[min_width]=1920&filters[min_height]=1080&order=relevance`,
         {
           headers: {
             "x-freepik-api-key": FREEPIK_API_KEY,
@@ -432,7 +415,7 @@ async function searchUnsplash(queryVariations: string[]) {
       const response = await fetch(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
           query,
-        )}&per_page=5&orientation=landscape&page=${randomPage}&content_filter=high`,
+        )}&per_page=5&orientation=landscape&page=${randomPage}&content_filter=high&order_by=relevant`,
         {
           headers: {
             Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
@@ -478,7 +461,7 @@ async function searchPexels(queryVariations: string[]) {
       const response = await fetch(
         `https://api.pexels.com/v1/search?query=${encodeURIComponent(
           query,
-        )}&per_page=5&orientation=landscape&page=${randomPage}&size=large`,
+        )}&per_page=5&orientation=landscape&page=${randomPage}&size=large&locale=pt-BR`,
         {
           headers: {
             Authorization: PEXELS_API_KEY,
@@ -541,7 +524,7 @@ async function searchPixabay(queryVariations: string[]) {
       const response = await fetch(
         `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(
           query,
-        )}&image_type=photo&orientation=horizontal&per_page=5&page=${randomPage}&min_width=1920&min_height=1080`,
+        )}&image_type=photo&orientation=horizontal&per_page=5&page=${randomPage}&min_width=1920&min_height=1080&order=popular`,
         {
           cache: "no-store",
         },
