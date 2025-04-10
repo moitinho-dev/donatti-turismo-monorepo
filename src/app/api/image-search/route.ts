@@ -186,12 +186,21 @@ const imageVariations = [
   "sunset",
 ]
 
+
+
 function filterRelevantImages(images: any[], originalQuery: string): any[] {
   const lowerQuery = originalQuery.toLowerCase();
   return images.filter((img) => {
+    // Considerar mínimo de 500px de largura
+    if (img.width < 500) return false;
+    
     const description = (img.description || img.alt_description || "").toLowerCase();
     const tags = (img.tags || []).map((tag: any) => tag.title?.toLowerCase() || "");
-    return description.includes(lowerQuery) || tags.some((tag: string) => tag.includes(lowerQuery));
+    
+    // Filtro menos restritivo
+    return description.includes(lowerQuery) || 
+           tags.some((tag: string) => tag.includes(lowerQuery)) ||
+           img.user.location?.toLowerCase().includes(lowerQuery);
   });
 }
 
@@ -254,6 +263,8 @@ export async function GET(request: NextRequest) {
     })
 
     allImages = filterRelevantImages(allImages, query);
+    console.log('Todas as imagens coletadas:', allImages);
+    
 
     // If we have images, select one randomly
     if (allImages.length > 0) {
@@ -271,21 +282,14 @@ export async function GET(request: NextRequest) {
 
     // Final fallback with placeholder images
     if (!selectedImage) {
+      const fallbackQuery = query.includes('Brazil') ? query : `${query} Brazil`;
       selectedImage = {
-        id: "fallback1",
         urls: {
-          raw: `https://source.unsplash.com/1920x1080/?${encodeURIComponent(processedQuery)}`,
-          full: `https://source.unsplash.com/1920x1080/?${encodeURIComponent(processedQuery)}`,
-          regular: `https://source.unsplash.com/1600x900/?${encodeURIComponent(processedQuery)}`,
-          small: `https://source.unsplash.com/800x600/?${encodeURIComponent(processedQuery)}`,
-          thumb: `https://source.unsplash.com/400x300/?${encodeURIComponent(processedQuery)}`,
+          regular: `https://source.unsplash.com/featured/1600x900/?${encodeURIComponent(fallbackQuery)}`,
         },
         user: {
-          name: "Unsplash",
-          links: {
-            html: "https://unsplash.com",
-          },
-        },
+          name: "Fallback Image"
+        }
       };
     }
 
@@ -296,6 +300,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
 // Process query to improve search results
 function processQuery(query: string): string {
   const lowerQuery = query.toLowerCase().trim();
@@ -303,7 +308,7 @@ function processQuery(query: string): string {
   // Verifica destinos brasileiros
   for (const [destination, state] of Object.entries(brazilianDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination} ${state} Brazil`; // Apenas cidade, estado e "Brazil" para manter o foco
+      return `${destination}, ${state.replace(/á|ã|â/g, 'a')}, Brazil`;
     }
   }
 
@@ -311,7 +316,7 @@ function processQuery(query: string): string {
   for (const [region, states] of Object.entries(brazilianRegions)) {
     for (const state of states) {
       if (lowerQuery === state || lowerQuery.includes(state)) {
-        return `${lowerQuery} ${region} Brazil`; // Apenas estado, região e "Brazil"
+        return `${state.replace(/á|ã|â/g, 'a')}, Brazil`;
       }
     }
   }
@@ -319,23 +324,23 @@ function processQuery(query: string): string {
   // Verifica destinos internacionais
   for (const [destination, context] of Object.entries(internationalDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination} ${context.split(" ")[0]}`; // Apenas cidade e país
+      return `${destination}, ${context.split(" ")[0]}`;
     }
   }
 
-  // Default: apenas a query original com "city" para forçar busca por cidades
-  return `${lowerQuery} city`;
+  return query;
 }
 
 // Create variations of the query to increase image diversity
 function createQueryVariations(baseQuery: string): string[] {
-  const variations: string[] = [baseQuery];
-  
-  // Adiciona variações apenas se necessário, mantendo o foco no destino
-  variations.push(`${baseQuery} landmark`); // Foco em pontos turísticos
-  variations.push(`${baseQuery} skyline`);  // Foco em vistas da cidade
-  
-  return variations;
+  const cleanQuery = baseQuery.replace(/,/g, '');
+  return [
+    cleanQuery,
+    `${cleanQuery} city`,
+    `${cleanQuery} tourism`,
+    `turismo ${cleanQuery}`,
+    `viagem ${cleanQuery}`
+  ];
 }
 
 // Search Freepik API with multiple query variations
@@ -351,13 +356,11 @@ async function searchFreepik(queryVariations: string[]) {
       const randomPage = Math.floor(Math.random() * 5) + 1
 
       const response = await fetch(
-        `https://api.freepik.com/v1/resources?term=${encodeURIComponent(
-          query,
-        )}&page=${randomPage}&limit=5&filters[content_type]=photo&filters[orientation]=landscape&filters[min_width]=1920&filters[min_height]=1080&order=relevance`,
+        `https://api.freepik.com/v2/images?query=${encodeURIComponent(query)}&locale=pt-BR&page=${randomPage}&limit=5`,
         {
           headers: {
             "x-freepik-api-key": FREEPIK_API_KEY,
-            "Accept-Language": "en-US",
+            "Accept": "application/json",
           },
           cache: "no-store",
         },
@@ -522,13 +525,8 @@ async function searchPixabay(queryVariations: string[]) {
       const randomPage = Math.floor(Math.random() * 3) + 1
 
       const response = await fetch(
-        `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(
-          query,
-        )}&image_type=photo&orientation=horizontal&per_page=5&page=${randomPage}&min_width=1920&min_height=1080&order=popular`,
-        {
-          cache: "no-store",
-        },
-      )
+        `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&lang=pt&per_page=5`,
+      );
 
       if (!response.ok) {
         console.error(`Pixabay API error: ${response.statusText}`)
