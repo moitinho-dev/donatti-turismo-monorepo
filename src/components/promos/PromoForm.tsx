@@ -222,8 +222,8 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     setFormattedAmount(formattedValue)
     setFormData((prev) => ({
       ...prev,
-      VALOR:parsedValue ,
-      VALORTOTAL: inputValue
+      VALOR: parsedValue,
+      VALORTOTAL: inputValue,
     }))
   }
 
@@ -255,7 +255,6 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       maximumFractionDigits: 2,
     })
   }
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
