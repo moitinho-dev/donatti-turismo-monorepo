@@ -109,6 +109,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }
   }, [promo])
 
+  // Fix the handleChange function to properly recalculate values when parcelas changes
   const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({
       ...prev,
@@ -117,7 +118,23 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
     // If changing the number of parcels, recalculate the per-person installment value
     if (field === "PARCELAS" && typeof value === "string" && formattedAmount) {
-      updatePerPersonInstallmentValue(formattedAmount, value)
+      const totalValue = formattedAmount
+        .replace(/[^\d.,]/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".")
+      const numericValue = Number.parseFloat(totalValue)
+
+      if (!isNaN(numericValue)) {
+        const parcelasNum = Number.parseInt(value, 10)
+        const perPersonValue = numericValue / 2 // Value per person (total / 2)
+        const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
+
+        setFormData((prev) => ({
+          ...prev,
+          VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
+          PARCELAS: parcelasNum.toString(),
+        }))
+      }
     }
   }
 
@@ -212,18 +229,41 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
-  // Improve the value formatting in the form
-  // Replace the handleAmountChange function with this improved version
+  // Fix the handleAmountChange function to properly update all related values
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value
-    const formattedValue = formatCurrencyValue(inputValue)
-    const parsedValue = parseCurrencyValue(inputValue)
+    const cleanedValue = inputValue.replace(/[^\d]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue) / 100
 
-    setFormattedAmount(formattedValue)
+    if (isNaN(numericValue)) {
+      setFormattedAmount("R$ 0,00")
+      setFormData((prev) => ({
+        ...prev,
+        VALOR: "0,00",
+        VALORTOTAL: "0,00",
+      }))
+      return
+    }
+
+    // Format for display
+    const formattedCurrency = numericValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+
+    setFormattedAmount(formattedCurrency)
+
+    // Calculate per-person installment value
+    const parcelas = Number.parseInt(formData.PARCELAS || "10", 10)
+    const perPersonValue = numericValue / 2 // Value per person (total / 2)
+    const perPersonInstallment = perPersonValue / parcelas // Installment value per person
+
     setFormData((prev) => ({
       ...prev,
-      VALOR: parsedValue,
-      VALORTOTAL: inputValue,
+      VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
+      VALORTOTAL: numericValue.toFixed(2).replace(".", ","),
     }))
   }
 
@@ -240,15 +280,19 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return valueAfterCalculation
   }
 
+  // Replace it with a simpler function that just formats the currency
   const formatCurrencyValue = (value: string) => {
-    const formattedValue = value.replace(/[^\d]/g, "")
-    const numberValue = Number.parseFloat(formattedValue) / 100
+    const cleanedValue = value
+      .replace(/[^\d.,]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+    const numericValue = Number.parseFloat(cleanedValue)
 
-    if (isNaN(numberValue)) {
+    if (isNaN(numericValue)) {
       return "R$ 0,00"
     }
 
-    return numberValue.toLocaleString("pt-BR", {
+    return numericValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
