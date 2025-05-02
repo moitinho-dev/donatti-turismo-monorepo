@@ -315,14 +315,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Process query to improve search results
+// Melhorar o processamento de consultas para obter imagens mais relevantes
 function processQuery(query: string): string {
   const lowerQuery = query.toLowerCase().trim()
+
+  // Adicionar contexto para melhorar a qualidade das imagens
+  const enhancedQuery = `${lowerQuery} tourism landscape scenic high quality`
 
   // Verifica destinos brasileiros
   for (const [destination, state] of Object.entries(brazilianDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination}, ${state.replace(/á|ã|â/g, "a")}, Brazil`
+      return `${destination}, ${state.replace(/á|ã|â/g, "a")}, Brazil, tourism landscape scenic high quality`
     }
   }
 
@@ -330,7 +333,7 @@ function processQuery(query: string): string {
   for (const [region, states] of Object.entries(brazilianRegions)) {
     for (const state of states) {
       if (lowerQuery === state || lowerQuery.includes(state)) {
-        return `${state.replace(/á|ã|â/g, "a")}, Brazil`
+        return `${state.replace(/á|ã|â/g, "a")}, Brazil, tourism landscape scenic high quality`
       }
     }
   }
@@ -338,17 +341,34 @@ function processQuery(query: string): string {
   // Verifica destinos internacionais
   for (const [destination, context] of Object.entries(internationalDestinations)) {
     if (lowerQuery === destination || lowerQuery.includes(destination)) {
-      return `${destination}, ${context.split(" ")[0]}`
+      return `${destination}, ${context}, tourism landscape scenic high quality`
     }
   }
 
-  return query
+  // Adicionar "Brazil" à consulta se não for um destino internacional conhecido
+  // e não contiver já a palavra "Brazil" ou "Brasil"
+  if (
+    !lowerQuery.includes("brazil") &&
+    !lowerQuery.includes("brasil") &&
+    !Object.keys(internationalDestinations).some((dest) => lowerQuery.includes(dest))
+  ) {
+    return `${enhancedQuery}, Brazil`
+  }
+
+  return enhancedQuery
 }
 
-// Create variations of the query to increase image diversity
+// Melhorar as variações de consulta para aumentar a diversidade e qualidade das imagens
 function createQueryVariations(baseQuery: string): string[] {
-  const cleanQuery = baseQuery.replace(/,/g, "")
-  return [cleanQuery, `${cleanQuery} city`, `${cleanQuery} tourism`, `turismo ${cleanQuery}`, `viagem ${cleanQuery}`]
+  const cleanQuery = baseQuery.replace(/,/g, " ")
+  return [
+    cleanQuery,
+    `${cleanQuery} beautiful landscape`,
+    `${cleanQuery} tourism destination`,
+    `${cleanQuery} travel photography`,
+    `${cleanQuery} scenic view`,
+    `${cleanQuery} vacation spot`,
+  ]
 }
 
 // Search Unsplash API using the official library
@@ -576,35 +596,72 @@ async function searchPixabay(queryVariations: string[]) {
   }
 }
 
-// Filter for relevant images
+// Melhorar o filtro para imagens relevantes
 function filterRelevantImages(images: any[], originalQuery: string): any[] {
   if (!images || images.length === 0) return []
 
   const lowerQuery = originalQuery.toLowerCase()
+  const queryWords = lowerQuery.split(/\s+/).filter((word) => word.length > 3)
 
-  // Filtro menos restritivo para garantir que tenhamos resultados
-  return images.filter((img) => {
-    // Verificar dimensões mínimas
-    if (img.width && img.width < 500) return false
+  // Primeiro, filtrar por qualidade mínima
+  const qualityImages = images.filter((img) => {
+    // Verificar dimensões mínimas para garantir qualidade
+    if ((img.width && img.width < 800) || (img.height && img.height < 600)) return false
 
     // Se não tiver URLs, não é uma imagem válida
     if (!img.urls || !img.urls.regular) return false
 
-    // Verificar se a imagem tem alguma descrição ou tags
-    const description = (img.description || img.alt_description || "").toLowerCase()
-    const tags = Array.isArray(img.tags)
-      ? img.tags.map((tag: any) => (typeof tag === "string" ? tag : tag.title || "").toLowerCase())
-      : []
+    return true
+  })
 
-    // Aceitar a imagem se tiver pelo menos alguma relação com a consulta
-    // ou se vier de uma API confiável como Unsplash ou Pexels
-    return (
-      img.source === "unsplash" ||
-      img.source === "pexels" ||
-      description.includes(lowerQuery) ||
-      tags.some((tag: string) => tag.includes(lowerQuery)) ||
-      (img.user && img.user.location && img.user.location.toLowerCase().includes(lowerQuery))
-    )
+  // Depois, ordenar por relevância
+  return qualityImages.sort((a, b) => {
+    let scoreA = 0
+    let scoreB = 0
+
+    // Pontuação baseada na fonte (algumas fontes são mais confiáveis)
+    if (a.source === "unsplash") scoreA += 5
+    if (a.source === "pexels") scoreA += 4
+    if (a.source === "freepik") scoreA += 3
+
+    if (b.source === "unsplash") scoreB += 5
+    if (b.source === "pexels") scoreB += 4
+    if (b.source === "freepik") scoreB += 3
+
+    // Pontuação baseada na resolução
+    if (a.width && a.height) {
+      const resolutionA = a.width * a.height
+      if (resolutionA > 4000000)
+        scoreA += 3 // > 4MP
+      else if (resolutionA > 2000000)
+        scoreA += 2 // > 2MP
+      else if (resolutionA > 1000000) scoreA += 1 // > 1MP
+    }
+
+    if (b.width && b.height) {
+      const resolutionB = b.width * b.height
+      if (resolutionB > 4000000)
+        scoreB += 3 // > 4MP
+      else if (resolutionB > 2000000)
+        scoreB += 2 // > 2MP
+      else if (resolutionB > 1000000) scoreB += 1 // > 1MP
+    }
+
+    // Pontuação baseada na relevância do conteúdo
+    const descriptionA = (a.description || a.alt_description || "").toLowerCase()
+    const descriptionB = (b.description || b.alt_description || "").toLowerCase()
+
+    // Verificar se a descrição contém palavras da consulta
+    queryWords.forEach((word) => {
+      if (descriptionA.includes(word)) scoreA += 1
+      if (descriptionB.includes(word)) scoreB += 1
+    })
+
+    // Verificar se a imagem tem orientação paisagem (preferível para promos)
+    if (a.width && a.height && a.width > a.height) scoreA += 2
+    if (b.width && b.height && b.width > b.height) scoreB += 2
+
+    return scoreB - scoreA // Ordenar do maior score para o menor
   })
 }
 

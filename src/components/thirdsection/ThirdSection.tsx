@@ -62,7 +62,7 @@ export function ThirdSection() {
           sizes="100vw"
           priority={false}
         />
-        <div className="absolute inset-0 bg-primary-blue/30 backdrop-filter backdrop-blur-[2px]"></div>
+        <div className="absolute inset-0 bg-primary-blue/50 backdrop-filter backdrop-blur-[2px]"></div>
       </div>
     </section>
   )

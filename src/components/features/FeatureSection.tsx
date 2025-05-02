@@ -1,7 +1,7 @@
 "use client"
 import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
-import { FaPlane, FaHotel, FaPassport, FaShip } from "react-icons/fa"
+import { FaPlane, FaHotel, FaPassport, FaShip, FaUmbrella, FaCreditCard } from "react-icons/fa"
 
 export function FeatureSection() {
   const [ref, inView] = useInView({
@@ -29,6 +29,16 @@ export function FeatureSection() {
       icon: <FaShip className="h-8 w-8 text-primary-blue" />,
       title: "Cruzeiros",
       description: "Experiências inesquecíveis em alto mar",
+    },
+    {
+      icon: <FaUmbrella className="h-8 w-8 text-primary-blue" />,
+      title: "Seguro Viagem",
+      description: "Viaje com tranquilidade e segurança garantida",
+    },
+    {
+      icon: <FaCreditCard className="h-8 w-8 text-primary-blue" />,
+      title: "Parcelamento",
+      description: "Facilidade de pagamento em até 12x sem juros",
     },
   ]
 
@@ -69,7 +79,7 @@ export function FeatureSection() {
           variants={containerVariants}
           initial="hidden"
           animate={inView ? "visible" : "hidden"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {features.map((feature, index) => (
             <motion.div

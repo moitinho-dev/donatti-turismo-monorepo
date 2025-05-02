@@ -64,42 +64,255 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   // Get region based on destination
   const getRegion = (destination: string) => {
+    const dest = destination.toLowerCase().trim()
+
+    // Lista expandida de cidades brasileiras por região
     const northeastCities = [
       "natal",
       "recife",
       "fortaleza",
       "salvador",
       "maceió",
+      "maceio",
       "joão pessoa",
+      "joao pessoa",
       "aracaju",
       "são luís",
+      "sao luis",
       "teresina",
       "porto de galinhas",
       "porto seguro",
       "pipa",
       "maragogi",
+      "jericoacoara",
+      "fernando de noronha",
+      "canoa quebrada",
+      "praia do forte",
+      "costa do sauípe",
+      "costa do sauipe",
+      "ilhéus",
+      "ilheus",
+      "lençóis maranhenses",
+      "lencois maranhenses",
+      "chapada diamantina",
+      "bahia",
+      "ceará",
+      "ceara",
+      "maranhão",
+      "maranhao",
+      "pernambuco",
+      "alagoas",
+      "sergipe",
+      "paraíba",
+      "paraiba",
+      "piauí",
+      "piaui",
+      "rio grande do norte",
     ]
-    const southCities = ["florianópolis", "porto alegre", "gramado", "curitiba", "foz do iguaçu", "balneário camboriú"]
+
+    const southCities = [
+      "florianópolis",
+      "florianopolis",
+      "porto alegre",
+      "gramado",
+      "curitiba",
+      "foz do iguaçu",
+      "foz do iguacu",
+      "balneário camboriú",
+      "balneario camboriu",
+      "blumenau",
+      "bombinhas",
+      "canela",
+      "bento gonçalves",
+      "bento goncalves",
+      "santa catarina",
+      "paraná",
+      "parana",
+      "rio grande do sul",
+      "camboriú",
+      "camboriu",
+      "joinville",
+      "londrina",
+      "maringá",
+      "maringa",
+    ]
+
     const southeastCities = [
       "rio de janeiro",
       "são paulo",
+      "sao paulo",
       "belo horizonte",
       "vitória",
+      "vitoria",
       "búzios",
+      "buzios",
       "paraty",
       "campos do jordão",
+      "campos do jordao",
+      "angra dos reis",
+      "cabo frio",
+      "petrópolis",
+      "petropolis",
+      "ouro preto",
+      "tiradentes",
+      "guarujá",
+      "guaruja",
+      "ubatuba",
+      "ilhabela",
+      "minas gerais",
+      "espírito santo",
+      "espirito santo",
+      "arraial do cabo",
+      "são sebastião",
+      "sao sebastiao",
+      "aparecida",
+      "poços de caldas",
+      "pocos de caldas",
     ]
-    const centralCities = ["brasília", "goiânia", "cuiabá", "campo grande", "bonito", "caldas novas"]
-    const northCities = ["manaus", "belém", "palmas", "rio branco", "porto velho", "boa vista", "macapá"]
 
-    const dest = destination.toLowerCase()
+    const centralCities = [
+      "brasília",
+      "brasilia",
+      "goiânia",
+      "goiania",
+      "cuiabá",
+      "cuiaba",
+      "campo grande",
+      "bonito",
+      "caldas novas",
+      "pirenópolis",
+      "pirenopolis",
+      "chapada dos veadeiros",
+      "pantanal",
+      "goiás",
+      "goias",
+      "mato grosso",
+      "mato grosso do sul",
+      "distrito federal",
+      "chapada dos guimarães",
+      "chapada dos guimaraes",
+      "corumbá",
+      "corumba",
+    ]
 
+    const northCities = [
+      "manaus",
+      "belém",
+      "belem",
+      "palmas",
+      "rio branco",
+      "porto velho",
+      "boa vista",
+      "macapá",
+      "macapa",
+      "alter do chão",
+      "alter do chao",
+      "são gabriel da cachoeira",
+      "sao gabriel da cachoeira",
+      "monte roraima",
+      "amazonas",
+      "pará",
+      "para",
+      "tocantins",
+      "acre",
+      "rondônia",
+      "rondonia",
+      "roraima",
+      "amapá",
+      "amapa",
+      "santarém",
+      "santarem",
+    ]
+
+    // Palavras-chave que indicam destinos internacionais
+    const internationalKeywords = [
+      "cancun",
+      "miami",
+      "orlando",
+      "nova york",
+      "las vegas",
+      "paris",
+      "londres",
+      "roma",
+      "madri",
+      "lisboa",
+      "tóquio",
+      "toquio",
+      "dubai",
+      "buenos aires",
+      "santiago",
+      "toronto",
+      "vancouver",
+      "amsterdam",
+      "berlim",
+      "viena",
+      "atenas",
+      "bangkok",
+      "pequim",
+      "sydney",
+      "auckland",
+      "cidade do cabo",
+      "cairo",
+      "istambul",
+      "jerusalém",
+      "jerusalem",
+      "havana",
+      "punta cana",
+      "méxico",
+      "mexico",
+      "eua",
+      "usa",
+      "estados unidos",
+      "europa",
+      "ásia",
+      "asia",
+      "áfrica",
+      "africa",
+      "oceania",
+      "caribe",
+    ]
+
+    // Verificar se o destino contém palavras-chave que indicam que é no Brasil
+    const brazilKeywords = ["brasil", "brazil"]
+    const isBrazilExplicit = brazilKeywords.some((keyword) => dest.includes(keyword))
+
+    // Se explicitamente menciona Brasil, verificar em qual região se encaixa melhor
+    if (isBrazilExplicit) {
+      if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
+      if (southCities.some((city) => dest.includes(city))) return "Sul"
+      if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
+      if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
+      if (northCities.some((city) => dest.includes(city))) return "Norte"
+      return "Brasil" // Caso não identifique a região específica
+    }
+
+    // Verificar se é um destino internacional explícito
+    if (internationalKeywords.some((keyword) => dest.includes(keyword))) {
+      return "Exterior"
+    }
+
+    // Verificar em qual região do Brasil o destino se encaixa
     if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
     if (southCities.some((city) => dest.includes(city))) return "Sul"
     if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
 
+    // Se não encontrou em nenhuma região específica, verificar se contém estados ou regiões do Brasil
+    const brazilRegions = ["nordeste", "norte", "sul", "sudeste", "centro-oeste", "centro oeste"]
+    if (brazilRegions.some((region) => dest.includes(region))) {
+      return dest.includes("nordeste")
+        ? "Nordeste"
+        : dest.includes("norte")
+          ? "Norte"
+          : dest.includes("sul")
+            ? "Sul"
+            : dest.includes("sudeste")
+              ? "Sudeste"
+              : "Centro-Oeste"
+    }
+
+    // Se não conseguiu identificar, assume que é um destino internacional
     return "Exterior"
   }
 

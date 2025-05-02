@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import BgImage from "../../../public/assets/secondcontent-bg.png"
 import { FooterEmailBox } from "./FooterEmailBox"
 import { Terms } from "../modals/Terms"
-import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaWhatsapp } from "react-icons/fa"
+import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaWhatsapp, FaInstagram, FaFacebookF } from "react-icons/fa"
 
 export function FooterSection() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
@@ -50,6 +50,33 @@ export function FooterSection() {
                     <FaEnvelope className="mr-3 text-primary-yellow" />
                     <p>contato@donattiturismo.com.br</p>
                   </div>
+
+                  <div className="flex items-center space-x-4 pt-2">
+                    <a
+                      href="https://instagram.com/donattiturismo"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white/10 hover:bg-white/20 p-3 rounded-full transition-colors"
+                    >
+                      <FaInstagram className="text-primary-yellow text-xl" />
+                    </a>
+                    <a
+                      href="https://facebook.com/donattiturismo"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white/10 hover:bg-white/20 p-3 rounded-full transition-colors"
+                    >
+                      <FaFacebookF className="text-primary-yellow text-xl" />
+                    </a>
+                    <a
+                      href="https://wa.me/556796372769"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white/10 hover:bg-white/20 p-3 rounded-full transition-colors"
+                    >
+                      <FaWhatsapp className="text-primary-yellow text-xl" />
+                    </a>
+                  </div>
                 </div>
 
                 <div className="mt-8">
@@ -57,7 +84,7 @@ export function FooterSection() {
                     className="w-full h-[250px] rounded-xl border-2 border-white/10"
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3738.1132929822643!2d-54.63646658944231!3d-20.460539454969034!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9486e71ddefc0ac3%3A0xa552f4c0c93e9999!2sLe%20Monde%20Turismo!5e0!3m2!1spt-BR!2sbr!4v1698785317968!5m2!1spt-BR!2sbr"
                     loading="lazy"
-                    title="Localização da Lemonde Turismo"
+                    title="Localização da Donatti Turismo"
                   ></iframe>
                 </div>
               </motion.div>

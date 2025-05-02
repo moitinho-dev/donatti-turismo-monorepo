@@ -38,10 +38,10 @@ export function HeroSection() {
           >
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src={content.herobanner || "/placeholder.svg"}
-                width={content.width}
-                height={content.height}
-                alt="Descubra o Rio de Janeiro com a Lemonde Tourisme"
+                src="/assets/hero-rio.jpg"
+                width={1920}
+                height={1080}
+                alt="Descubra o Rio de Janeiro com a Donatti Turismo"
                 className="w-full h-auto object-cover"
                 priority
               />
