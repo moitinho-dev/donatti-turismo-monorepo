@@ -468,9 +468,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Destination */}
-                <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold">
-                  {promo.DESTINO}
-                </div>
+                <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold">{promo.DESTINO}</div>
 
                 {/* Hotel */}
                 <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium">{promo.HOTEL}</div>

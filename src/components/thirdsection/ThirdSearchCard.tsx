@@ -3,7 +3,38 @@ import { useState } from "react"
 import type React from "react"
 import { motion } from "framer-motion"
 import { FaSearch, FaPlane, FaCalendarAlt, FaUsers, FaCoffee, FaGlassMartiniAlt, FaCarSide } from "react-icons/fa"
-import { opcoesOrigem, opcoesDestino, type Opcoes } from "../../components/contents/Opcoes"
+
+const aeroportosBrasil = [
+  { value: "Aracaju - AJU", label: "Aracaju - AJU" },
+  { value: "Belém - BEL", label: "Belém - BEL" },
+  { value: "Belo Horizonte - CNF", label: "Belo Horizonte - CNF" },
+  { value: "Boa Vista - BVB", label: "Boa Vista - BVB" },
+  { value: "Brasília - BSB", label: "Brasília - BSB" },
+  { value: "Campo Grande - CGR", label: "Campo Grande - CGR" },
+  { value: "Cuiabá - CGB", label: "Cuiabá - CGB" },
+  { value: "Curitiba - CWB", label: "Curitiba - CWB" },
+  { value: "Florianópolis - FLN", label: "Florianópolis - FLN" },
+  { value: "Fortaleza - FOR", label: "Fortaleza - FOR" },
+  { value: "Goiânia - GYN", label: "Goiânia - GYN" },
+  { value: "João Pessoa - JPA", label: "João Pessoa - JPA" },
+  { value: "Macapá - MCP", label: "Macapá - MCP" },
+  { value: "Maceió - MCZ", label: "Maceió - MCZ" },
+  { value: "Manaus - MAO", label: "Manaus - MAO" },
+  { value: "Natal - NAT", label: "Natal - NAT" },
+  { value: "Palmas - PMW", label: "Palmas - PMW" },
+  { value: "Porto Alegre - POA", label: "Porto Alegre - POA" },
+  { value: "Porto Velho - PVH", label: "Porto Velho - PVH" },
+  { value: "Recife - REC", label: "Recife - REC" },
+  { value: "Rio Branco - RBR", label: "Rio Branco - RBR" },
+  { value: "Rio de Janeiro - GIG", label: "Rio de Janeiro - GIG" },
+  { value: "Rio de Janeiro - SDU", label: "Rio de Janeiro - SDU" },
+  { value: "Salvador - SSA", label: "Salvador - SSA" },
+  { value: "São Luís - SLZ", label: "São Luís - SLZ" },
+  { value: "São Paulo - CGH", label: "São Paulo - CGH" },
+  { value: "São Paulo - GRU", label: "São Paulo - GRU" },
+  { value: "Teresina - THE", label: "Teresina - THE" },
+  { value: "Vitória - VIX", label: "Vitória - VIX" },
+]
 
 export function ThirdSearchCard() {
   const [origem, setOrigem] = useState<string>("")
@@ -24,7 +55,11 @@ export function ThirdSearchCard() {
 
   const handleDataPartidaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const dataSelecionada = new Date(event.target.value)
-    const dataFormatada = dataSelecionada.toLocaleDateString("pt-BR")
+    const dataFormatada = dataSelecionada.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    })
     setDataPartida(dataFormatada)
   }
 
@@ -79,13 +114,14 @@ export function ThirdSearchCard() {
               onChange={handleOrigemChange}
             >
               <option value="">Selecione a origem</option>
-              {opcoesOrigem.map((origem: Opcoes, index: number) => (
-                <option key={index} value={origem.value}>
-                  {origem.label}
+              {aeroportosBrasil.map((aeroporto, index) => (
+                <option key={index} value={aeroporto.value}>
+                  {aeroporto.label}
                 </option>
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-primary-blue font-mon font-medium mb-2 flex items-center">
               <FaPlane className="mr-2 text-second-blue" /> Destino
@@ -95,9 +131,9 @@ export function ThirdSearchCard() {
               onChange={handleDestinoChange}
             >
               <option value="">Selecione o destino</option>
-              {opcoesDestino.map((destino: Opcoes, index: number) => (
-                <option key={index} value={destino.value}>
-                  {destino.label}
+              {aeroportosBrasil.map((aeroporto, index) => (
+                <option key={index} value={aeroporto.value}>
+                  {aeroporto.label}
                 </option>
               ))}
             </select>
@@ -173,7 +209,7 @@ export function ThirdSearchCard() {
           whileHover={{ scale: 1.02, backgroundColor: "#FED400" }}
           whileTap={{ scale: 0.98 }}
         >
-          <FaSearch className="mr-2" /> BUSCAR
+          <FaSearch className="mr-2" /> ORÇAR
         </motion.button>
       </div>
     </motion.div>
