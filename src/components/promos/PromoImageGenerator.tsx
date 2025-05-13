@@ -499,7 +499,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               {/* Text Overlay */}
               <div className="absolute inset-0">
                 {/* Region Tag */}
-                <div className="absolute top-[270px] right-[70px] text-[#7f222c] text-5xl font-black">
+                <div className="absolute top-[270px] right-[70px] text-[#ffff] text-5xl font-black">
                   {selectedRegion}
                 </div>
 
@@ -507,7 +507,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold">{promo.DESTINO}</div>
 
                 {/* Hotel */}
-                <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium">{promo.HOTEL}</div>
+                <div className="absolute top-[450px] left-[480px] text-[f9ac00] text-4xl font-medium">{promo.HOTEL}</div>
 
                 {/* Date */}
                 <div className="absolute top-[530px] left-[480px] text-white text-4xl font-medium">
@@ -515,14 +515,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Price */}
-                <div className="absolute top-[620px] left-[510px] text-[#f6df2e] text-3xl font-medium">
+                <div className="absolute top-[620px] left-[510px] text-[#162544] text-3xl font-medium">
                   {parcelas}x de
                 </div>
-                <div className="absolute top-[660px] left-[510px] text-[#f6df2e] text-6xl font-black">R$</div>
-                <div className="absolute top-[605px] left-[600px] text-[#f6df2e] text-[126px] font-black">
+                <div className="absolute top-[660px] left-[510px] text-[#162544] text-6xl font-black">R$</div>
+                <div className="absolute top-[605px] left-[600px] text-[#162544] text-[126px] font-black">
                   {baseValue.toFixed(2).replace(".", ",")}
                 </div>
-                <div className="absolute top-[760px] left-[518px] text-[#f6df2e] text-[28px] font-medium">
+                <div className="absolute top-[760px] left-[518px] text-[#162544]text-[28px] font-medium">
                   no cartão e 10x no boleto sem juros.
                 </div>
 
@@ -541,8 +541,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Departure */}
-                <div className="absolute top-[1070px] left-[410px] text-[#f6df2e] text-xl font-medium">saindo de</div>
-                <div className="absolute top-[1100px] left-[410px] text-[#f6df2e] text-xl font-bold">
+                <div className="absolute top-[1070px] left-[410px] text-[#ffff] text-xl font-medium">saindo de</div>
+                <div className="absolute top-[1100px] left-[410px] text-[#ffff] text-xl font-bold">
                   {getDepartureAirport()}
                 </div>
 
