@@ -507,7 +507,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold">{promo.DESTINO}</div>
 
                 {/* Hotel */}
-                <div className="absolute top-[450px] left-[480px] text-[f9ac00] text-4xl font-medium">{promo.HOTEL}</div>
+                <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium">{promo.HOTEL}</div>
 
                 {/* Date */}
                 <div className="absolute top-[530px] left-[480px] text-white text-4xl font-medium">
@@ -552,10 +552,10 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Contact */}
-                <div className="absolute top-[1250px] left-[580px] text-[#f6df2e] text-3xl font-medium">
+                <div className="absolute top-[1250px] left-[580px] text-[#162544] text-3xl font-medium">
                   Contato e Whatsapp
                 </div>
-                <div className="absolute top-[1285px] left-[580px] text-[#f6df2e] text-3xl font-medium">
+                <div className="absolute top-[1285px] left-[580px] text-[#162544] text-3xl font-medium">
                   (67) 9 9637-2769
                 </div>
               </div>
