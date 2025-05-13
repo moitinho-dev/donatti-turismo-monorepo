@@ -515,14 +515,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Price */}
-                <div className="absolute top-[620px] left-[510px] text-[#7f222c] text-3xl font-medium">
+                <div className="absolute top-[620px] left-[510px] text-[#f6df2e] text-3xl font-medium">
                   {parcelas}x de
                 </div>
-                <div className="absolute top-[660px] left-[510px] text-[#7f222c] text-6xl font-black">R$</div>
-                <div className="absolute top-[605px] left-[600px] text-[#7f222c] text-[126px] font-black">
+                <div className="absolute top-[660px] left-[510px] text-[#f6df2e] text-6xl font-black">R$</div>
+                <div className="absolute top-[605px] left-[600px] text-[#f6df2e] text-[126px] font-black">
                   {baseValue.toFixed(2).replace(".", ",")}
                 </div>
-                <div className="absolute top-[760px] left-[518px] text-[#7f222c] text-[28px] font-medium">
+                <div className="absolute top-[760px] left-[518px] text-[#f6df2e] text-[28px] font-medium">
                   no cartão e 10x no boleto sem juros.
                 </div>
 
@@ -541,8 +541,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Departure */}
-                <div className="absolute top-[1070px] left-[410px] text-[#7f222c] text-xl font-medium">saindo de</div>
-                <div className="absolute top-[1100px] left-[410px] text-[#7f222c] text-xl font-bold">
+                <div className="absolute top-[1070px] left-[410px] text-[#f6df2e] text-xl font-medium">saindo de</div>
+                <div className="absolute top-[1100px] left-[410px] text-[#f6df2e] text-xl font-bold">
                   {getDepartureAirport()}
                 </div>
 
@@ -552,10 +552,10 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Contact */}
-                <div className="absolute top-[1250px] left-[580px] text-[#7f222c] text-3xl font-medium">
+                <div className="absolute top-[1250px] left-[580px] text-[#f6df2e] text-3xl font-medium">
                   Contato e Whatsapp
                 </div>
-                <div className="absolute top-[1285px] left-[580px] text-[#7f222c] text-3xl font-medium">
+                <div className="absolute top-[1285px] left-[580px] text-[#f6df2e] text-3xl font-medium">
                   (67) 9 9637-2769
                 </div>
               </div>
