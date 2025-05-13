@@ -23,9 +23,9 @@ module.exports = {
   images: {
     domains: [
       "img.freepik.com",
-      "lh3.googleusercontent.com", 
-      "images.unsplash.com", 
-      "img.freepik.com", 
+      "lh3.googleusercontent.com",
+      "images.unsplash.com",
+      "img.freepik.com",
       "br.freepik.com",
     ],
   },

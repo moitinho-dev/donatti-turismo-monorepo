@@ -11,7 +11,8 @@ export function FourthSection() {
       destino: "Viagem Nacional",
       texto:
         "Viajo com a Donatti desde 2021, e só tive experiências maravilhosas, preço, atendimento, dúvidas todas esclarecidas. A Tati da todo apoio e suporte, recomendo de olhos fechados!",
-      avatar: "https://lh3.googleusercontent.com/a-/ALV-UjUCA_UR4wNN8TlPgtNdFuIzAQIMrFHkFjv3SZW2R9W1MZCW408cFA=w72-h72-p-rp-mo-br100",
+      avatar:
+        "https://lh3.googleusercontent.com/a-/ALV-UjUCA_UR4wNN8TlPgtNdFuIzAQIMrFHkFjv3SZW2R9W1MZCW408cFA=w72-h72-p-rp-mo-br100",
       avaliacao: 5,
     },
     {
@@ -19,7 +20,8 @@ export function FourthSection() {
       destino: "Viagem Internacional",
       texto:
         "O atendimento é mega diferenciado, você tem suporte vip! Eles procuram as melhores opções baseado nas espectativas e no bolso do cliente. Super recomendo!",
-      avatar: "https://lh3.googleusercontent.com/a-/ALV-UjWNaRQ8H36rOio5EiJD4lfQNcp54PPgOXqD-2FDP8F0W8r2qET-=w72-h72-p-rp-mo-br100",
+      avatar:
+        "https://lh3.googleusercontent.com/a-/ALV-UjWNaRQ8H36rOio5EiJD4lfQNcp54PPgOXqD-2FDP8F0W8r2qET-=w72-h72-p-rp-mo-br100",
       avaliacao: 5,
     },
     {
@@ -27,7 +29,8 @@ export function FourthSection() {
       destino: "Viagem em Família",
       texto:
         "Tati e equipe nota 1000! Viajar com segurança e credibilidade é com a equipe da Tati! Muito obrigado! Até o ano que vem!",
-      avatar: "https://lh3.googleusercontent.com/a-/ALV-UjUgXXPJMaAS2-2_l6yKoR08iMg2jMtmF0wybzmOg6lmAvllJ389TQ=w72-h72-p-rp-mo-ba3-br100",
+      avatar:
+        "https://lh3.googleusercontent.com/a-/ALV-UjUgXXPJMaAS2-2_l6yKoR08iMg2jMtmF0wybzmOg6lmAvllJ389TQ=w72-h72-p-rp-mo-ba3-br100",
       avaliacao: 5,
     },
   ]

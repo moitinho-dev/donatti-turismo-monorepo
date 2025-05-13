@@ -75,7 +75,13 @@ export function HeroSection() {
     <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <Image src="https://img.freepik.com/fotos-gratis/bela-praia-tropical-mar-e-oceano-com-coqueiro-e-guarda-chuva-e-cadeira-no-ceu-azul_74190-8827.jpg?t=st=1746560930~exp=1746564530~hmac=9da296fe0aee8df0ea2978ea9398b0da6c6c9ae187163a010d7424f943ad345a&w=996" alt="Fernando de Noronha" fill priority className="object-cover" />
+        <Image
+          src="https://img.freepik.com/fotos-gratis/bela-praia-tropical-mar-e-oceano-com-coqueiro-e-guarda-chuva-e-cadeira-no-ceu-azul_74190-8827.jpg?t=st=1746560930~exp=1746564530~hmac=9da296fe0aee8df0ea2978ea9398b0da6c6c9ae187163a010d7424f943ad345a&w=996"
+          alt="Fernando de Noronha"
+          fill
+          priority
+          className="object-cover"
+        />
         <div className="absolute inset-0 bg-black/40" />
       </div>
 

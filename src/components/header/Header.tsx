@@ -57,7 +57,7 @@ export function Header() {
             <Link href="/destinos" className="text-sm font-medium text-gray-800 hover:text-primary transition-colors">
               Destinos
             </Link>
-            
+
             <Link href="/sobre" className="text-sm font-medium text-gray-800 hover:text-primary transition-colors">
               Sobre
             </Link>
@@ -110,7 +110,7 @@ export function Header() {
                     >
                       Pacotes
                     </Link>
-                   
+
                     <Link
                       href="/contato"
                       className="text-base font-medium text-gray-800 hover:text-primary transition-colors"

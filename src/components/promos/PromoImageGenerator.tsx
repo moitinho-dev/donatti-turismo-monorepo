@@ -1,5 +1,7 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
+import type React from "react"
+
 import { toPng } from "html-to-image"
 import { Loader2, Download, ImageIcon } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
@@ -15,6 +17,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [error, setError] = useState<string | null>(null)
   const [availableImages, setAvailableImages] = useState<any[]>([])
   const [customSearchQuery, setCustomSearchQuery] = useState<string | null>(null)
+  const [selectedRegion, setSelectedRegion] = useState<string>("")
   const templateRef = useRef<HTMLDivElement>(null)
 
   // Calculate values
@@ -24,6 +27,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   // Fetch destination images when component mounts or destination changes
   useEffect(() => {
     fetchDestinationImages()
+    // Set initial region based on destination
+    setSelectedRegion(getRegion(promo.DESTINO))
   }, [promo.DESTINO])
 
   // Function to fetch destination images from API
@@ -395,6 +400,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     fetchDestinationImages(query)
   }
 
+  // Handle region selection
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedRegion(e.target.value)
+  }
+
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* Galeria de imagens */}
@@ -433,6 +443,32 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             Baixar imagem promocional
           </button>
         </div>
+        <div className="mb-6 w-full">
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Personalizar Imagem</h3>
+
+            <div className="mb-4">
+              <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-1">
+                Região
+              </label>
+              <select
+                id="region-select"
+                value={selectedRegion}
+                onChange={handleRegionChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              >
+                <option value="Nordeste">Nordeste</option>
+                <option value="Sul">Sul</option>
+                <option value="Sudeste">Sudeste</option>
+                <option value="Norte">Norte</option>
+                <option value="Centro-Oeste">Centro-Oeste</option>
+                <option value="Exterior">Exterior</option>
+                <option value="Brasil">Brasil</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Selecione a região que aparecerá na imagem promocional</p>
+            </div>
+          </div>
+        </div>
         {error && (
           <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm w-full">{error}</div>
         )}
@@ -464,7 +500,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               <div className="absolute inset-0">
                 {/* Region Tag */}
                 <div className="absolute top-[270px] right-[70px] text-[#7f222c] text-5xl font-black">
-                  {getRegion(promo.DESTINO)}
+                  {selectedRegion}
                 </div>
 
                 {/* Destination */}
