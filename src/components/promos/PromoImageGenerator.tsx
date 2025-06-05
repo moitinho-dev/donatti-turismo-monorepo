@@ -356,39 +356,82 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       return promo.DATA_FORMATADA
     }
   }
-
+  
+useEffect(() => {
+  const preloadFonts = () => {
+    const fontLinks = [
+      "/fonts/NeoSansW1G-Regular.otf",
+      "/fonts/NeoSansW1G-Medium.otf",
+      "/fonts/NeoSansW1G-Bold.otf",
+    ];
+    fontLinks.forEach((font) => {
+      const link = document.createElement("link");
+      link.href = font;
+      link.rel = "preload";
+      link.as = "font";
+      link.type = "font/otf";
+      link.crossOrigin = "anonymous";
+      document.head.appendChild(link);
+    });
+  };
+  preloadFonts();
+}, []);
   // Generate and download image
   const generateImage = async () => {
-    if (!templateRef.current) return
+  if (!templateRef.current) return;
 
-    setIsGenerating(true)
+  setIsGenerating(true);
 
-    try {
-      const template = templateRef.current
-      const originalTransform = template.style.transform
-      template.style.transform = ""
+  try {
+    const template = templateRef.current;
+    const originalTransform = template.style.transform;
+    template.style.transform = "";
 
-      const dataUrl = await toPng(template, {
-        quality: 0.95,
-        width: 1080,
-        height: 1920,
-        fontEmbedCSS:
-          '@font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Regular.woff2") format("woff2"); font-weight: normal; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2"); font-weight: bold; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2"); font-weight: 900; font-style: normal; }',
-      })
+    const dataUrl = await toPng(template, {
+      quality: 0.95,
+      width: 1080,
+      height: 1920,
+      fontEmbedCSS: `
+        @font-face {
+          font-family: "NeoSansW1G";
+          src: url("/fonts/NeoSansW1G-Regular.otf") format("opentype");
+          font-weight: normal;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: "NeoSansW1G";
+          src: url("/fonts/NeoSansW1G-Medium.otf") format("opentype");
+          font-weight: 500;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: "NeoSansW1G";
+          src: url("/fonts/NeoSansW1G-Bold.otf") format("opentype");
+          font-weight: bold;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: "NeoSansW1G";
+          src: url("/fonts/NeoSansW1G-Bold.otf") format("opentype");
+          font-weight: 900;
+          font-style: normal;
+        }
+      `,
+    });
 
-      template.style.transform = originalTransform
+    template.style.transform = originalTransform;
 
-      const link = document.createElement("a")
-      link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
-      link.href = dataUrl
-      link.click()
-    } catch (error) {
-      console.error("Error generating image:", error)
-      setError("Erro ao gerar imagem. Tente novamente.")
-    } finally {
-      setIsGenerating(false)
-    }
+    const link = document.createElement("a");
+    link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`;
+    link.href = dataUrl;
+    link.click();
+  } catch (error) {
+    console.error("Error generating image:", error);
+    setError("Erro ao gerar imagem. Tente novamente.");
+  } finally {
+    setIsGenerating(false);
   }
+};
 
   // Handle image selection from gallery
   const handleSelectImage = (imageUrl: string) => {
@@ -499,7 +542,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               {/* Text Overlay */}
               <div className="absolute inset-0">
                 {/* Region Tag */}
-                <div className="absolute top-[270px] right-[70px] text-[9b0a0a] text-5xl font-black">
+                <div className="absolute top-[270px] right-[70px] text-[#9b0a0a]  text-5xl font-black">
                   {selectedRegion}
                 </div>
 
