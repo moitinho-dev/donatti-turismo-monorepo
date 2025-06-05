@@ -499,7 +499,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               {/* Text Overlay */}
               <div className="absolute inset-0">
                 {/* Region Tag */}
-                <div className="absolute top-[270px] right-[70px] text-[#ffff] text-5xl font-black">
+                <div className="absolute top-[270px] right-[70px] text-white text-5xl font-black">
                   {selectedRegion}
                 </div>
 
@@ -515,14 +515,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Price */}
-                <div className="absolute top-[620px] left-[510px] text-[#162544] text-3xl font-medium">
+                <div className="absolute top-[620px] left-[510px] text-[#9b0a0a] text-3xl font-medium">
                   {parcelas}x de
                 </div>
-                <div className="absolute top-[660px] left-[510px] text-[#162544] text-6xl font-black">R$</div>
-                <div className="absolute top-[605px] left-[600px] text-[#162544] text-[126px] font-black">
+                <div className="absolute top-[660px] left-[510px] text-[#9b0a0a] text-6xl font-black">R$</div>
+                <div className="absolute top-[605px] left-[600px] text-[#9b0a0a] text-[126px] font-black">
                   {baseValue.toFixed(2).replace(".", ",")}
                 </div>
-                <div className="absolute top-[760px] left-[518px] text-[#162544]text-[28px] font-medium">
+                <div className="absolute top-[760px] left-[518px] text-[#9b0a0a]text-[28px] font-medium">
                   no cartão e 10x no boleto sem juros.
                 </div>
 
@@ -541,8 +541,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Departure */}
-                <div className="absolute top-[1070px] left-[410px] text-[#ffff] text-xl font-medium">saindo de</div>
-                <div className="absolute top-[1100px] left-[410px] text-[#ffff] text-xl font-bold">
+                <div className="absolute top-[1070px] left-[410px] text-[#9b0a0a] text-xl font-medium">saindo de</div>
+                <div className="absolute top-[1100px] left-[410px] text-[#9b0a0a] text-xl font-bold">
                   {getDepartureAirport()}
                 </div>
 
@@ -552,10 +552,10 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 </div>
 
                 {/* Contact */}
-                <div className="absolute top-[1250px] left-[580px] text-[#162544] text-3xl font-medium">
+                <div className="absolute top-[1250px] left-[580px] text-[#9b0a0a] text-3xl font-medium">
                   Contato e Whatsapp
                 </div>
-                <div className="absolute top-[1285px] left-[580px] text-[#162544] text-3xl font-medium">
+                <div className="absolute top-[1285px] left-[580px] text-[#9b0a0a] text-3xl font-medium">
                   (67) 9 9637-2769
                 </div>
               </div>
