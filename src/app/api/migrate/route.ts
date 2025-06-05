@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 export async function POST(req: Request) {
   try {
     // Check authentication
@@ -30,4 +33,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Erro ao migrar dados" }, { status: 500 })
   }
 }
-

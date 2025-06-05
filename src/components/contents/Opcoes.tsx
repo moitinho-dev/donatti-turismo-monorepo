@@ -68,4 +68,3 @@ export const opcoesDestino: Opcoes[] = [
   { value: "Teresina (THE)", label: "Teresina (THE)" },
   { value: "Vitória (VIX)", label: "Vitória (VIX)" },
 ]
-

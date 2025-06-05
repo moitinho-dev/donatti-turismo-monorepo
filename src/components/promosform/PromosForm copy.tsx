@@ -404,4 +404,3 @@ const PromosForm = ({ updateData }: { updateData: () => void }) => {
 }
 
 export default PromosForm
-

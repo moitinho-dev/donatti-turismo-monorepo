@@ -1,27 +1,46 @@
-import type { Metadata } from "next"
+"use client"
+import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../api/auth/[...nextauth]/options"
-import AgentDashboard from "@/components/agent/AgentDashboard"
+import AgentDashboardContent from "@/components/agent/AgentDashboardContent"
+import { DashboardLayout } from "@/components/layouts/DashboardLayout"
+import { Loader2 } from "lucide-react"
 
-export const metadata: Metadata = {
-  title: "Painel do Agente | Donatti Turismo",
-  description: "Gerencie as promoções de viagens e pacotes turísticos da Donatti Turismo.",
-}
+export default function AgentPage() {
+  const { data: session, status } = useSession()
+  const [isAddingNew, setIsAddingNew] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-export default async function AgentPage() {
-  // Check if user is authenticated
-  const session = await getServerSession(authOptions)
+  useEffect(() => {
+    // If not authenticated, redirect to login
+    if (status === "unauthenticated") {
+      redirect("/login")
+    }
 
-  // If not authenticated, redirect to login
+    // Set loading to false when we have the session data
+    if (status !== "loading") {
+      setIsLoading(false)
+    }
+  }, [status])
+
+  // Show loading state while checking authentication
+  if (isLoading || status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+        <span className="ml-2 text-gray-600">Carregando...</span>
+      </div>
+    )
+  }
+
+  // Only render content when authenticated
   if (!session) {
-    redirect("/login")
+    return null
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <AgentDashboard user={session.user} />
-    </main>
+    <DashboardLayout user={session.user}>
+      <AgentDashboardContent user={session.user} isAddingNew={isAddingNew} setIsAddingNew={setIsAddingNew} />
+    </DashboardLayout>
   )
 }
-

@@ -1,7 +1,6 @@
 "use client"
 import { useState } from "react"
 import type React from "react"
-
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -125,11 +124,10 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center text-xs text-gray-500">
           <p>Para fins de demonstração, use:</p>
-          <p className="mt-1">Email: admin@lemonde.com</p>
+          <p className="mt-1">Email: admin@donatti.com</p>
           <p>Senha: lemonde123</p>
         </div>
       </div>
     </div>
   )
 }
-

@@ -121,4 +121,3 @@ export function AgentHeader({ user, onSignOut }: AgentHeaderProps) {
     </header>
   )
 }
-

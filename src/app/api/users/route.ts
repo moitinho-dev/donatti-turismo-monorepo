@@ -6,6 +6,9 @@ import { z } from "zod"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 import type { User } from "@/types/user"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 // Schema for user validation
 const userSchema = z.object({
   id: z.string().optional(),
@@ -108,7 +111,7 @@ export async function POST(req: NextRequest) {
       role: userData.role,
       createdAt: isNewUser ? now : userData.createdAt || now,
       updatedAt: now,
-      active: isNewUser ? true : userData.active ?? true,
+      active: isNewUser ? true : (userData.active ?? true),
     }
 
     // Save to Redis
@@ -186,4 +189,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao excluir usuário" }, { status: 500 })
   }
 }
-

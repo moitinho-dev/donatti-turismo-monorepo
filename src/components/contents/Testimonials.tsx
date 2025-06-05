@@ -39,4 +39,3 @@ const testimonials: Testimonial[] = [
 ]
 
 export default testimonials
-

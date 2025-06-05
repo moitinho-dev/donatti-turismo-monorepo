@@ -1,7 +1,7 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type React from "react"
-import { signIn, useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Logo from "../../../public/assets/logo-preto.png"
@@ -12,19 +12,6 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { data: session, status } = useSession()
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (status === "authenticated" && session) {
-      // Redirect based on user role
-      if (session.user.role === "admin") {
-        router.push("/admin")
-      } else {
-        router.push("/agent")
-      }
-    }
-  }, [session, status, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -158,4 +145,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

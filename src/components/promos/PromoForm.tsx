@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import type React from "react"
 
 import { usePromo } from "@/hooks/usePromo"
@@ -20,8 +20,9 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     MES_DE: "",
     MES_ATE: "",
     ANO: "",
-    VALOR: "",
-    PARCELAS: "10",
+    VALOR: "", // Will store the per-person installment value
+    VALORTOTAL: "", // Will store the total package value
+    PARCELAS: "10", // Default number of parcels
     COM_CAFE: false,
     SEM_CAFE: false,
     MEIA_PENSAO: false,
@@ -34,14 +35,16 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     DATA_FORMATADA: "",
   })
 
-  const [formattedAmount, setFormattedAmount] = useState("")
+  const [formattedAmount, setFormattedAmount] = useState("") // Stores the formatted total package value (for display)
   const [regimeAlimentacao, setRegimeAlimentacao] = useState("")
   const [formError, setFormError] = useState<string | null>(null)
   const [formSuccess, setFormSuccess] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const [deDate, setDeDate] = useState("")
   const [ateDate, setAteDate] = useState("")
+  const amountInputRef = useRef<HTMLInputElement>(null) // Ref to manage cursor position
 
-  const { savePromo, isLoading } = usePromo()
+  const { savePromo, isLoading: isSaving } = usePromo()
 
   // Initialize form with promo data if editing
   useEffect(() => {
@@ -50,12 +53,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         id: promo.id || "",
         DESTINO: promo.DESTINO || "",
         HOTEL: promo.HOTEL || "",
-        DE: "", // Will be set from DATA_FORMATADA
-        ATE: "", // Will be set from DATA_FORMATADA
-        MES_DE: "", // Will be set from DATA_FORMATADA
-        MES_ATE: "", // Will be set from DATA_FORMATADA
-        ANO: "", // Will be set from DATA_FORMATADA
+        DE: "",
+        ATE: "",
+        MES_DE: "",
+        MES_ATE: "",
+        ANO: "",
         VALOR: promo.VALOR || "",
+        VALORTOTAL: promo.VALORTOTAL || "", // Load the total value
         PARCELAS: promo.PARCELAS || "10",
         COM_CAFE: promo.COM_CAFE || false,
         SEM_CAFE: promo.SEM_CAFE || false,
@@ -69,16 +73,29 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         DATA_FORMATADA: promo.DATA_FORMATADA || "",
       }))
 
-      // Set formatted amount
-      if (promo.VALOR) {
-        const cleanedValue = promo.VALOR.replace(/[^\d.,]/g, "")
-        const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+      // Set formatted amount (total value for display)
+      if (promo.VALORTOTAL) {
+        const totalValue = Number.parseFloat(promo.VALORTOTAL.replace(",", "."))
+        if (!isNaN(totalValue)) {
+          setFormattedAmount(
+            totalValue.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
+          )
+        }
+      } else if (promo.VALOR && promo.PARCELAS) {
+        const perPersonInstallment = Number.parseFloat(promo.VALOR.replace(",", "."))
         const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
-        const valueAfterCalculation = numericValue * parcelas * 2
+        const totalValue = perPersonInstallment * parcelas * 2 // Total value for two people
         setFormattedAmount(
-          valueAfterCalculation.toLocaleString("pt-BR", {
+          totalValue.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
           }),
         )
       }
@@ -92,26 +109,48 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }
   }, [promo])
 
+  // Fix the handleChange function to properly recalculate values when parcelas changes
   const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }))
 
-    // If changing parcelas, update the formatted amount
-    if (field === "PARCELAS" && typeof value === "string") {
-      const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
-      const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+    // If changing the number of parcels, recalculate the per-person installment value
+    if (field === "PARCELAS" && typeof value === "string" && formattedAmount) {
+      const totalValue = formattedAmount
+        .replace(/[^\d.,]/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".")
+      const numericValue = Number.parseFloat(totalValue)
+
       if (!isNaN(numericValue)) {
-        const parcelas = Number.parseInt(value, 10)
-        const valueAfterCalculation = numericValue * parcelas * 2
-        setFormattedAmount(
-          valueAfterCalculation.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }),
-        )
+        const parcelasNum = Number.parseInt(value, 10)
+        const perPersonValue = numericValue / 2 // Value per person (total / 2)
+        const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
+
+        setFormData((prev) => ({
+          ...prev,
+          VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
+          PARCELAS: parcelasNum.toString(),
+        }))
       }
+    }
+  }
+
+  const updatePerPersonInstallmentValue = (totalValue: string, parcelas: string) => {
+    const cleanedValue = totalValue.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+    if (!isNaN(numericValue)) {
+      const parcelasNum = Number.parseInt(parcelas, 10)
+      const perPersonValue = numericValue / 2 // Value per person (total / 2)
+      const perPersonInstallment = perPersonValue / parcelasNum // Installment value per person
+      setFormData((prev) => ({
+        ...prev,
+        VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
+        VALORTOTAL: numericValue.toFixed(2).replace(".", ","), // Store the total value
+        PARCELAS: parcelasNum.toString(),
+      }))
     }
   }
 
@@ -190,15 +229,41 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return prev
   }
 
+  // Fix the handleAmountChange function to properly update all related values
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value
-    const formattedValue = formatCurrencyValue(inputValue)
-    const parsedValue = parseCurrencyValue(inputValue)
+    const cleanedValue = inputValue.replace(/[^\d]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue) / 100
 
-    setFormattedAmount(formattedValue)
+    if (isNaN(numericValue)) {
+      setFormattedAmount("R$ 0,00")
+      setFormData((prev) => ({
+        ...prev,
+        VALOR: "0,00",
+        VALORTOTAL: "0,00",
+      }))
+      return
+    }
+
+    // Format for display
+    const formattedCurrency = numericValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+
+    setFormattedAmount(formattedCurrency)
+
+    // Calculate per-person installment value
+    const parcelas = Number.parseInt(formData.PARCELAS || "10", 10)
+    const perPersonValue = numericValue / 2 // Value per person (total / 2)
+    const perPersonInstallment = perPersonValue / parcelas // Installment value per person
+
     setFormData((prev) => ({
       ...prev,
-      VALOR: parsedValue,
+      VALOR: perPersonInstallment.toFixed(2).replace(".", ","),
+      VALORTOTAL: numericValue.toFixed(2).replace(".", ","),
     }))
   }
 
@@ -215,15 +280,19 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     return valueAfterCalculation
   }
 
+  // Replace it with a simpler function that just formats the currency
   const formatCurrencyValue = (value: string) => {
-    const formattedValue = value.replace(/[^\d]/g, "")
-    const numberValue = Number.parseFloat(formattedValue) / 100
+    const cleanedValue = value
+      .replace(/[^\d.,]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+    const numericValue = Number.parseFloat(cleanedValue)
 
-    if (isNaN(numberValue)) {
+    if (isNaN(numericValue)) {
       return "R$ 0,00"
     }
 
-    return numberValue.toLocaleString("pt-BR", {
+    return numericValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
@@ -251,20 +320,21 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }
 
     try {
+      setIsLoading(true)
       await savePromo(formData)
       setFormSuccess(formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!")
 
-      // Reset form if it's a new promo
       if (!formData.id) {
         resetForm()
       }
 
-      // Notify parent component
       setTimeout(() => {
         onSuccess()
       }, 1500)
     } catch (error) {
       setFormError("Erro ao salvar promoção. Por favor, tente novamente.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -279,6 +349,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       MES_ATE: "",
       ANO: "",
       VALOR: "",
+      VALORTOTAL: "",
       PARCELAS: "10",
       COM_CAFE: false,
       SEM_CAFE: false,
@@ -297,7 +368,43 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     setAteDate("")
   }
 
-  // Calculate installment value for display
+  // Calculate total value
+  const getTotalValue = () => {
+    const cleanedValue = formattedAmount.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+
+    if (isNaN(numericValue)) {
+      return "R$ 0,00"
+    }
+
+    return numericValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
+
+  // Calculate per person value
+  const getPerPersonValue = () => {
+    const cleanedValue = formattedAmount.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+
+    if (isNaN(numericValue)) {
+      return "R$ 0,00"
+    }
+
+    const perPersonValue = numericValue / 2
+
+    return perPersonValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
+
+  // Calculate per person installment value
   const getInstallmentValue = () => {
     const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
     const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
@@ -306,11 +413,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       return "R$ 0,00"
     }
 
-    const parcelas = Number.parseInt(formData.PARCELAS, 10)
-    const totalValue = numericValue * parcelas * 2
-    const installmentValue = totalValue / parcelas
-
-    return installmentValue.toLocaleString("pt-BR", {
+    return numericValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
@@ -405,25 +508,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
-                <DollarSign className="h-4 w-4" />
-                Valor <span className="text-red-500">*</span>
-              </label>
-              <input
-                placeholder="R$ 0,00"
-                name="amount"
-                inputMode="numeric"
-                type="text"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
-                id="VALOR"
-                value={formattedAmount}
-                onChange={handleAmountChange}
-                required
-              />
-              <p className="text-xs text-gray-500 font-mon">Valor total que será dividido por pessoa e em parcelas</p>
-            </div>
-
+            {/* Parcelas first */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
                 <CreditCard className="h-4 w-4" />
@@ -441,9 +526,28 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                 <option value="15">15x</option>
                 <option value="18">18x</option>
               </select>
-              <p className="text-xs text-gray-500 font-mon">
-                {formData.PARCELAS}x de {getInstallmentValue()}
-              </p>
+              <p className="text-xs text-gray-500 font-mon">Número de parcelas para dividir o valor</p>
+            </div>
+
+            {/* Valor (total package value) */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-primary-blue font-mon font-medium">
+                <DollarSign className="h-4 w-4" />
+                Valor Total <span className="text-red-500">*</span>
+              </label>
+              <input
+                ref={amountInputRef}
+                placeholder="R$ 0,00"
+                name="amount"
+                inputMode="numeric"
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                id="VALOR"
+                value={formattedAmount}
+                onChange={handleAmountChange}
+                required
+              />
+              <p className="text-xs text-gray-500 font-mon">Valor total do pacote para duas pessoas</p>
             </div>
 
             <div className="space-y-2">
@@ -461,6 +565,27 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                 placeholder="Ex: 5"
                 required
               />
+            </div>
+          </div>
+
+          {/* Resumo dos valores */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h3 className="text-md font-semibold text-primary-blue mb-3 font-mon">Resumo dos Valores</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-3 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-500 font-mon">Valor Total:</p>
+                <p className="text-lg font-bold text-primary-blue font-mon">{getTotalValue()}</p>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-500 font-mon">Valor por Pessoa:</p>
+                <p className="text-lg font-bold text-second-blue font-mon">{getPerPersonValue()}</p>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-500 font-mon">Valor da Parcela (por pessoa):</p>
+                <p className="text-lg font-bold text-primary-orange font-mon">
+                  {formData.PARCELAS}x de {getInstallmentValue()}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -553,4 +678,3 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     </div>
   )
 }
-

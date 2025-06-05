@@ -5,6 +5,9 @@ import { nanoid } from "nanoid"
 import { z } from "zod"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 // Schema for promo validation
 const promoSchema = z.object({
   id: z.string().optional(),
@@ -12,6 +15,8 @@ const promoSchema = z.object({
   HOTEL: z.string().min(1, "Hotel é obrigatório"),
   DATA_FORMATADA: z.string().min(1, "Data é obrigatória"),
   VALOR: z.string().min(1, "Valor é obrigatório"),
+  VALORTOTAL: z.string().min(1, "Valor total é obrigatório"),
+  PARCELAS: z.string().min(1, "Parcelas são obrigatórias"),
   COM_CAFE: z.boolean().optional(),
   SEM_CAFE: z.boolean().optional(),
   MEIA_PENSAO: z.boolean().optional(),
@@ -196,4 +201,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao excluir promoção" }, { status: 500 })
   }
 }
-

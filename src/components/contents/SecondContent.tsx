@@ -14,4 +14,3 @@ const Second: SecondContent[] = [
 ]
 
 export default Second // Exportando o array de objetos para uso em outros lugares do código
-

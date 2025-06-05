@@ -94,4 +94,3 @@ const Home: React.FC<HomeProps> = ({ data }) => {
 }
 
 export default Home
-

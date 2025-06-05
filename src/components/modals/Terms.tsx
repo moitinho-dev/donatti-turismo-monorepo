@@ -101,4 +101,3 @@ export function Terms({ isOpen, onClose }: TermsProps): ReactElement | null {
     </AnimatePresence>
   )
 }
-

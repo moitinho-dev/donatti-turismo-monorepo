@@ -4,6 +4,9 @@ import { authOptions } from "../../auth/[...nextauth]/options"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 import type { User, UserStats } from "@/types/user"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 export async function GET(req: NextRequest) {
   try {
     // Check authentication
@@ -17,6 +20,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
     }
 
+    // Add this helper function at the beginning of the GET function
+    const safeParseDate = (dateString?: string): Date | null => {
+      if (!dateString) return null
+
+      try {
+        const date = new Date(dateString)
+        if (isNaN(date.getTime())) {
+          console.error("Invalid date encountered:", dateString)
+          return null
+        }
+        return date
+      } catch (error) {
+        console.error("Error parsing date:", error)
+        return null
+      }
+    }
+
     // Get users and promos from Redis
     const users = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
     const promos = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
@@ -26,19 +46,49 @@ export async function GET(req: NextRequest) {
     const userStats: UserStats[] = users
       .filter((user) => user.active) // Only include active users
       .map((user) => {
-        // Get promos created by this user
-        const userPromos = promos.filter((promo) => promo.createdBy === user.id)
-
+        // Update the sorting of sessions and promos
         // Get last login
         const userSessions = sessions.filter((session) => session.userId === user.id)
-        const lastLoginSession = userSessions.sort(
-          (a, b) => new Date(b.loginTime).getTime() - new Date(a.loginTime).getTime(),
-        )[0]
+        let lastLoginDate = user.lastLogin
 
-        // Get last promo date
-        const lastPromo = userPromos.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )[0]
+        if (userSessions.length > 0) {
+          // Sort safely
+          const sortedSessions = userSessions.sort((a, b) => {
+            const dateA = safeParseDate(a.loginTime)
+            const dateB = safeParseDate(b.loginTime)
+
+            if (!dateA && !dateB) return 0
+            if (!dateA) return 1
+            if (!dateB) return -1
+
+            return dateB.getTime() - dateA.getTime()
+          })
+
+          if (sortedSessions[0] && sortedSessions[0].loginTime) {
+            lastLoginDate = sortedSessions[0].loginTime
+          }
+        }
+
+        // Get last promo date - similar safe sorting
+        const userPromos = promos.filter((promo) => promo.createdBy === user.id)
+        let lastPromoDate = undefined
+
+        if (userPromos.length > 0) {
+          const sortedPromos = userPromos.sort((a, b) => {
+            const dateA = safeParseDate(a.createdAt)
+            const dateB = safeParseDate(b.createdAt)
+
+            if (!dateA && !dateB) return 0
+            if (!dateA) return 1
+            if (!dateB) return -1
+
+            return dateB.getTime() - dateA.getTime()
+          })
+
+          if (sortedPromos[0] && sortedPromos[0].createdAt) {
+            lastPromoDate = sortedPromos[0].createdAt
+          }
+        }
 
         return {
           id: user.id,
@@ -46,8 +96,8 @@ export async function GET(req: NextRequest) {
           email: user.email,
           role: user.role,
           totalPromos: userPromos.length,
-          lastPromoDate: lastPromo?.createdAt,
-          lastLoginDate: lastLoginSession?.loginTime || user.lastLogin,
+          lastPromoDate: lastPromoDate,
+          lastLoginDate: lastLoginDate,
         }
       })
 
@@ -57,4 +107,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar estatísticas de usuários" }, { status: 500 })
   }
 }
-

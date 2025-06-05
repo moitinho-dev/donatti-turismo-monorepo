@@ -5,6 +5,9 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 
+// Add this line to mark the route as dynamic
+export const dynamic = "force-dynamic"
+
 export async function GET(req: NextRequest) {
   try {
     // Check authentication
@@ -123,4 +126,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar CSV" }, { status: 500 })
   }
 }
-

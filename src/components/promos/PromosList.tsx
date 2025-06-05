@@ -5,17 +5,17 @@ import {
   Calendar,
   MapPin,
   Hotel,
-  DollarSign,
   Search,
   Edit,
   Trash2,
   ChevronDown,
   ChevronUp,
   X,
-  Image,
+  ImageIcon,
+  Users,
+  Utensils,
+  Plane,
 } from "lucide-react"
-import { format, parseISO } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { PromoImageGeneratorModal } from "./PromoImageGeneratorModal"
 
 interface PromoData {
@@ -24,6 +24,7 @@ interface PromoData {
   HOTEL: string
   DATA_FORMATADA: string
   VALOR: string
+  VALORTOTAL: string
   COM_CAFE?: boolean
   SEM_CAFE?: boolean
   MEIA_PENSAO?: boolean
@@ -35,12 +36,114 @@ interface PromoData {
   AEREO?: boolean
   createdAt: string
   updatedAt: string
+  PARCELAS?: string
 }
 
 interface PromosListProps {
   promos: PromoData[]
   onEdit: (promo: PromoData) => void
   onDelete: () => void
+}
+
+// Fix the date formatting to use local timezone
+const formatRelativeDate = (dateString: string) => {
+  try {
+    // Parse the date string and convert to local date
+    const date = new Date(dateString)
+
+    // Get today and yesterday dates in local timezone
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    // Format all dates to remove time component for comparison
+    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const localYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+    // Compare the dates
+    if (localDate.getTime() === localToday.getTime()) {
+      return "Hoje"
+    } else if (localDate.getTime() === localYesterday.getTime()) {
+      return "Ontem"
+    } else {
+      return date.toLocaleDateString("pt-BR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    }
+  } catch (error) {
+    console.error("Error formatting relative date:", error)
+    return "Data desconhecida"
+  }
+}
+
+// Also update the formatDate function for consistent timezone handling
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return "Data inválida"
+    }
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  } catch (error) {
+    console.error("Error formatting date:", error)
+    return "Data inválida"
+  }
+}
+
+// Update the groupPromosByDate function to use local dates
+const groupPromosByDate = (promos: PromoData[]) => {
+  const groups: { [key: string]: PromoData[] } = {}
+
+  promos.forEach((promo) => {
+    if (!promo.createdAt) {
+      const unknownGroup = "unknown"
+      if (!groups[unknownGroup]) groups[unknownGroup] = []
+      groups[unknownGroup].push(promo)
+      return
+    }
+
+    // Convert date to local date string for grouping
+    const date = new Date(promo.createdAt)
+    // Format as YYYY-MM-DD in local timezone
+    const localDateStr = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split("T")[0]
+
+    if (!groups[localDateStr]) {
+      groups[localDateStr] = []
+    }
+    groups[localDateStr].push(promo)
+  })
+
+  // Sort dates in descending order (newest first)
+  return Object.entries(groups)
+    .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+    .map(([date, promos]) => ({ date, promos }))
+}
+
+// Modificar a função para calcular valores por pessoa
+const calculateValues = (promo: PromoData) => {
+  const baseValue = Number.parseFloat(promo.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
+  if (isNaN(baseValue)) return { total: "0,00", perPerson: "0,00", installment: "0,00" }
+
+  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
+  const totalValue = baseValue * parcelas * 2
+  const perPersonValue = totalValue / 2
+  const installmentValue = perPersonValue / parcelas
+
+  return {
+    total: totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    perPerson: perPersonValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    installment: installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  }
 }
 
 export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
@@ -52,30 +155,6 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   const [selectedPromoForImage, setSelectedPromoForImage] = useState<PromoData | null>(null)
 
   const { deletePromo, isLoading } = usePromo()
-
-  const parseCurrencyValue = (value: string) => {
-    if (!value) {
-      return "0,00"
-    }
-
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const valueAfterCalculation = numericValue * 15 * 2
-
-    return valueAfterCalculation.toFixed(2).replace(".", ",")
-  }
-
-  const getInstallmentValue = (value: string) => {
-    if (!value) {
-      return "0,00"
-    }
-
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const installmentValue = (numericValue * 2 * 15) / 15
-
-    return installmentValue.toFixed(2).replace(".", ",")
-  }
 
   const getRegimeAlimentacao = (promo: PromoData): string => {
     if (promo.ALL_INCLUSIVE) return "All Inclusive"
@@ -117,8 +196,8 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
       } else if (sortField === "DESTINO") {
         comparison = a.DESTINO.localeCompare(b.DESTINO)
       } else if (sortField === "VALOR") {
-        const valueA = Number.parseFloat(a.VALOR.replace(",", "."))
-        const valueB = Number.parseFloat(b.VALOR.replace(",", "."))
+        const valueA = Number.parseFloat(a.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
+        const valueB = Number.parseFloat(b.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
         comparison = valueA - valueB
       } else if (sortField === "DATA_FORMATADA") {
         comparison = a.DATA_FORMATADA.localeCompare(b.DATA_FORMATADA)
@@ -206,175 +285,149 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
               : "Nenhuma promoção encontrada com os filtros atuais."}
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("createdAt")}
-                >
-                  <div className="flex items-center">
-                    Data de Envio
-                    {renderSortIcon("createdAt")}
+          <div className="divide-y divide-gray-200">
+            {groupPromosByDate(filteredPromos).map(({ date, promos }) => (
+              <div key={date} className="py-2">
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div
+                      className={`w-full border-t ${
+                        date === new Date().toISOString().split("T")[0]
+                          ? "border-green-300"
+                          : date === new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split("T")[0]
+                            ? "border-orange-300"
+                            : "border-gray-300"
+                      }`}
+                    ></div>
                   </div>
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("DATA_FORMATADA")}
-                >
-                  <div className="flex items-center">
-                    Data da Viagem
-                    {renderSortIcon("DATA_FORMATADA")}
+                  <div className="relative flex justify-center">
+                    <span
+                      className={`px-3 text-sm ${
+                        date === new Date().toISOString().split("T")[0]
+                          ? "bg-green-50 text-green-700 font-medium"
+                          : date === new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split("T")[0]
+                            ? "bg-orange-50 text-orange-700 font-medium"
+                            : "bg-white text-gray-500"
+                      }`}
+                    >
+                      {formatRelativeDate(date)}
+                    </span>
                   </div>
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("DESTINO")}
-                >
-                  <div className="flex items-center">
-                    Destino
-                    {renderSortIcon("DESTINO")}
-                  </div>
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Hotel
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("VALOR")}
-                >
-                  <div className="flex items-center">
-                    Valor
-                    {renderSortIcon("VALOR")}
-                  </div>
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Detalhes
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPromos.map((promo) => (
-                <tr key={promo.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 font-mon">
-                        {format(parseISO(promo.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 font-mon">{promo.DATA_FORMATADA}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 font-mon">{promo.DESTINO}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Hotel className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 font-mon">{promo.HOTEL}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm font-medium text-primary-blue font-mon">
-                          R$ {parseCurrencyValue(promo.VALOR)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 ml-6 mt-1">
-                        ou 15x de R$ {getInstallmentValue(promo.VALOR)}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="space-y-1">
-                      <div className="text-xs">
-                        <span className="font-medium">Regime:</span> {getRegimeAlimentacao(promo)}
-                      </div>
-                      {promo.NUMERO_DE_NOITES && (
-                        <div className="text-xs">
-                          <span className="font-medium">Noites:</span> {promo.NUMERO_DE_NOITES}
+                </div>
+
+                <div className="space-y-2 mt-2">
+                  {promos.map((promo) => {
+                    const values = calculateValues(promo)
+                    return (
+                      <div
+                        key={promo.id}
+                        className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 text-primary-blue mr-2" />
+                              <span className="font-medium text-primary-blue">{promo.DESTINO}</span>
+                              <span className="mx-2 text-gray-400">•</span>
+                              <Hotel className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-gray-700">{promo.HOTEL}</span>
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {promo.DATA_FORMATADA}
+                              </span>
+
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <Users className="h-3 w-3 mr-1" />
+                                {promo.NUMERO_DE_NOITES} noites
+                              </span>
+
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <Utensils className="h-3 w-3 mr-1" />
+                                {getRegimeAlimentacao(promo)}
+                              </span>
+
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                <Plane className="h-3 w-3 mr-1" />
+                                {getAeroportoSaida(promo)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end">
+                            <div className="text-right">
+                              <div className="text-sm text-gray-500">Valor total:</div>
+                              <div className="text-lg font-bold text-primary-blue">R$ {values.total}</div>
+                            </div>
+
+                            <div className="flex gap-4 mt-1 text-sm">
+                              <div className="text-right">
+                                <div className="text-gray-500">Por pessoa:</div>
+                                <div className="font-medium">R$ {values.perPerson}</div>
+                              </div>
+
+                              <div className="text-right">
+                                <div className="text-gray-500">Em {promo.PARCELAS || 10}x:</div>
+                                <div className="font-medium">R$ {values.installment}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            {deleteConfirmId === promo.id ? (
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={handleConfirmDelete}
+                                  disabled={isLoading}
+                                  className="text-white bg-red-600 hover:bg-red-700 p-1.5 rounded"
+                                >
+                                  {isLoading ? (
+                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={handleCancelDelete}
+                                  className="text-gray-600 hover:text-gray-800 p-1.5 rounded bg-gray-100 hover:bg-gray-200"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleGenerateImage(promo)}
+                                  className="text-green-600 hover:text-green-800 p-1.5 rounded hover:bg-green-50"
+                                  title="Gerar imagem promocional"
+                                >
+                                  <ImageIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => onEdit(promo)}
+                                  className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(promo.id)}
+                                  className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <div className="text-xs">
-                        <span className="font-medium">Saída:</span> {getAeroportoSaida(promo)}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {deleteConfirmId === promo.id ? (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={handleConfirmDelete}
-                          disabled={isLoading}
-                          className="text-white bg-red-600 hover:bg-red-700 p-1.5 rounded"
-                        >
-                          {isLoading ? (
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={handleCancelDelete}
-                          className="text-gray-600 hover:text-gray-800 p-1.5 rounded bg-gray-100 hover:bg-gray-200"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleGenerateImage(promo)}
-                          className="text-green-600 hover:text-green-800 p-1.5 rounded hover:bg-green-50"
-                          title="Gerar imagem promocional"
-                        >
-                          <Image className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => onEdit(promo)}
-                          className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(promo.id)}
-                          className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -389,4 +442,3 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
     </div>
   )
 }
-

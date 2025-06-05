@@ -22,4 +22,3 @@ export function CallOutButton({ text }: Props) {
     </motion.button>
   )
 }
-

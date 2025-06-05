@@ -1,33 +1,50 @@
-import type { Metadata } from "next"
+"use client"
+import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../api/auth/[...nextauth]/options"
-import AdminDashboard from "@/components/admin/AdminDashboard"
-import { User } from "@/types/user"
+import AdminDashboardContent from "@/components/admin/AdminDashboardContent"
+import { DashboardLayout } from "@/components/layouts/DashboardLayout"
+import { Loader2 } from "lucide-react"
 
-export const metadata: Metadata = {
-  title: "Painel Administrativo | Donatti Turismo",
-  description: "Gerencie usuários, promoções e estatísticas da Donatti Turismo.",
-}
+export default function AdminPage() {
+  const { data: session, status } = useSession()
+  const [isLoading, setIsLoading] = useState(true)
 
-export default async function AdminPage() {
-  // Check if user is authenticated and is admin
-  const session = await getServerSession(authOptions)
+  useEffect(() => {
+    // If not authenticated, redirect to login
+    if (status === "unauthenticated") {
+      redirect("/login")
+    }
 
-  // If not authenticated, redirect to login
-  if (!session) {
-    redirect("/login")
+    // If not admin, redirect to appropriate area
+    if (session?.user?.role !== "admin" && status === "authenticated") {
+      redirect("/agent")
+    }
+
+    // Set loading to false when we have the session data
+    if (status !== "loading") {
+      setIsLoading(false)
+    }
+  }, [status, session])
+
+  // Show loading state while checking authentication
+  if (isLoading || status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+        <span className="ml-2 text-gray-600">Carregando...</span>
+      </div>
+    )
   }
 
-  // If not admin, redirect to appropriate area
-  if (session.user.role !== "admin") {
-    redirect("/agent")
+  // Only render content when authenticated and is admin
+  if (!session || session.user.role !== "admin") {
+    return null
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <AdminDashboard user={session.user} />
-    </main>
+    <DashboardLayout user={session.user}>
+      <AdminDashboardContent user={session.user} />
+    </DashboardLayout>
   )
 }
-

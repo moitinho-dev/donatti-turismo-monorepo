@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { PromoProvider } from "@/providers/PromoProvider"
-import { AuthProvider } from "@/providers/AuthProvider"
+import AdminLayoutClient from "./AdminLayoutClient"
 
 export const metadata: Metadata = {
   title: "Área Administrativa | Donatti Turismo",
@@ -13,10 +12,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AuthProvider>
-      <PromoProvider>{children}</PromoProvider>
-    </AuthProvider>
-  )
+  return <AdminLayoutClient>{children}</AdminLayoutClient>
 }
-

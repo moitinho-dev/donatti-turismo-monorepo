@@ -107,4 +107,3 @@ export function PromosHeader({ user, onSignOut }: PromosHeaderProps) {
     </header>
   )
 }
-

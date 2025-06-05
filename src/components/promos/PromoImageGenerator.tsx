@@ -1,7 +1,10 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
+import type React from "react"
+
 import { toPng } from "html-to-image"
-import { Loader2, Download, ImageIcon, RefreshCw } from "lucide-react"
+import { Loader2, Download, ImageIcon } from "lucide-react"
+import { ImageGallery } from "./ImageGallery"
 
 interface PromoImageGeneratorProps {
   promo: any
@@ -12,55 +15,310 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [destinationImage, setDestinationImage] = useState<string | null>(null)
   const [isLoadingImage, setIsLoadingImage] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [availableImages, setAvailableImages] = useState<any[]>([])
+  const [customSearchQuery, setCustomSearchQuery] = useState<string | null>(null)
+  const [selectedRegion, setSelectedRegion] = useState<string>("")
   const templateRef = useRef<HTMLDivElement>(null)
 
   // Calculate values
   const baseValue = Number.parseFloat(promo.VALOR)
-  const parcelas = Number.parseInt(promo.PARCELAS || "15", 10)
-  const totalValue = Math.round(baseValue * parcelas * 2)
+  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
+
+  // Fetch destination images when component mounts or destination changes
+  useEffect(() => {
+    fetchDestinationImages()
+    // Set initial region based on destination
+    setSelectedRegion(getRegion(promo.DESTINO))
+  }, [promo.DESTINO])
+
+  // Function to fetch destination images from API
+  const fetchDestinationImages = async (customQuery?: string) => {
+    const searchQuery = customQuery || promo.DESTINO
+    if (!searchQuery) return
+
+    setIsLoadingImage(true)
+    setError(null)
+    setAvailableImages([])
+    setCustomSearchQuery(customQuery || null)
+
+    try {
+      const response = await fetch(`/api/image-search?query=${encodeURIComponent(searchQuery)}&limit=30`)
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch destination images")
+      }
+
+      const data = await response.json()
+
+      if (data.results && data.results.length > 0) {
+        setAvailableImages(data.results)
+        // Seleciona a primeira imagem por padrão se ainda não houver uma selecionada
+        if (!destinationImage) {
+          setDestinationImage(data.results[0].urls.regular)
+        }
+      } else {
+        setError("Não foi possível encontrar imagens para este destino")
+      }
+    } catch (err) {
+      console.error("Error fetching destination images:", err)
+      setError("Erro ao buscar imagens do destino")
+    } finally {
+      setIsLoadingImage(false)
+    }
+  }
 
   // Get region based on destination
   const getRegion = (destination: string) => {
+    const dest = destination.toLowerCase().trim()
+
+    // Lista expandida de cidades brasileiras por região
     const northeastCities = [
       "natal",
       "recife",
       "fortaleza",
       "salvador",
       "maceió",
+      "maceio",
       "joão pessoa",
+      "joao pessoa",
       "aracaju",
       "são luís",
+      "sao luis",
       "teresina",
       "porto de galinhas",
       "porto seguro",
       "pipa",
+      "maragogi",
+      "jericoacoara",
+      "fernando de noronha",
+      "canoa quebrada",
+      "praia do forte",
+      "costa do sauípe",
+      "costa do sauipe",
+      "ilhéus",
+      "ilheus",
+      "lençóis maranhenses",
+      "lencois maranhenses",
+      "chapada diamantina",
+      "bahia",
+      "ceará",
+      "ceara",
+      "maranhão",
+      "maranhao",
+      "pernambuco",
+      "alagoas",
+      "sergipe",
+      "paraíba",
+      "paraiba",
+      "piauí",
+      "piaui",
+      "rio grande do norte",
     ]
 
-    const southCities = ["florianópolis", "porto alegre", "gramado", "curitiba", "foz do iguaçu", "balneário camboriú"]
+    const southCities = [
+      "florianópolis",
+      "florianopolis",
+      "porto alegre",
+      "gramado",
+      "curitiba",
+      "foz do iguaçu",
+      "foz do iguacu",
+      "balneário camboriú",
+      "balneario camboriu",
+      "blumenau",
+      "bombinhas",
+      "canela",
+      "bento gonçalves",
+      "bento goncalves",
+      "santa catarina",
+      "paraná",
+      "parana",
+      "rio grande do sul",
+      "camboriú",
+      "camboriu",
+      "joinville",
+      "londrina",
+      "maringá",
+      "maringa",
+    ]
 
     const southeastCities = [
       "rio de janeiro",
       "são paulo",
+      "sao paulo",
       "belo horizonte",
       "vitória",
+      "vitoria",
       "búzios",
+      "buzios",
       "paraty",
       "campos do jordão",
+      "campos do jordao",
+      "angra dos reis",
+      "cabo frio",
+      "petrópolis",
+      "petropolis",
+      "ouro preto",
+      "tiradentes",
+      "guarujá",
+      "guaruja",
+      "ubatuba",
+      "ilhabela",
+      "minas gerais",
+      "espírito santo",
+      "espirito santo",
+      "arraial do cabo",
+      "são sebastião",
+      "sao sebastiao",
+      "aparecida",
+      "poços de caldas",
+      "pocos de caldas",
     ]
 
-    const centralCities = ["brasília", "goiânia", "cuiabá", "campo grande", "bonito", "caldas novas"]
+    const centralCities = [
+      "brasília",
+      "brasilia",
+      "goiânia",
+      "goiania",
+      "cuiabá",
+      "cuiaba",
+      "campo grande",
+      "bonito",
+      "caldas novas",
+      "pirenópolis",
+      "pirenopolis",
+      "chapada dos veadeiros",
+      "pantanal",
+      "goiás",
+      "goias",
+      "mato grosso",
+      "mato grosso do sul",
+      "distrito federal",
+      "chapada dos guimarães",
+      "chapada dos guimaraes",
+      "corumbá",
+      "corumba",
+    ]
 
-    const northCities = ["manaus", "belém", "palmas", "rio branco", "porto velho", "boa vista", "macapá"]
+    const northCities = [
+      "manaus",
+      "belém",
+      "belem",
+      "palmas",
+      "rio branco",
+      "porto velho",
+      "boa vista",
+      "macapá",
+      "macapa",
+      "alter do chão",
+      "alter do chao",
+      "são gabriel da cachoeira",
+      "sao gabriel da cachoeira",
+      "monte roraima",
+      "amazonas",
+      "pará",
+      "para",
+      "tocantins",
+      "acre",
+      "rondônia",
+      "rondonia",
+      "roraima",
+      "amapá",
+      "amapa",
+      "santarém",
+      "santarem",
+    ]
 
-    const dest = destination.toLowerCase()
+    // Palavras-chave que indicam destinos internacionais
+    const internationalKeywords = [
+      "cancun",
+      "miami",
+      "orlando",
+      "nova york",
+      "las vegas",
+      "paris",
+      "londres",
+      "roma",
+      "madri",
+      "lisboa",
+      "tóquio",
+      "toquio",
+      "dubai",
+      "buenos aires",
+      "santiago",
+      "toronto",
+      "vancouver",
+      "amsterdam",
+      "berlim",
+      "viena",
+      "atenas",
+      "bangkok",
+      "pequim",
+      "sydney",
+      "auckland",
+      "cidade do cabo",
+      "cairo",
+      "istambul",
+      "jerusalém",
+      "jerusalem",
+      "havana",
+      "punta cana",
+      "méxico",
+      "mexico",
+      "eua",
+      "usa",
+      "estados unidos",
+      "europa",
+      "ásia",
+      "asia",
+      "áfrica",
+      "africa",
+      "oceania",
+      "caribe",
+    ]
 
+    // Verificar se o destino contém palavras-chave que indicam que é no Brasil
+    const brazilKeywords = ["brasil", "brazil"]
+    const isBrazilExplicit = brazilKeywords.some((keyword) => dest.includes(keyword))
+
+    // Se explicitamente menciona Brasil, verificar em qual região se encaixa melhor
+    if (isBrazilExplicit) {
+      if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
+      if (southCities.some((city) => dest.includes(city))) return "Sul"
+      if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
+      if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
+      if (northCities.some((city) => dest.includes(city))) return "Norte"
+      return "Brasil" // Caso não identifique a região específica
+    }
+
+    // Verificar se é um destino internacional explícito
+    if (internationalKeywords.some((keyword) => dest.includes(keyword))) {
+      return "Exterior"
+    }
+
+    // Verificar em qual região do Brasil o destino se encaixa
     if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
     if (southCities.some((city) => dest.includes(city))) return "Sul"
     if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
 
-    return "Brasil" // Default
+    // Se não encontrou em nenhuma região específica, verificar se contém estados ou regiões do Brasil
+    const brazilRegions = ["nordeste", "norte", "sul", "sudeste", "centro-oeste", "centro oeste"]
+    if (brazilRegions.some((region) => dest.includes(region))) {
+      return dest.includes("nordeste")
+        ? "Nordeste"
+        : dest.includes("norte")
+          ? "Norte"
+          : dest.includes("sul")
+            ? "Sul"
+            : dest.includes("sudeste")
+              ? "Sudeste"
+              : "Centro-Oeste"
+    }
+
+    // Se não conseguiu identificar, assume que é um destino internacional
+    return "Exterior"
   }
 
   // Get regime de alimentação
@@ -84,7 +342,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   // Format date range
   const formatDateRange = () => {
     try {
-      // Extract dates from DATA_FORMATADA
       const datePattern = /(\d{1,2})\/(\d{1,2}) até (\d{1,2})\/(\d{1,2}) de (\d{4})/
       const match = promo.DATA_FORMATADA.match(datePattern)
 
@@ -100,40 +357,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
-  // Fetch destination image
-  const fetchDestinationImage = async () => {
-    setIsLoadingImage(true)
-    setError(null)
-
-    try {
-      const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-          promo.DESTINO + " tourism",
-        )}&orientation=portrait&per_page=1&client_id=RZEIOVfPhS7m9qvjUJJh3hRUz0H3rPqaYuUPf_Wh2mA`,
-      )
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch image")
-      }
-
-      const data = await response.json()
-
-      if (data.results && data.results.length > 0) {
-        setDestinationImage(data.results[0].urls.regular)
-      } else {
-        // Fallback to a default image if no results
-        setDestinationImage(`https://source.unsplash.com/random/1080x1920/?${encodeURIComponent(promo.DESTINO)}`)
-      }
-    } catch (error) {
-      console.error("Error fetching destination image:", error)
-      setError("Erro ao buscar imagem do destino. Tente novamente.")
-      // Fallback to a default image
-      setDestinationImage(`https://source.unsplash.com/random/1080x1920/?${encodeURIComponent(promo.DESTINO)}`)
-    } finally {
-      setIsLoadingImage(false)
-    }
-  }
-
   // Generate and download image
   const generateImage = async () => {
     if (!templateRef.current) return
@@ -141,14 +364,20 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setIsGenerating(true)
 
     try {
-      const dataUrl = await toPng(templateRef.current, {
+      const template = templateRef.current
+      const originalTransform = template.style.transform
+      template.style.transform = ""
+
+      const dataUrl = await toPng(template, {
         quality: 0.95,
         width: 1080,
         height: 1920,
-        pixelRatio: 2,
+        fontEmbedCSS:
+          '@font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Regular.woff2") format("woff2"); font-weight: normal; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2"); font-weight: bold; font-style: normal; } @font-face { font-family: "NeoSans"; src: url("/fonts/NeoSansW1G-Bold.woff2") format("woff2"); font-weight: 900; font-style: normal; }',
       })
 
-      // Create download link
+      template.style.transform = originalTransform
+
       const link = document.createElement("a")
       link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
       link.href = dataUrl
@@ -161,153 +390,173 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
-  // Fetch image on component mount
-  useEffect(() => {
-    fetchDestinationImage()
-  }, [promo.DESTINO])
+  // Handle image selection from gallery
+  const handleSelectImage = (imageUrl: string) => {
+    setDestinationImage(imageUrl)
+  }
+
+  // Handle custom search
+  const handleCustomSearch = (query: string) => {
+    fetchDestinationImages(query)
+  }
+
+  // Handle region selection
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedRegion(e.target.value)
+  }
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="mb-4 flex gap-4">
-        <button
-          onClick={fetchDestinationImage}
-          disabled={isLoadingImage}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-        >
-          {isLoadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Trocar imagem
-        </button>
+    <div className="flex flex-col md:flex-row gap-6">
+      {/* Galeria de imagens */}
+      <div className="w-full md:w-2/5 bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+            <ImageIcon className="h-5 w-5 mr-2 text-primary-blue" />
+            Galeria de imagens
+          </h3>
+          <p className="text-sm text-gray-500 mb-2">
+            {customSearchQuery
+              ? `Mostrando resultados para "${customSearchQuery}"`
+              : `Escolha entre as imagens disponíveis para ${promo.DESTINO}`}
+          </p>
+        </div>
 
-        <button
-          onClick={generateImage}
-          disabled={isGenerating || isLoadingImage || !destinationImage}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50"
-        >
-          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          Baixar imagem
-        </button>
+        <ImageGallery
+          images={availableImages}
+          onSelectImage={handleSelectImage}
+          selectedImageUrl={destinationImage}
+          isLoading={isLoadingImage}
+          onSearch={handleCustomSearch}
+          destination={promo.DESTINO}
+        />
       </div>
 
-      {error && <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm w-full">{error}</div>}
+      {/* Gerador de imagem */}
+      <div className="w-full md:w-3/5 flex flex-col items-center">
+        <div className="mb-4 flex gap-4 w-full justify-center">
+          <button
+            onClick={generateImage}
+            disabled={isGenerating || !destinationImage}
+            className="flex items-center gap-2 px-6 py-3 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50 font-medium"
+          >
+            {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            Baixar imagem promocional
+          </button>
+        </div>
+        <div className="mb-6 w-full">
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Personalizar Imagem</h3>
 
-      <div className="relative w-[540px] h-[960px] overflow-hidden border border-gray-300 rounded-lg shadow-lg">
-        {isLoadingImage ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-            <div className="flex flex-col items-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary-blue mb-2" />
-              <p className="text-gray-600 font-mon">Carregando imagem...</p>
+            <div className="mb-4">
+              <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-1">
+                Região
+              </label>
+              <select
+                id="region-select"
+                value={selectedRegion}
+                onChange={handleRegionChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              >
+                <option value="Nordeste">Nordeste</option>
+                <option value="Sul">Sul</option>
+                <option value="Sudeste">Sudeste</option>
+                <option value="Norte">Norte</option>
+                <option value="Centro-Oeste">Centro-Oeste</option>
+                <option value="Exterior">Exterior</option>
+                <option value="Brasil">Brasil</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Selecione a região que aparecerá na imagem promocional</p>
             </div>
           </div>
-        ) : !destinationImage ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-            <div className="flex flex-col items-center">
-              <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-gray-600 font-mon">Imagem não disponível</p>
-            </div>
-          </div>
-        ) : null}
+        </div>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm w-full">{error}</div>
+        )}
 
-        {/* Template for the promotional image */}
-        <div
-          ref={templateRef}
-          className="w-[540px] h-[960px] relative"
-          style={{ transform: "scale(0.5)", transformOrigin: "top left" }}
-        >
-          <div className="absolute inset-0 w-[1080px] h-[1920px] bg-white overflow-hidden">
-            {/* Background image with overlay */}
+        <div className="relative w-[540px] h-[960px] overflow-hidden border border-gray-300 rounded-lg shadow-lg">
+          {/* Template for the promotional image */}
+          <div
+            ref={templateRef}
+            className="w-[540px] h-[960px] relative"
+            style={{ transform: "scale(0.5)", transformOrigin: "top left" }}
+          >
+            {/* Destination image as background */}
             {destinationImage && (
-              <div className="absolute inset-0">
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${destinationImage})` }}
-                ></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70"></div>
+              <div className="absolute top-0 left-0 w-[1080px] h-[1920px] overflow-hidden z-0">
+                <img
+                  src={destinationImage || "/placeholder.svg"}
+                  alt={promo.DESTINO}
+                  className="w-full h-full object-cover opacity-80"
+                  crossOrigin="anonymous"
+                />
               </div>
             )}
+            {/* Template overlay with higher z-index */}
+            <div className="absolute inset-0 w-[1080px] h-[1920px] font-neo z-10">
+              {/* Background template image */}
+              <img src="/assets/LAYOUTFINAL.png" alt="Promo Template" className="w-full h-full object-cover" />
 
-            {/* Content container */}
-            <div className="absolute inset-0 flex flex-col p-8">
-              {/* Region tag */}
-              <div className="self-end bg-primary-yellow text-primary-blue font-bold text-[48px] py-4 px-8 rounded-bl-[30px]">
-                {getRegion(promo.DESTINO)}
-              </div>
-
-              {/* Main content */}
-              <div className="flex-1 flex flex-col justify-center">
-                <div className="bg-primary-blue/90 rounded-[50px] p-8 mt-8 max-w-[900px]">
-                  {/* Destination */}
-                  <h1 className="text-primary-yellow font-bold text-[100px] leading-tight">{promo.DESTINO}</h1>
-
-                  {/* Hotel */}
-                  <h2 className="text-white font-medium text-[48px] mb-4">{promo.HOTEL}</h2>
-
-                  {/* Date */}
-                  <p className="text-primary-yellow font-medium text-[40px] mb-8">{formatDateRange()}</p>
-
-                  {/* Price */}
-                  <div className="bg-primary-yellow text-primary-blue rounded-[30px] p-6 inline-block mb-8">
-                    <div className="flex items-center">
-                      <div className="text-[40px] font-bold mr-4">{parcelas}x de</div>
-                      <div>
-                        <div className="text-[40px] font-bold">R$</div>
-                        <div className="text-[120px] font-bold leading-none">{totalValue}</div>
-                      </div>
-                    </div>
-                    <div className="text-[32px]">no cartão e {parcelas - 1}x no boleto sem juros</div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">✈</span>
-                      Aéreo ida e volta
-                    </div>
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">👤</span>
-                      Valor por pessoa
-                    </div>
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">🌙</span>
-                      {promo.NUMERO_DE_NOITES} Noites
-                    </div>
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">🍽</span>
-                      {getRegimeAlimentacao()}
-                    </div>
-                  </div>
-
-                  {/* Departure */}
-                  <div className="bg-primary-yellow text-primary-blue rounded-[20px] p-4 inline-block text-[32px] font-medium">
-                    saindo de
-                    <br />
-                    {getDepartureAirport()}
-                  </div>
+              {/* Text Overlay */}
+              <div className="absolute inset-0">
+                {/* Region Tag */}
+                <div className="absolute top-[270px] right-[70px] text-white text-5xl font-black">
+                  {selectedRegion}
                 </div>
-              </div>
 
-              {/* Footer */}
-              <div className="mt-auto">
-                <div className="text-white text-[28px] mb-4 text-center">
-                  Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio.Taxas inclusas.
+                {/* Destination */}
+                <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold">{promo.DESTINO}</div>
+
+                {/* Hotel */}
+                <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium">{promo.HOTEL}</div>
+
+                {/* Date */}
+                <div className="absolute top-[530px] left-[480px] text-white text-4xl font-medium">
+                  {formatDateRange()}
+                </div>
+
+                {/* Price */}
+                <div className="absolute top-[620px] left-[510px] text-[#9b0a0a] text-3xl font-medium">
+                  {parcelas}x de
+                </div>
+                <div className="absolute top-[660px] left-[510px] text-[#9b0a0a] text-6xl font-black">R$</div>
+                <div className="absolute top-[605px] left-[600px] text-[#9b0a0a] text-[126px] font-black">
+                  {baseValue.toFixed(2).replace(".", ",")}
+                </div>
+                <div className="absolute top-[760px] left-[518px] text-[#9b0a0a]text-[28px] font-medium">
+                  no cartão e 10x no boleto sem juros.
+                </div>
+
+                {/* Features */}
+                <div className="absolute top-[835px] left-[545px] text-white text-3xl font-medium">
+                  Aéreo Ida e Volta
+                </div>
+                <div className="absolute top-[885px] left-[545px] text-white text-3xl font-medium">
+                  Valor por pessoa
+                </div>
+                <div className="absolute top-[935px] left-[545px] text-white text-3xl font-medium">
+                  {promo.NUMERO_DE_NOITES} Noites
+                </div>
+                <div className="absolute top-[980px] left-[545px] text-white text-3xl font-medium">
+                  {getRegimeAlimentacao()}
+                </div>
+
+                {/* Departure */}
+                <div className="absolute top-[1070px] left-[410px] text-[#9b0a0a] text-xl font-medium">saindo de</div>
+                <div className="absolute top-[1100px] left-[410px] text-[#9b0a0a] text-xl font-bold">
+                  {getDepartureAirport()}
+                </div>
+
+                {/* Fine print */}
+                <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] font-normal max-w-[500px]">
+                  Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.
                 </div>
 
                 {/* Contact */}
-                <div className="flex items-center bg-primary-yellow text-primary-blue p-4 rounded-t-[20px] max-w-[500px]">
-                  <div className="bg-primary-yellow p-2 rounded-full mr-4">
-                    <span className="text-[60px]">📱</span>
-                  </div>
-                  <div>
-                    <div className="text-[36px] font-bold">Contato e Whatsapp</div>
-                    <div className="text-[40px] font-bold">(67) 9637-2769</div>
-                  </div>
+                <div className="absolute top-[1250px] left-[580px] text-[#9b0a0a] text-3xl font-medium">
+                  Contato e Whatsapp
                 </div>
-
-                {/* Logo area */}
-                <div className="bg-gradient-to-r from-primary-blue to-primary-yellow h-[200px] flex items-center p-8">
-                  <div className="text-white text-[100px] font-bold">
-                    Donatti
-                    <span className="text-primary-yellow">TURISMO</span>
-                  </div>
+                <div className="absolute top-[1285px] left-[580px] text-[#9b0a0a] text-3xl font-medium">
+                  (67) 9 9637-2769
                 </div>
               </div>
             </div>
@@ -317,4 +566,3 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     </div>
   )
 }
-

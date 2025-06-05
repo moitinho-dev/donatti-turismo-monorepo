@@ -127,4 +127,3 @@ export function UserStats({ userStats }: UserStatsProps) {
     </div>
   )
 }
-

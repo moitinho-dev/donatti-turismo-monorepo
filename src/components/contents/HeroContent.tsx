@@ -19,9 +19,9 @@ const Hero: HeroContent[] = [
     herotexto4:
       "Aqui você encontra todas as informações necessárias para aproveitar ao máximo esse destino e vários outros.",
     herotexto5: "Além do Rio, você merece lugares como estes...",
-    herobanner: "/assets/HEROATT.png",
-    width: 1132,
-    height: 907,
+    herobanner: "/assets/hero-rio.jpg",
+    width: 1920,
+    height: 1080,
   },
   {
     herotexto1: "descubra",
@@ -29,11 +29,10 @@ const Hero: HeroContent[] = [
     herotexto3: "Planejando ir para a cidade?",
     herotexto4: "Descubra as maravilhas de São Paulo e aproveite ao máximo sua viagem.",
     herotexto5: "Além de São Paulo, você merece lugares como estes...",
-    herobanner: "/assets/HEROatt.png",
+    herobanner: "/assets/hero-saopaulo.jpg",
     width: 1920,
     height: 1080,
   },
 ]
 
 export default Hero
-

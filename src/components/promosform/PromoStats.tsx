@@ -96,4 +96,3 @@ const PromoStats: React.FC<PromoStatsProps> = ({ promos }) => {
 }
 
 export default PromoStats
-

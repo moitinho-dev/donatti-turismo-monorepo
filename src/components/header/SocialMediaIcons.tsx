@@ -35,4 +35,3 @@ export function SocialMediaIcons({ tipoRedeSocial }: { tipoRedeSocial: "whatsapp
     </motion.button>
   )
 }
-

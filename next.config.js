@@ -19,11 +19,14 @@ module.exports = {
   },
 }
 
-const nextConfig = {
+module.exports = {
   images: {
-    domains: ["lh3.googleusercontent.com", "images.unsplash.com"],
+    domains: [
+      "img.freepik.com",
+      "lh3.googleusercontent.com",
+      "images.unsplash.com",
+      "img.freepik.com",
+      "br.freepik.com",
+    ],
   },
 }
-
-module.exports = nextConfig
-
