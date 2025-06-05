@@ -499,7 +499,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               {/* Text Overlay */}
               <div className="absolute inset-0">
                 {/* Region Tag */}
-                <div className="absolute top-[270px] right-[70px] text-white text-5xl font-black">
+                <div className="absolute top-[270px] right-[70px] text-[9b0a0a] text-5xl font-black">
                   {selectedRegion}
                 </div>
 
@@ -522,7 +522,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 <div className="absolute top-[605px] left-[600px] text-[#9b0a0a] text-[126px] font-black">
                   {baseValue.toFixed(2).replace(".", ",")}
                 </div>
-                <div className="absolute top-[760px] left-[518px] text-[#9b0a0a]text-[28px] font-medium">
+                <div className="absolute top-[760px] left-[518px] text-[#9b0a0a] text-[28px] font-medium">
                   no cartão e 10x no boleto sem juros.
                 </div>
 
