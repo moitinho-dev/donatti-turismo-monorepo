@@ -413,25 +413,25 @@ const generateImage = async () => {
       fontEmbedCSS: `
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Regular.otf>") format("opentype");
+          src: url("/public/fonts/NeoSansW1G-Regular.otf") format("opentype");
           font-weight: normal;
           font-style: normal;
         }
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Medium.otf>") format("opentype");
+          src: url("/public/fonts/NeoSansW1G-Medium.otf") format("opentype");
           font-weight: 500;
           font-style: normal;
         }
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Bold.otf>") format("opentype");
+          src: url("/public/fonts/NeoSansW1G-Bold.otf") format("opentype");
           font-weight: bold;
           font-style: normal;
         }
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Bold.otf>") format("opentype");
+          src: url("/public/fonts/NeoSansW1G-Bold.otf") format("opentype");
           font-weight: 900;
           font-style: normal;
         }
