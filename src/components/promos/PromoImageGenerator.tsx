@@ -24,6 +24,26 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const baseValue = Number.parseFloat(promo.VALOR)
   const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
 
+  useEffect(() => {
+  const preloadFonts = () => {
+    const fontLinks = [
+      "/fonts/NeoSansW1G-Regular.otf",
+      "/fonts/NeoSansW1G-Medium.otf",
+      "/fonts/NeoSansW1G-Bold.otf",
+    ];
+    fontLinks.forEach((font) => {
+      const link = document.createElement("link");
+      link.href = font;
+      link.rel = "preload";
+      link.as = "font";
+      link.type = "font/otf";
+      link.crossOrigin = "anonymous";
+      document.head.appendChild(link);
+    });
+  };
+  preloadFonts();
+}, []);
+
   // Fetch destination images when component mounts or destination changes
   useEffect(() => {
     fetchDestinationImages()
@@ -393,25 +413,25 @@ const generateImage = async () => {
       fontEmbedCSS: `
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("/fonts/NeoSansW1G-Regular.otf") format("opentype");
+          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Regular.otf>") format("opentype");
           font-weight: normal;
           font-style: normal;
         }
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("/fonts/NeoSansW1G-Medium.otf") format("opentype");
+          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Medium.otf>") format("opentype");
           font-weight: 500;
           font-style: normal;
         }
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("/fonts/NeoSansW1G-Bold.otf") format("opentype");
+          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Bold.otf>") format("opentype");
           font-weight: bold;
           font-style: normal;
         }
         @font-face {
           font-family: "NeoSansW1G";
-          src: url("/fonts/NeoSansW1G-Bold.otf") format("opentype");
+          src: url("data:font/opentype;base64,<base64-encoded-NeoSansW1G-Bold.otf>") format("opentype");
           font-weight: 900;
           font-style: normal;
         }
