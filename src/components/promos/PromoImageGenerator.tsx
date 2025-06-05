@@ -376,8 +376,7 @@ useEffect(() => {
   };
   preloadFonts();
 }, []);
-  // Generate and download image
-  const generateImage = async () => {
+const generateImage = async () => {
   if (!templateRef.current) return;
 
   setIsGenerating(true);
@@ -432,7 +431,6 @@ useEffect(() => {
     setIsGenerating(false);
   }
 };
-
   // Handle image selection from gallery
   const handleSelectImage = (imageUrl: string) => {
     setDestinationImage(imageUrl)
@@ -446,7 +444,7 @@ useEffect(() => {
   // Handle region selection
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedRegion(e.target.value)
-  }
+  } 
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
@@ -540,69 +538,60 @@ useEffect(() => {
               <img src="/assets/LAYOUTFINAL.png" alt="Promo Template" className="w-full h-full object-cover" />
 
               {/* Text Overlay */}
-              <div className="absolute inset-0">
-                {/* Region Tag */}
-                <div className="absolute top-[270px] right-[70px] text-[#9b0a0a]  text-5xl font-black">
-                  {selectedRegion}
-                </div>
-
-                {/* Destination */}
-                <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold">{promo.DESTINO}</div>
-
-                {/* Hotel */}
-                <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium">{promo.HOTEL}</div>
-
-                {/* Date */}
-                <div className="absolute top-[530px] left-[480px] text-white text-4xl font-medium">
-                  {formatDateRange()}
-                </div>
-
-                {/* Price */}
-                <div className="absolute top-[620px] left-[510px] text-[#9b0a0a] text-3xl font-medium">
-                  {parcelas}x de
-                </div>
-                <div className="absolute top-[660px] left-[510px] text-[#9b0a0a] text-6xl font-black">R$</div>
-                <div className="absolute top-[605px] left-[600px] text-[#9b0a0a] text-[126px] font-black">
-                  {baseValue.toFixed(2).replace(".", ",")}
-                </div>
-                <div className="absolute top-[760px] left-[518px] text-[#9b0a0a] text-[28px] font-medium">
-                  no cartão e 10x no boleto sem juros.
-                </div>
-
-                {/* Features */}
-                <div className="absolute top-[835px] left-[545px] text-white text-3xl font-medium">
-                  Aéreo Ida e Volta
-                </div>
-                <div className="absolute top-[885px] left-[545px] text-white text-3xl font-medium">
-                  Valor por pessoa
-                </div>
-                <div className="absolute top-[935px] left-[545px] text-white text-3xl font-medium">
-                  {promo.NUMERO_DE_NOITES} Noites
-                </div>
-                <div className="absolute top-[980px] left-[545px] text-white text-3xl font-medium">
-                  {getRegimeAlimentacao()}
-                </div>
-
-                {/* Departure */}
-                <div className="absolute top-[1070px] left-[410px] text-[#9b0a0a] text-xl font-medium">saindo de</div>
-                <div className="absolute top-[1100px] left-[410px] text-[#9b0a0a] text-xl font-bold">
-                  {getDepartureAirport()}
-                </div>
-
-                {/* Fine print */}
-                <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] font-normal max-w-[500px]">
-                  Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.
-                </div>
-
-                {/* Contact */}
-                <div className="absolute top-[1250px] left-[580px] text-[#9b0a0a] text-3xl font-medium">
-                  Contato e Whatsapp
-                </div>
-                <div className="absolute top-[1285px] left-[580px] text-[#9b0a0a] text-3xl font-medium">
-                  (67) 9 9637-2769
-                </div>
-              </div>
-            </div>
+  <div className="absolute inset-0">
+    <div className="absolute top-[270px] right-[70px] text-[#9b0a0a] text-5xl font-black font-neo">
+      {selectedRegion}
+    </div>
+    <div className="absolute top-[360px] left-[480px] text-white text-6xl font-bold font-neo">
+      {promo.DESTINO}
+    </div>
+    <div className="absolute top-[450px] left-[480px] text-white text-4xl font-medium font-neo">
+      {promo.HOTEL}
+    </div>
+    <div className="absolute top-[530px] left-[480px] text-white text-4xl font-medium font-neo">
+      {formatDateRange()}
+    </div>
+    <div className="absolute top-[620px] left-[510px] text-[#9b0a0a] text-3xl font-medium font-neo">
+      {parcelas}x de
+    </div>
+    <div className="absolute top-[660px] left-[510px] text-[#9b0a0a] text-6xl font-black font-neo">
+      R$
+    </div>
+    <div className="absolute top-[605px] left-[600px] text-[#9b0a0a] text-[126px] font-black font-neo">
+      {baseValue.toFixed(2).replace(".", ",")}
+    </div>
+    <div className="absolute top-[760px] left-[518px] text-[#9b0a0a] text-[28px] font-medium font-neo">
+      no cartão e 10x no boleto sem juros.
+    </div>
+    <div className="absolute top-[835px] left-[545px] text-white text-3xl font-medium font-neo">
+      Aéreo Ida e Volta
+    </div>
+    <div className="absolute top-[885px] left-[545px] text-white text-3xl font-medium font-neo">
+      Valor por pessoa
+    </div>
+    <div className="absolute top-[935px] left-[545px] text-white text-3xl font-medium font-neo">
+      {promo.NUMERO_DE_NOITES} Noites
+    </div>
+    <div className="absolute top-[980px] left-[545px] text-white text-3xl font-medium font-neo">
+      {getRegimeAlimentacao()}
+    </div>
+    <div className="absolute top-[1070px] left-[410px] text-[#9b0a0a] text-xl font-medium font-neo">
+      saindo de
+    </div>
+    <div className="absolute top-[1100px] left-[410px] text-[#9b0a0a] text-xl font-bold font-neo">
+      {getDepartureAirport()}
+    </div>
+    <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] font-normal font-neo max-w-[500px]">
+      Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.
+    </div>
+    <div className="absolute top-[1250px] left-[580px] text-[#9b0a0a] text-3xl font-medium font-neo">
+      Contato e Whatsapp
+    </div>
+    <div className="absolute top-[1285px] left-[580px] text-[#9b0a0a] text-3xl font-medium font-neo">
+      (67) 9 9637-2769
+    </div>
+  </div>
+</div>
           </div>
         </div>
       </div>
