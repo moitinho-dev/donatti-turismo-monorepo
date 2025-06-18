@@ -52,6 +52,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
     const northCities = ["manaus", "belém", "palmas", "rio branco", "porto velho", "boa vista", "macapá"]
 
+    const internationalCities = ["santiago", "buenos aires", "montevideo", "lima", "bogotá", "caracas"]
+
     const dest = destination.toLowerCase()
 
     if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
@@ -59,6 +61,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
     if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
     if (northCities.some((city) => dest.includes(city))) return "Norte"
+    if (internationalCities.some((city) => dest.includes(city))) return "Exterior"
 
     return "Brasil" // Default
   }
@@ -134,6 +137,17 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
+  // Load Google Fonts
+  const loadGoogleFonts = () => {
+    return new Promise((resolve) => {
+      const link = document.createElement('link')
+      link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
+      link.rel = 'stylesheet'
+      link.onload = () => resolve(true)
+      document.head.appendChild(link)
+    })
+  }
+
   // Generate and download image
   const generateImage = async () => {
     if (!templateRef.current) return
@@ -141,11 +155,29 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setIsGenerating(true)
 
     try {
+      // Load fonts first
+      await loadGoogleFonts()
+      
+      // Wait a bit for fonts to load
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
       const dataUrl = await toPng(templateRef.current, {
-        quality: 0.95,
+        quality: 1.0,
         width: 1080,
         height: 1920,
         pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        style: {
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        },
+        filter: (node) => {
+          // Exclude certain elements that might cause issues
+          if (node.classList && node.classList.contains('exclude-from-export')) {
+            return false
+          }
+          return true
+        },
+        cacheBust: true,
       })
 
       // Create download link
@@ -195,14 +227,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <div className="flex flex-col items-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary-blue mb-2" />
-              <p className="text-gray-600 font-mon">Carregando imagem...</p>
+              <p className="text-gray-600 font-mono">Carregando imagem...</p>
             </div>
           </div>
         ) : !destinationImage ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <div className="flex flex-col items-center">
               <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-gray-600 font-mon">Imagem não disponível</p>
+              <p className="text-gray-600 font-mono">Imagem não disponível</p>
             </div>
           </div>
         ) : null}
@@ -211,9 +243,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         <div
           ref={templateRef}
           className="w-[540px] h-[960px] relative"
-          style={{ transform: "scale(0.5)", transformOrigin: "top left" }}
+          style={{ 
+            transform: "scale(0.5)", 
+            transformOrigin: "top left",
+            fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          }}
         >
-          <div className="absolute inset-0 w-[1080px] h-[1920px] bg-white overflow-hidden">
+          <div className="absolute inset-0 w-[1080px] h-[1920px] bg-white overflow-hidden" style={{ fontFamily: 'inherit' }}>
             {/* Background image with overlay */}
             {destinationImage && (
               <div className="absolute inset-0">
@@ -226,58 +262,58 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             )}
 
             {/* Content container */}
-            <div className="absolute inset-0 flex flex-col p-8">
+            <div className="absolute inset-0 flex flex-col p-8" style={{ fontFamily: 'inherit' }}>
               {/* Region tag */}
-              <div className="self-end bg-primary-yellow text-primary-blue font-bold text-[48px] py-4 px-8 rounded-bl-[30px]">
+              <div className="self-end bg-yellow-400 text-red-700 font-black text-[48px] py-4 px-8 rounded-bl-[30px]" style={{ fontFamily: 'inherit' }}>
                 {getRegion(promo.DESTINO)}
               </div>
 
               {/* Main content */}
               <div className="flex-1 flex flex-col justify-center">
-                <div className="bg-primary-blue/90 rounded-[50px] p-8 mt-8 max-w-[900px]">
+                <div className="bg-red-700/95 rounded-[50px] p-8 mt-8 max-w-[900px]" style={{ fontFamily: 'inherit' }}>
                   {/* Destination */}
-                  <h1 className="text-primary-yellow font-bold text-[100px] leading-tight">{promo.DESTINO}</h1>
+                  <h1 className="text-yellow-400 font-black text-[100px] leading-tight" style={{ fontFamily: 'inherit' }}>{promo.DESTINO}</h1>
 
                   {/* Hotel */}
-                  <h2 className="text-white font-medium text-[48px] mb-4">{promo.HOTEL}</h2>
+                  <h2 className="text-white font-semibold text-[48px] mb-4" style={{ fontFamily: 'inherit' }}>{promo.HOTEL}</h2>
 
                   {/* Date */}
-                  <p className="text-primary-yellow font-medium text-[40px] mb-8">{formatDateRange()}</p>
+                  <p className="text-yellow-400 font-semibold text-[40px] mb-8" style={{ fontFamily: 'inherit' }}>{formatDateRange()}</p>
 
                   {/* Price */}
-                  <div className="bg-primary-yellow text-primary-blue rounded-[30px] p-6 inline-block mb-8">
+                  <div className="bg-yellow-400 text-red-700 rounded-[30px] p-6 inline-block mb-8">
                     <div className="flex items-center">
-                      <div className="text-[40px] font-bold mr-4">{parcelas}x de</div>
+                      <div className="text-[40px] font-black mr-4" style={{ fontFamily: 'inherit' }}>{parcelas}x de</div>
                       <div>
-                        <div className="text-[40px] font-bold">R$</div>
-                        <div className="text-[120px] font-bold leading-none">{totalValue}</div>
+                        <div className="text-[40px] font-black" style={{ fontFamily: 'inherit' }}>R$</div>
+                        <div className="text-[120px] font-black leading-none" style={{ fontFamily: 'inherit' }}>{totalValue}</div>
                       </div>
                     </div>
-                    <div className="text-[32px]">no cartão e {parcelas - 1}x no boleto sem juros</div>
+                    <div className="text-[32px] font-semibold" style={{ fontFamily: 'inherit' }}>no cartão e {parcelas - 1}x no boleto sem juros</div>
                   </div>
 
                   {/* Features */}
                   <div className="space-y-4 mb-8">
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">✈</span>
+                    <div className="flex items-center text-white text-[36px] font-medium" style={{ fontFamily: 'inherit' }}>
+                      <span className="text-yellow-400 mr-4 text-[40px]">✈</span>
                       Aéreo ida e volta
                     </div>
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">👤</span>
+                    <div className="flex items-center text-white text-[36px] font-medium" style={{ fontFamily: 'inherit' }}>
+                      <span className="text-yellow-400 mr-4 text-[40px]">👤</span>
                       Valor por pessoa
                     </div>
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">🌙</span>
+                    <div className="flex items-center text-white text-[36px] font-medium" style={{ fontFamily: 'inherit' }}>
+                      <span className="text-yellow-400 mr-4 text-[40px]">🌙</span>
                       {promo.NUMERO_DE_NOITES} Noites
                     </div>
-                    <div className="flex items-center text-white text-[36px]">
-                      <span className="text-primary-yellow mr-4">🍽</span>
+                    <div className="flex items-center text-white text-[36px] font-medium" style={{ fontFamily: 'inherit' }}>
+                      <span className="text-yellow-400 mr-4 text-[40px]">🍽</span>
                       {getRegimeAlimentacao()}
                     </div>
                   </div>
 
                   {/* Departure */}
-                  <div className="bg-primary-yellow text-primary-blue rounded-[20px] p-4 inline-block text-[32px] font-medium">
+                  <div className="bg-yellow-400 text-red-700 rounded-[20px] p-4 inline-block text-[32px] font-bold" style={{ fontFamily: 'inherit' }}>
                     saindo de
                     <br />
                     {getDepartureAirport()}
@@ -287,26 +323,26 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
               {/* Footer */}
               <div className="mt-auto">
-                <div className="text-white text-[28px] mb-4 text-center">
-                  Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio.Taxas inclusas.
+                <div className="text-white text-[28px] mb-4 text-center font-medium" style={{ fontFamily: 'inherit' }}>
+                  Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio. Taxas inclusas.
                 </div>
 
                 {/* Contact */}
-                <div className="flex items-center bg-primary-yellow text-primary-blue p-4 rounded-t-[20px] max-w-[500px]">
-                  <div className="bg-primary-yellow p-2 rounded-full mr-4">
+                <div className="flex items-center bg-yellow-400 text-red-700 p-4 rounded-t-[20px] max-w-[500px]">
+                  <div className="bg-yellow-400 p-2 rounded-full mr-4">
                     <span className="text-[60px]">📱</span>
                   </div>
                   <div>
-                    <div className="text-[36px] font-bold">Contato e Whatsapp</div>
-                    <div className="text-[40px] font-bold">(67) 9637-2769</div>
+                    <div className="text-[36px] font-bold" style={{ fontFamily: 'inherit' }}>Contato e Whatsapp</div>
+                    <div className="text-[40px] font-black" style={{ fontFamily: 'inherit' }}>(67) 9637-2769</div>
                   </div>
                 </div>
 
                 {/* Logo area */}
-                <div className="bg-gradient-to-r from-primary-blue to-primary-yellow h-[200px] flex items-center p-8">
-                  <div className="text-white text-[100px] font-bold">
+                <div className="bg-gradient-to-r from-red-700 to-yellow-400 h-[200px] flex items-center p-8">
+                  <div className="text-white text-[100px] font-black" style={{ fontFamily: 'inherit' }}>
                     Donatti
-                    <span className="text-primary-yellow">TURISMO</span>
+                    <span className="text-yellow-400">TURISMO</span>
                   </div>
                 </div>
               </div>
@@ -317,4 +353,3 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     </div>
   )
 }
-
