@@ -24,7 +24,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const baseValue = Number.parseFloat(promo.VALOR)
   const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
 
-  // Preload fonts
+  // Preload fonts and initialize
   useEffect(() => {
     const loadFonts = async () => {
       // Load Google Fonts
@@ -43,7 +43,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   // Fetch destination images when component mounts or destination changes
   useEffect(() => {
-    fetchDestinationImages()
+    if (promo.DESTINO) {
+      fetchDestinationImages()
+    }
   }, [promo.DESTINO])
 
   // Function to fetch destination images from API
@@ -53,7 +55,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
     setIsLoadingImage(true)
     setError(null)
-    setAvailableImages([])
     setCustomSearchQuery(customQuery || null)
 
     try {
@@ -67,15 +68,18 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
       if (data.results && data.results.length > 0) {
         setAvailableImages(data.results)
+        // Seleciona a primeira imagem automaticamente se não houver uma selecionada
         if (!destinationImage) {
           setDestinationImage(data.results[0].urls.regular)
         }
       } else {
         setError("Não foi possível encontrar imagens para este destino")
+        setAvailableImages([])
       }
     } catch (err) {
       console.error("Error fetching destination images:", err)
       setError("Erro ao buscar imagens do destino")
+      setAvailableImages([])
     } finally {
       setIsLoadingImage(false)
     }
