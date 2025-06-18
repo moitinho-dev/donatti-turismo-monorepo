@@ -5,17 +5,18 @@ import {
   Calendar,
   MapPin,
   Hotel,
+  DollarSign,
   Search,
   Edit,
   Trash2,
   ChevronDown,
   ChevronUp,
   X,
-  ImageIcon,
-  Users,
-  Utensils,
-  Plane,
+  Image,
+  Clock,
 } from "lucide-react"
+import { format, parseISO, isValid } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { PromoImageGeneratorModal } from "./PromoImageGeneratorModal"
 
 interface PromoData {
@@ -24,7 +25,6 @@ interface PromoData {
   HOTEL: string
   DATA_FORMATADA: string
   VALOR: string
-  VALORTOTAL: string
   COM_CAFE?: boolean
   SEM_CAFE?: boolean
   MEIA_PENSAO?: boolean
@@ -36,6 +36,8 @@ interface PromoData {
   AEREO?: boolean
   createdAt: string
   updatedAt: string
+  createdBy?: string
+  createdByName?: string
   PARCELAS?: string
 }
 
@@ -45,105 +47,141 @@ interface PromosListProps {
   onDelete: () => void
 }
 
-// Fix the date formatting to use local timezone
-const formatRelativeDate = (dateString: string) => {
+// Função para formatar data de forma segura
+const formatDateSafe = (dateString: string): string => {
+  if (!dateString) return "Data não informada"
+  
   try {
-    // Parse the date string and convert to local date
-    const date = new Date(dateString)
-
-    // Get today and yesterday dates in local timezone
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-
-    // Format all dates to remove time component for comparison
-    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const localYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
-
-    // Compare the dates
-    if (localDate.getTime() === localToday.getTime()) {
-      return "Hoje"
-    } else if (localDate.getTime() === localYesterday.getTime()) {
-      return "Ontem"
-    } else {
-      return date.toLocaleDateString("pt-BR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+    const date = parseISO(dateString)
+    if (!isValid(date)) {
+      // Tentar parse direto se parseISO falhar
+      const fallbackDate = new Date(dateString)
+      if (!isValid(fallbackDate)) {
+        return "Data inválida"
+      }
+      return format(fallbackDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
     }
+    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
   } catch (error) {
-    console.error("Error formatting relative date:", error)
-    return "Data desconhecida"
-  }
-}
-
-// Also update the formatDate function for consistent timezone handling
-const formatDate = (dateString: string) => {
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) {
-      return "Data inválida"
-    }
-    return date.toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  } catch (error) {
-    console.error("Error formatting date:", error)
+    console.error("Erro ao formatar data:", error, "Data original:", dateString)
     return "Data inválida"
   }
 }
 
-// Update the groupPromosByDate function to use local dates
+// Função para obter data relativa (hoje, ontem, etc.)
+const getRelativeDate = (dateString: string): string => {
+  if (!dateString) return "Data não informada"
+  
+  try {
+    const date = parseISO(dateString)
+    if (!isValid(date)) {
+      const fallbackDate = new Date(dateString)
+      if (!isValid(fallbackDate)) {
+        return "Data inválida"
+      }
+      return formatDateSafe(dateString)
+    }
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    const promoDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    
+    if (promoDate.getTime() === today.getTime()) {
+      return `Hoje às ${format(date, "HH:mm", { locale: ptBR })}`
+    } else if (promoDate.getTime() === yesterday.getTime()) {
+      return `Ontem às ${format(date, "HH:mm", { locale: ptBR })}`
+    } else {
+      return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+    }
+  } catch (error) {
+    console.error("Erro ao obter data relativa:", error)
+    return formatDateSafe(dateString)
+  }
+}
+
+// Função para agrupar promoções por data
 const groupPromosByDate = (promos: PromoData[]) => {
-  const groups: { [key: string]: PromoData[] } = {}
+  const groups: { [key: string]: { promos: PromoData[]; displayDate: string } } = {}
 
   promos.forEach((promo) => {
     if (!promo.createdAt) {
-      const unknownGroup = "unknown"
-      if (!groups[unknownGroup]) groups[unknownGroup] = []
-      groups[unknownGroup].push(promo)
+      const unknownKey = "unknown"
+      if (!groups[unknownKey]) {
+        groups[unknownKey] = { promos: [], displayDate: "Data não informada" }
+      }
+      groups[unknownKey].promos.push(promo)
       return
     }
 
-    // Convert date to local date string for grouping
-    const date = new Date(promo.createdAt)
-    // Format as YYYY-MM-DD in local timezone
-    const localDateStr = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split("T")[0]
+    try {
+      const date = parseISO(promo.createdAt)
+      if (!isValid(date)) {
+        const fallbackDate = new Date(promo.createdAt)
+        if (!isValid(fallbackDate)) {
+          const unknownKey = "unknown"
+          if (!groups[unknownKey]) {
+            groups[unknownKey] = { promos: [], displayDate: "Data não informada" }
+          }
+          groups[unknownKey].promos.push(promo)
+          return
+        }
+      }
 
-    if (!groups[localDateStr]) {
-      groups[localDateStr] = []
+      const validDate = isValid(date) ? date : new Date(promo.createdAt)
+      const dateKey = format(validDate, "yyyy-MM-dd")
+      
+      if (!groups[dateKey]) {
+        const now = new Date()
+        const today = format(now, "yyyy-MM-dd")
+        const yesterday = format(new Date(now.getTime() - 24 * 60 * 60 * 1000), "yyyy-MM-dd")
+        
+        let displayDate: string
+        if (dateKey === today) {
+          displayDate = "Hoje"
+        } else if (dateKey === yesterday) {
+          displayDate = "Ontem"
+        } else {
+          displayDate = format(validDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+        }
+        
+        groups[dateKey] = { promos: [], displayDate }
+      }
+      
+      groups[dateKey].promos.push(promo)
+    } catch (error) {
+      console.error("Erro ao agrupar promoção por data:", error)
+      const unknownKey = "unknown"
+      if (!groups[unknownKey]) {
+        groups[unknownKey] = { promos: [], displayDate: "Data não informada" }
+      }
+      groups[unknownKey].promos.push(promo)
     }
-    groups[localDateStr].push(promo)
   })
 
-  // Sort dates in descending order (newest first)
+  // Ordenar grupos por data (mais recente primeiro)
   return Object.entries(groups)
-    .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-    .map(([date, promos]) => ({ date, promos }))
-}
-
-// Modificar a função para calcular valores por pessoa
-const calculateValues = (promo: PromoData) => {
-  const baseValue = Number.parseFloat(promo.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
-  if (isNaN(baseValue)) return { total: "0,00", perPerson: "0,00", installment: "0,00" }
-
-  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
-  const totalValue = baseValue * parcelas * 2
-  const perPersonValue = totalValue / 2
-  const installmentValue = perPersonValue / parcelas
-
-  return {
-    total: totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    perPerson: perPersonValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    installment: installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-  }
+    .sort(([dateA], [dateB]) => {
+      if (dateA === "unknown") return 1
+      if (dateB === "unknown") return -1
+      return dateB.localeCompare(dateA)
+    })
+    .map(([dateKey, { promos, displayDate }]) => ({
+      dateKey,
+      displayDate,
+      promos: promos.sort((a, b) => {
+        // Ordenar promoções dentro do grupo por hora de criação (mais recente primeiro)
+        try {
+          const dateA = parseISO(a.createdAt) || new Date(a.createdAt)
+          const dateB = parseISO(b.createdAt) || new Date(b.createdAt)
+          return dateB.getTime() - dateA.getTime()
+        } catch (error) {
+          return 0
+        }
+      })
+    }))
 }
 
 export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
@@ -155,6 +193,32 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   const [selectedPromoForImage, setSelectedPromoForImage] = useState<PromoData | null>(null)
 
   const { deletePromo, isLoading } = usePromo()
+
+  const parseCurrencyValue = (value: string) => {
+    if (!value) {
+      return "0,00"
+    }
+
+    const cleanedValue = value.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+    const parcelas = 15 // Valor padrão
+    const valueAfterCalculation = numericValue * parcelas * 2
+
+    return valueAfterCalculation.toFixed(2).replace(".", ",")
+  }
+
+  const getInstallmentValue = (value: string, parcelas: string = "15") => {
+    if (!value) {
+      return "0,00"
+    }
+
+    const cleanedValue = value.replace(/[^\d.,]/g, "")
+    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+    const parcelasNum = Number.parseInt(parcelas, 10)
+    const installmentValue = (numericValue * 2 * parcelasNum) / parcelasNum
+
+    return installmentValue.toFixed(2).replace(".", ",")
+  }
 
   const getRegimeAlimentacao = (promo: PromoData): string => {
     if (promo.ALL_INCLUSIVE) return "All Inclusive"
@@ -175,45 +239,29 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
   // Get unique destinations for filter
   const destinos = [...new Set(promos.map((promo) => promo.DESTINO))].sort()
 
-  // Filter and sort promos
-  const filteredPromos = promos
-    .filter((promo) => {
-      const matchesSearch =
-        searchTerm === "" ||
-        promo.DESTINO.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        promo.HOTEL.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        promo.DATA_FORMATADA.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter promos
+  const filteredPromos = promos.filter((promo) => {
+    const matchesSearch =
+      searchTerm === "" ||
+      promo.DESTINO.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      promo.HOTEL.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      promo.DATA_FORMATADA.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchesDestino = selectedDestino === null || promo.DESTINO === selectedDestino
+    const matchesDestino = selectedDestino === null || promo.DESTINO === selectedDestino
 
-      return matchesSearch && matchesDestino
-    })
-    .sort((a, b) => {
-      let comparison = 0
+    return matchesSearch && matchesDestino
+  })
 
-      if (sortField === "createdAt") {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      } else if (sortField === "DESTINO") {
-        comparison = a.DESTINO.localeCompare(b.DESTINO)
-      } else if (sortField === "VALOR") {
-        const valueA = Number.parseFloat(a.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
-        const valueB = Number.parseFloat(b.VALOR.replace(/[^\d.,]/g, "").replace(",", "."))
-        comparison = valueA - valueB
-      } else if (sortField === "DATA_FORMATADA") {
-        comparison = a.DATA_FORMATADA.localeCompare(b.DATA_FORMATADA)
-      }
-
-      return sortDirection === "asc" ? comparison : -comparison
-    })
-
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-    } else {
-      setSortField(field)
-      setSortDirection("asc")
+  // Ordenar promoções por data de criação (mais recente primeiro)
+  const sortedPromos = [...filteredPromos].sort((a, b) => {
+    try {
+      const dateA = parseISO(a.createdAt) || new Date(a.createdAt)
+      const dateB = parseISO(b.createdAt) || new Date(b.createdAt)
+      return dateB.getTime() - dateA.getTime()
+    } catch (error) {
+      return 0
     }
-  }
+  })
 
   const handleDeleteClick = (id: string) => {
     setDeleteConfirmId(id)
@@ -233,12 +281,6 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
 
   const handleGenerateImage = (promo: PromoData) => {
     setSelectedPromoForImage(promo)
-  }
-
-  const renderSortIcon = (field: string) => {
-    if (sortField !== field) return null
-
-    return sortDirection === "asc" ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
   }
 
   return (
@@ -278,7 +320,7 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
       </div>
 
       <div className="overflow-x-auto">
-        {filteredPromos.length === 0 ? (
+        {sortedPromos.length === 0 ? (
           <div className="p-8 text-center text-gray-500 font-mon">
             {promos.length === 0
               ? "Nenhuma promoção cadastrada. Adicione sua primeira promoção!"
@@ -286,144 +328,134 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {groupPromosByDate(filteredPromos).map(({ date, promos }) => (
-              <div key={date} className="py-2">
-                <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <div
-                      className={`w-full border-t ${
-                        date === new Date().toISOString().split("T")[0]
-                          ? "border-green-300"
-                          : date === new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split("T")[0]
-                            ? "border-orange-300"
-                            : "border-gray-300"
-                      }`}
-                    ></div>
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span
-                      className={`px-3 text-sm ${
-                        date === new Date().toISOString().split("T")[0]
-                          ? "bg-green-50 text-green-700 font-medium"
-                          : date === new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split("T")[0]
-                            ? "bg-orange-50 text-orange-700 font-medium"
-                            : "bg-white text-gray-500"
-                      }`}
-                    >
-                      {formatRelativeDate(date)}
-                    </span>
-                  </div>
+            {groupPromosByDate(sortedPromos).map(({ dateKey, displayDate, promos }) => (
+              <div key={dateKey} className="p-4">
+                {/* Header da data */}
+                <div className="flex items-center mb-4">
+                  <div className="flex-grow border-t border-gray-300"></div>
+                  <span className={`px-4 text-sm font-medium ${
+                    displayDate === "Hoje" 
+                      ? "text-green-600 bg-green-50" 
+                      : displayDate === "Ontem" 
+                        ? "text-orange-600 bg-orange-50" 
+                        : "text-gray-600 bg-gray-50"
+                  } rounded-full`}>
+                    {displayDate}
+                  </span>
+                  <div className="flex-grow border-t border-gray-300"></div>
                 </div>
 
-                <div className="space-y-2 mt-2">
-                  {promos.map((promo) => {
-                    const values = calculateValues(promo)
-                    return (
-                      <div
-                        key={promo.id}
-                        className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 text-primary-blue mr-2" />
-                              <span className="font-medium text-primary-blue">{promo.DESTINO}</span>
-                              <span className="mx-2 text-gray-400">•</span>
-                              <Hotel className="h-4 w-4 text-gray-500 mr-1" />
-                              <span className="text-gray-700">{promo.HOTEL}</span>
-                            </div>
-
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {promo.DATA_FORMATADA}
-                              </span>
-
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <Users className="h-3 w-3 mr-1" />
-                                {promo.NUMERO_DE_NOITES} noites
-                              </span>
-
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                <Utensils className="h-3 w-3 mr-1" />
-                                {getRegimeAlimentacao(promo)}
-                              </span>
-
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                <Plane className="h-3 w-3 mr-1" />
-                                {getAeroportoSaida(promo)}
-                              </span>
-                            </div>
+                {/* Lista de promoções do dia */}
+                <div className="space-y-3">
+                  {promos.map((promo) => (
+                    <div
+                      key={promo.id}
+                      className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        {/* Informações principais */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="h-4 w-4 text-primary-blue" />
+                            <span className="font-semibold text-primary-blue text-lg">{promo.DESTINO}</span>
+                            <span className="text-gray-400">•</span>
+                            <Hotel className="h-4 w-4 text-gray-500" />
+                            <span className="text-gray-700">{promo.HOTEL}</span>
                           </div>
 
-                          <div className="flex flex-col items-end">
-                            <div className="text-right">
-                              <div className="text-sm text-gray-500">Valor total:</div>
-                              <div className="text-lg font-bold text-primary-blue">R$ {values.total}</div>
-                            </div>
-
-                            <div className="flex gap-4 mt-1 text-sm">
-                              <div className="text-right">
-                                <div className="text-gray-500">Por pessoa:</div>
-                                <div className="font-medium">R$ {values.perPerson}</div>
-                              </div>
-
-                              <div className="text-right">
-                                <div className="text-gray-500">Em {promo.PARCELAS || 10}x:</div>
-                                <div className="font-medium">R$ {values.installment}</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            {deleteConfirmId === promo.id ? (
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={handleConfirmDelete}
-                                  disabled={isLoading}
-                                  className="text-white bg-red-600 hover:bg-red-700 p-1.5 rounded"
-                                >
-                                  {isLoading ? (
-                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={handleCancelDelete}
-                                  className="text-gray-600 hover:text-gray-800 p-1.5 rounded bg-gray-100 hover:bg-gray-200"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => handleGenerateImage(promo)}
-                                  className="text-green-600 hover:text-green-800 p-1.5 rounded hover:bg-green-50"
-                                  title="Gerar imagem promocional"
-                                >
-                                  <ImageIcon className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => onEdit(promo)}
-                                  className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(promo.id)}
-                                  className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                            <Clock className="h-4 w-4" />
+                            <span>{getRelativeDate(promo.createdAt)}</span>
+                            {promo.createdByName && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <span>por {promo.createdByName}</span>
+                              </>
                             )}
                           </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {promo.DATA_FORMATADA}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {promo.NUMERO_DE_NOITES} noites
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              {getRegimeAlimentacao(promo)}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              {getAeroportoSaida(promo)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Valores */}
+                        <div className="flex flex-col items-end">
+                          <div className="text-right mb-2">
+                            <div className="text-2xl font-bold text-primary-blue">
+                              R$ {parseCurrencyValue(promo.VALOR)}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ou {promo.PARCELAS || "15"}x de R$ {getInstallmentValue(promo.VALOR, promo.PARCELAS)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex items-center space-x-2">
+                          {deleteConfirmId === promo.id ? (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={handleConfirmDelete}
+                                disabled={isLoading}
+                                className="text-white bg-red-600 hover:bg-red-700 p-2 rounded-md transition-colors"
+                                title="Confirmar exclusão"
+                              >
+                                {isLoading ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={handleCancelDelete}
+                                className="text-gray-600 hover:text-gray-800 p-2 rounded-md bg-gray-200 hover:bg-gray-300 transition-colors"
+                                title="Cancelar"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleGenerateImage(promo)}
+                                className="text-green-600 hover:text-green-800 p-2 rounded-md hover:bg-green-50 transition-colors"
+                                title="Gerar imagem promocional"
+                              >
+                                <Image className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => onEdit(promo)}
+                                className="text-blue-600 hover:text-blue-800 p-2 rounded-md hover:bg-blue-50 transition-colors"
+                                title="Editar promoção"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(promo.id)}
+                                className="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50 transition-colors"
+                                title="Excluir promoção"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
