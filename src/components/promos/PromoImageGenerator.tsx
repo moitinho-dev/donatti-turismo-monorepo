@@ -59,7 +59,7 @@ const defaultLayouts: LayoutConfig[] = [
     },
     elements: {
       region: { x: 766, y: 274, fontSize: 42, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
+      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
       hotel: { x: 480, y: 450, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
       dates: { x: 480, y: 530, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
       installments: { x: 510, y: 620, fontSize: 30, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
