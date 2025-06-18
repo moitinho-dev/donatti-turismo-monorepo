@@ -1,14 +1,82 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
 import type React from "react"
-
 import { toPng } from "html-to-image"
-import { Loader2, Download, ImageIcon } from "lucide-react"
+import { 
+  Loader2, 
+  Download, 
+  ImageIcon, 
+  RefreshCw, 
+  Edit3, 
+  Save, 
+  Upload,
+  Palette,
+  Type,
+  Move,
+  Settings
+} from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
 
 interface PromoImageGeneratorProps {
   promo: any
 }
+
+interface LayoutConfig {
+  id: string
+  name: string
+  type: 'png' | 'svg' | 'custom'
+  url?: string
+  elements: {
+    [key: string]: {
+      x: number
+      y: number
+      fontSize: number
+      fontWeight: string
+      color: string
+      fontFamily: string
+    }
+  }
+  colors: {
+    primary: string
+    secondary: string
+    accent: string
+    background: string
+  }
+}
+
+const defaultLayouts: LayoutConfig[] = [
+  {
+    id: 'default-png',
+    name: 'Layout Padrão (PNG)',
+    type: 'png',
+    url: '/assets/LAYOUTFINAL.png',
+    colors: {
+      primary: '#DC2626',
+      secondary: '#FFFFFF',
+      accent: '#FED400',
+      background: '#1D3153'
+    },
+    elements: {
+      region: { x: 70, y: 270, fontSize: 48, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
+      hotel: { x: 480, y: 450, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      dates: { x: 480, y: 530, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      installments: { x: 510, y: 620, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
+      currency: { x: 510, y: 660, fontSize: 60, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      price: { x: 600, y: 605, fontSize: 126, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: '600', color: '#DC2626', fontFamily: 'Inter' },
+      flight: { x: 545, y: 835, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      perPerson: { x: 545, y: 885, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      nights: { x: 545, y: 935, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      regime: { x: 545, y: 980, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
+      departure: { x: 410, y: 1100, fontSize: 20, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      disclaimer: { x: 490, y: 1160, fontSize: 20, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
+      contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
+      contact: { x: 580, y: 1285, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' }
+    }
+  }
+]
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
@@ -18,22 +86,41 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [availableImages, setAvailableImages] = useState<any[]>([])
   const [customSearchQuery, setCustomSearchQuery] = useState<string | null>(null)
   const [selectedRegion, setSelectedRegion] = useState<string>("")
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedElement, setSelectedElement] = useState<string | null>(null)
+  const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(defaultLayouts[0])
+  const [savedLayouts, setSavedLayouts] = useState<LayoutConfig[]>([])
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [customLayoutFile, setCustomLayoutFile] = useState<File | null>(null)
+  const [customLayoutUrl, setCustomLayoutUrl] = useState<string | null>(null)
+  
   const templateRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Calculate values
   const baseValue = Number.parseFloat(promo.VALOR)
   const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
 
-  // Preload fonts and initialize
+  // Load saved layouts from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('promo-layouts')
+    if (saved) {
+      try {
+        setSavedLayouts(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading saved layouts:', e)
+      }
+    }
+  }, [])
+
+  // Initialize
   useEffect(() => {
     const loadFonts = async () => {
-      // Load Google Fonts
       const link = document.createElement('link')
       link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
       link.rel = 'stylesheet'
       document.head.appendChild(link)
-
-      // Wait for fonts to load
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
     
@@ -47,6 +134,28 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       fetchDestinationImages()
     }
   }, [promo.DESTINO])
+
+  // Handle custom layout file upload
+  const handleLayoutUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setCustomLayoutFile(file)
+      const url = URL.createObjectURL(file)
+      setCustomLayoutUrl(url)
+      
+      // Create new layout config
+      const newLayout: LayoutConfig = {
+        id: `custom-${Date.now()}`,
+        name: `Layout Personalizado - ${file.name}`,
+        type: 'custom',
+        url: url,
+        colors: currentLayout.colors,
+        elements: { ...currentLayout.elements }
+      }
+      
+      setCurrentLayout(newLayout)
+    }
+  }
 
   // Function to fetch destination images from API
   const fetchDestinationImages = async (customQuery?: string) => {
@@ -68,7 +177,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
       if (data.results && data.results.length > 0) {
         setAvailableImages(data.results)
-        // Seleciona a primeira imagem automaticamente se não houver uma selecionada
         if (!destinationImage) {
           setDestinationImage(data.results[0].urls.regular)
         }
@@ -211,6 +319,103 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
+  // Handle element click for selection
+  const handleElementClick = (elementId: string, event: React.MouseEvent) => {
+    if (!isEditMode) return
+    
+    event.stopPropagation()
+    setSelectedElement(elementId)
+  }
+
+  // Handle element drag
+  const handleMouseDown = (elementId: string, event: React.MouseEvent) => {
+    if (!isEditMode) return
+    
+    event.preventDefault()
+    setSelectedElement(elementId)
+    setIsDragging(true)
+    
+    const rect = event.currentTarget.getBoundingClientRect()
+    setDragOffset({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    })
+  }
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!isDragging || !selectedElement || !templateRef.current) return
+    
+    const templateRect = templateRef.current.getBoundingClientRect()
+    const scale = 0.5 // Template is scaled down
+    
+    const newX = (event.clientX - templateRect.left - dragOffset.x) / scale
+    const newY = (event.clientY - templateRect.top - dragOffset.y) / scale
+    
+    setCurrentLayout(prev => ({
+      ...prev,
+      elements: {
+        ...prev.elements,
+        [selectedElement]: {
+          ...prev.elements[selectedElement],
+          x: Math.max(0, Math.min(1080, newX)),
+          y: Math.max(0, Math.min(1920, newY))
+        }
+      }
+    }))
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  // Update element property
+  const updateElementProperty = (elementId: string, property: string, value: any) => {
+    setCurrentLayout(prev => ({
+      ...prev,
+      elements: {
+        ...prev.elements,
+        [elementId]: {
+          ...prev.elements[elementId],
+          [property]: value
+        }
+      }
+    }))
+  }
+
+  // Update layout colors
+  const updateLayoutColor = (colorKey: string, value: string) => {
+    setCurrentLayout(prev => ({
+      ...prev,
+      colors: {
+        ...prev.colors,
+        [colorKey]: value
+      }
+    }))
+  }
+
+  // Save current layout
+  const saveCurrentLayout = () => {
+    const layoutName = prompt('Nome do layout:')
+    if (!layoutName) return
+    
+    const newLayout: LayoutConfig = {
+      ...currentLayout,
+      id: `saved-${Date.now()}`,
+      name: layoutName
+    }
+    
+    const updatedLayouts = [...savedLayouts, newLayout]
+    setSavedLayouts(updatedLayouts)
+    localStorage.setItem('promo-layouts', JSON.stringify(updatedLayouts))
+    
+    alert('Layout salvo com sucesso!')
+  }
+
+  // Load saved layout
+  const loadLayout = (layout: LayoutConfig) => {
+    setCurrentLayout(layout)
+  }
+
   const generateImage = async () => {
     if (!templateRef.current) return
 
@@ -221,7 +426,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       const originalTransform = template.style.transform
       template.style.transform = ""
 
-      // Wait a bit for fonts to load
       await new Promise(resolve => setTimeout(resolve, 500))
 
       const dataUrl = await toPng(template, {
@@ -265,86 +469,247 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setSelectedRegion(e.target.value)
   }
 
+  // Get element content
+  const getElementContent = (elementId: string) => {
+    switch (elementId) {
+      case 'region': return selectedRegion
+      case 'destination': return promo.DESTINO
+      case 'hotel': return promo.HOTEL
+      case 'dates': return formatDateRange()
+      case 'installments': return `${parcelas}x de`
+      case 'currency': return 'R$'
+      case 'price': return baseValue.toFixed(2).replace(".", ",")
+      case 'installmentText': return 'no cartão e 10x no boleto sem juros.'
+      case 'flight': return 'Aéreo Ida e Volta'
+      case 'perPerson': return 'Valor por pessoa'
+      case 'nights': return `${promo.NUMERO_DE_NOITES} Noites`
+      case 'regime': return getRegimeAlimentacao()
+      case 'departureLabel': return 'saindo de'
+      case 'departure': return getDepartureAirport()
+      case 'disclaimer': return 'Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.'
+      case 'contactLabel': return 'Contato e Whatsapp'
+      case 'contact': return '(67) 9 9637-2769'
+      default: return ''
+    }
+  }
+
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      {/* Galeria de imagens */}
-      <div className="w-full md:w-2/5 bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
-            <ImageIcon className="h-5 w-5 mr-2 text-primary-blue" />
-            Galeria de imagens
-          </h3>
-          <p className="text-sm text-gray-500 mb-2">
-            {customSearchQuery
-              ? `Mostrando resultados para "${customSearchQuery}"`
-              : `Escolha entre as imagens disponíveis para ${promo.DESTINO}`}
-          </p>
-        </div>
+    <div className="flex h-full">
+      {/* Left Sidebar - Controls */}
+      <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="p-4 space-y-6">
+          {/* Layout Selection */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+              <Settings className="h-5 w-5 mr-2 text-primary-blue" />
+              Layout
+            </h3>
+            
+            <div className="space-y-2">
+              <select
+                value={currentLayout.id}
+                onChange={(e) => {
+                  const layout = [...defaultLayouts, ...savedLayouts].find(l => l.id === e.target.value)
+                  if (layout) loadLayout(layout)
+                }}
+                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value={defaultLayouts[0].id}>Layout Padrão</option>
+                {savedLayouts.map(layout => (
+                  <option key={layout.id} value={layout.id}>{layout.name}</option>
+                ))}
+              </select>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Layout
+                </button>
+                
+                <button
+                  onClick={saveCurrentLayout}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors text-sm"
+                >
+                  <Save className="h-4 w-4" />
+                  Salvar
+                </button>
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLayoutUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
 
-        <ImageGallery
-          images={availableImages}
-          onSelectImage={handleSelectImage}
-          selectedImageUrl={destinationImage}
-          isLoading={isLoadingImage}
-          onSearch={handleCustomSearch}
-          destination={promo.DESTINO}
-        />
-      </div>
+          {/* Edit Mode Toggle */}
+          <div className="space-y-3">
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                isEditMode 
+                  ? 'bg-green-100 text-green-700 border border-green-300' 
+                  : 'bg-gray-100 text-gray-700 border border-gray-300'
+              }`}
+            >
+              <Edit3 className="h-4 w-4" />
+              {isEditMode ? 'Sair da Edição' : 'Editar Layout'}
+            </button>
+          </div>
 
-      {/* Gerador de imagem */}
-      <div className="w-full md:w-3/5 flex flex-col items-center">
-        <div className="mb-4 flex gap-4 w-full justify-center">
+          {/* Layout Colors */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+              <Palette className="h-5 w-5 mr-2 text-primary-blue" />
+              Cores do Layout
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(currentLayout.colors).map(([key, value]) => (
+                <div key={key} className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600 capitalize">
+                    {key === 'primary' ? 'Primária' : 
+                     key === 'secondary' ? 'Secundária' : 
+                     key === 'accent' ? 'Destaque' : 'Fundo'}
+                  </label>
+                  <input
+                    type="color"
+                    value={value}
+                    onChange={(e) => updateLayoutColor(key, e.target.value)}
+                    className="w-full h-8 rounded border border-gray-300"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Region Selection */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-700">Região</h3>
+            <select
+              value={selectedRegion}
+              onChange={handleRegionChange}
+              className="w-full p-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="Nordeste">Nordeste</option>
+              <option value="Sul">Sul</option>
+              <option value="Sudeste">Sudeste</option>
+              <option value="Norte">Norte</option>
+              <option value="Centro-Oeste">Centro-Oeste</option>
+              <option value="Exterior">Exterior</option>
+              <option value="Brasil">Brasil</option>
+            </select>
+          </div>
+
+          {/* Element Properties */}
+          {isEditMode && selectedElement && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                <Type className="h-5 w-5 mr-2 text-primary-blue" />
+                Propriedades do Elemento
+              </h3>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Tamanho da Fonte</label>
+                  <input
+                    type="number"
+                    value={currentLayout.elements[selectedElement]?.fontSize || 16}
+                    onChange={(e) => updateElementProperty(selectedElement, 'fontSize', parseInt(e.target.value))}
+                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    min="8"
+                    max="200"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Peso da Fonte</label>
+                  <select
+                    value={currentLayout.elements[selectedElement]?.fontWeight || 'normal'}
+                    onChange={(e) => updateElementProperty(selectedElement, 'fontWeight', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="400">Normal</option>
+                    <option value="500">Medium</option>
+                    <option value="600">Semibold</option>
+                    <option value="700">Bold</option>
+                    <option value="800">Extrabold</option>
+                    <option value="900">Black</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Cor</label>
+                  <input
+                    type="color"
+                    value={currentLayout.elements[selectedElement]?.color || '#000000'}
+                    onChange={(e) => updateElementProperty(selectedElement, 'color', e.target.value)}
+                    className="w-full h-8 rounded border border-gray-300"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Posição X</label>
+                    <input
+                      type="number"
+                      value={currentLayout.elements[selectedElement]?.x || 0}
+                      onChange={(e) => updateElementProperty(selectedElement, 'x', parseInt(e.target.value))}
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Posição Y</label>
+                    <input
+                      type="number"
+                      value={currentLayout.elements[selectedElement]?.y || 0}
+                      onChange={(e) => updateElementProperty(selectedElement, 'y', parseInt(e.target.value))}
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Generate Button */}
           <button
             onClick={generateImage}
             disabled={isGenerating || !destinationImage}
-            className="flex items-center gap-2 px-6 py-3 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50 font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50 font-medium"
           >
             {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-            Baixar imagem promocional
+            Baixar Imagem
           </button>
         </div>
-        
-        <div className="mb-6 w-full">
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Personalizar Imagem</h3>
+      </div>
 
-            <div className="mb-4">
-              <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-1">
-                Região
-              </label>
-              <select
-                id="region-select"
-                value={selectedRegion}
-                onChange={handleRegionChange}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-              >
-                <option value="Nordeste">Nordeste</option>
-                <option value="Sul">Sul</option>
-                <option value="Sudeste">Sudeste</option>
-                <option value="Norte">Norte</option>
-                <option value="Centro-Oeste">Centro-Oeste</option>
-                <option value="Exterior">Exterior</option>
-                <option value="Brasil">Brasil</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Selecione a região que aparecerá na imagem promocional</p>
-            </div>
-          </div>
-        </div>
-        
+      {/* Center - Template Preview */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-50">
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm w-full">{error}</div>
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm w-full max-w-md">
+            {error}
+          </div>
         )}
 
-        <div className="relative w-[540px] h-[960px] overflow-hidden border border-gray-300 rounded-lg shadow-lg">
-          {/* Template for the promotional image */}
+        <div className="relative w-[540px] h-[960px] overflow-hidden border border-gray-300 rounded-lg shadow-lg bg-white">
           <div
             ref={templateRef}
-            className="w-[540px] h-[960px] relative"
+            className="w-[540px] h-[960px] relative cursor-pointer"
             style={{ 
               transform: "scale(0.5)", 
               transformOrigin: "top left",
               fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             }}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onClick={() => setSelectedElement(null)}
           >
             {/* Destination image as background */}
             {destinationImage && (
@@ -358,67 +723,75 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
             )}
             
-            {/* Template overlay with higher z-index */}
-            <div className="absolute inset-0 w-[1080px] h-[1920px] z-10" style={{ fontFamily: 'inherit' }}>
+            {/* Template overlay */}
+            <div className="absolute inset-0 w-[1080px] h-[1920px] z-10">
               {/* Background template image */}
-              <img src="/assets/LAYOUTFINAL.png" alt="Promo Template" className="w-full h-full object-cover" />
+              <img 
+                src={customLayoutUrl || currentLayout.url || "/assets/LAYOUTFINAL.png"} 
+                alt="Promo Template" 
+                className="w-full h-full object-cover" 
+              />
 
-              {/* Text Overlay with improved fonts and positioning */}
-              <div className="absolute inset-0" style={{ fontFamily: 'inherit' }}>
-                <div className="absolute top-[270px] right-[70px] text-red-800 text-5xl font-black" style={{ fontFamily: 'inherit', fontWeight: '900' }}>
-                  {selectedRegion}
-                </div>
-                <div className="absolute top-[360px] left-[480px] text-white text-6xl font-black" style={{ fontFamily: 'inherit', fontWeight: '900' }}>
-                  {promo.DESTINO}
-                </div>
-                <div className="absolute top-[450px] left-[480px] text-white text-4xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  {promo.HOTEL}
-                </div>
-                <div className="absolute top-[530px] left-[480px] text-white text-4xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  {formatDateRange()}
-                </div>
-                <div className="absolute top-[620px] left-[510px] text-red-800 text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  {parcelas}x de
-                </div>
-                <div className="absolute top-[660px] left-[510px] text-red-800 text-6xl font-black" style={{ fontFamily: 'inherit', fontWeight: '900' }}>
-                  R$
-                </div>
-                <div className="absolute top-[605px] left-[600px] text-red-800 text-[126px] font-black" style={{ fontFamily: 'inherit', fontWeight: '900' }}>
-                  {baseValue.toFixed(2).replace(".", ",")}
-                </div>
-                <div className="absolute top-[760px] left-[518px] text-red-800 text-[28px] font-semibold" style={{ fontFamily: 'inherit', fontWeight: '600' }}>
-                  no cartão e 10x no boleto sem juros.
-                </div>
-                <div className="absolute top-[835px] left-[545px] text-white text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  Aéreo Ida e Volta
-                </div>
-                <div className="absolute top-[885px] left-[545px] text-white text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  Valor por pessoa
-                </div>
-                <div className="absolute top-[935px] left-[545px] text-white text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  {promo.NUMERO_DE_NOITES} Noites
-                </div>
-                <div className="absolute top-[980px] left-[545px] text-white text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  {getRegimeAlimentacao()}
-                </div>
-                <div className="absolute top-[1070px] left-[410px] text-red-800 text-xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  saindo de
-                </div>
-                <div className="absolute top-[1100px] left-[410px] text-red-800 text-xl font-black" style={{ fontFamily: 'inherit', fontWeight: '900' }}>
-                  {getDepartureAirport()}
-                </div>
-                <div className="absolute top-[1160px] left-[490px] text-center text-white text-[20px] font-medium max-w-[500px]" style={{ fontFamily: 'inherit', fontWeight: '500' }}>
-                  Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.
-                </div>
-                <div className="absolute top-[1250px] left-[580px] text-red-800 text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  Contato e Whatsapp
-                </div>
-                <div className="absolute top-[1285px] left-[580px] text-red-800 text-3xl font-bold" style={{ fontFamily: 'inherit', fontWeight: '700' }}>
-                  (67) 9 9637-2769
-                </div>
+              {/* Text Overlays */}
+              <div className="absolute inset-0">
+                {Object.entries(currentLayout.elements).map(([elementId, element]) => (
+                  <div
+                    key={elementId}
+                    className={`absolute cursor-pointer ${
+                      isEditMode ? 'hover:ring-2 hover:ring-blue-400' : ''
+                    } ${
+                      selectedElement === elementId ? 'ring-2 ring-blue-500 bg-blue-100 bg-opacity-20' : ''
+                    }`}
+                    style={{
+                      left: `${element.x}px`,
+                      top: `${element.y}px`,
+                      fontSize: `${element.fontSize}px`,
+                      fontWeight: element.fontWeight,
+                      color: element.color,
+                      fontFamily: element.fontFamily,
+                      userSelect: isEditMode ? 'none' : 'auto'
+                    }}
+                    onClick={(e) => handleElementClick(elementId, e)}
+                    onMouseDown={(e) => handleMouseDown(elementId, e)}
+                  >
+                    {getElementContent(elementId)}
+                    {isEditMode && selectedElement === elementId && (
+                      <div className="absolute -top-6 -left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                        <Move className="h-3 w-3 inline mr-1" />
+                        {elementId}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Right Sidebar - Image Gallery */}
+      <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
+        <div className="p-4">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+              <ImageIcon className="h-5 w-5 mr-2 text-primary-blue" />
+              Galeria de Imagens
+            </h3>
+            <p className="text-sm text-gray-500 mb-2">
+              {customSearchQuery
+                ? `Resultados para "${customSearchQuery}"`
+                : `Imagens para ${promo.DESTINO}`}
+            </p>
+          </div>
+
+          <ImageGallery
+            images={availableImages}
+            onSelectImage={handleSelectImage}
+            selectedImageUrl={destinationImage}
+            isLoading={isLoadingImage}
+            onSearch={handleCustomSearch}
+            destination={promo.DESTINO}
+          />
         </div>
       </div>
     </div>
