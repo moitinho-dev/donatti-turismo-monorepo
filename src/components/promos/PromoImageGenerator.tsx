@@ -58,23 +58,23 @@ const defaultLayouts: LayoutConfig[] = [
       background: '#1D3153'
     },
     elements: {
-      region: { x: 70, y: 270, fontSize: 48, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
-      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
+      region: { x: 766, y: 274, fontSize: 42, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
+      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
       hotel: { x: 480, y: 450, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
       dates: { x: 480, y: 530, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      installments: { x: 510, y: 620, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
-      currency: { x: 510, y: 660, fontSize: 60, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
-      price: { x: 600, y: 605, fontSize: 126, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
-      installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: '600', color: '#DC2626', fontFamily: 'Inter' },
+      installments: { x: 510, y: 620, fontSize: 30, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
+      currency: { x: 510, y: 660, fontSize: 60, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
+      price: { x: 600, y: 605, fontSize: 114, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
+      installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: '600', color: '#002043', fontFamily: 'Inter' },
       flight: { x: 545, y: 835, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
       perPerson: { x: 545, y: 885, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
       nights: { x: 545, y: 935, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
       regime: { x: 545, y: 980, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
-      departure: { x: 410, y: 1100, fontSize: 20, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
-      disclaimer: { x: 490, y: 1160, fontSize: 20, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
-      contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
-      contact: { x: 580, y: 1285, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' }
+      departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
+      departure: { x: 410, y: 1100, fontSize: 20, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
+      disclaimer: { x: 470, y: 1160, fontSize: 20, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
+      contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
+      contact: { x: 580, y: 1285, fontSize: 30, fontWeight: '700', color: '#002043', fontFamily: 'Inter' }
     }
   }
 ]
