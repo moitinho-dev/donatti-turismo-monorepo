@@ -13,7 +13,8 @@ import {
   Palette,
   Type,
   Move,
-  Settings
+  Settings,
+  Trash2
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
 
@@ -411,6 +412,22 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     alert('Layout salvo com sucesso!')
   }
 
+  // Delete saved layout
+  const deleteLayout = (layoutId: string) => {
+    if (confirm('Tem certeza que deseja deletar este layout?')) {
+      const updatedLayouts = savedLayouts.filter(layout => layout.id !== layoutId)
+      setSavedLayouts(updatedLayouts)
+      localStorage.setItem('promo-layouts', JSON.stringify(updatedLayouts))
+      
+      // If the deleted layout is currently selected, switch to default
+      if (currentLayout.id === layoutId) {
+        setCurrentLayout(defaultLayouts[0])
+      }
+      
+      alert('Layout deletado com sucesso!')
+    }
+  }
+
   // Load saved layout
   const loadLayout = (layout: LayoutConfig) => {
     setCurrentLayout(layout)
@@ -537,6 +554,27 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                   Salvar
                 </button>
               </div>
+              
+              {/* Saved Layouts Management */}
+              {savedLayouts.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-700">Layouts Salvos:</h4>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {savedLayouts.map(layout => (
+                      <div key={layout.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                        <span className="truncate flex-1">{layout.name}</span>
+                        <button
+                          onClick={() => deleteLayout(layout.id)}
+                          className="ml-2 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                          title="Deletar layout"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               <input
                 ref={fileInputRef}
