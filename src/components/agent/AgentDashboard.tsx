@@ -8,8 +8,9 @@ import { PromoStats } from "../promos/PromoStats"
 import { DateRangePicker } from "../promos/DateRangePicker"
 import { CSVExport } from "../promos/CSVExport"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Plus, FileText, BarChart2, Image } from "lucide-react"
+import { Loader2, Plus, FileText, BarChart2, Image, Users } from "lucide-react"
 import { PromoImageBulkGenerator } from "../promos/PromoImageBulkGenerator"
+import { AgentStats } from "./AgentStats"
 
 interface User {
   id: string
@@ -23,7 +24,7 @@ interface AgentDashboardProps {
 }
 
 export default function AgentDashboard({ user }: AgentDashboardProps) {
-  const [activeTab, setActiveTab] = useState("promos")
+  const [activeTab, setActiveTab] = useState("dashboard")
   const [selectedPromo, setSelectedPromo] = useState<any>(null)
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -89,7 +90,7 @@ export default function AgentDashboard({ user }: AgentDashboardProps) {
   }
 
   const handleFormSubmitSuccess = () => {
-    setActiveTab("promos")
+    setActiveTab("dashboard")
     setSelectedPromo(null)
     fetchPromos()
     fetchStats()
@@ -124,9 +125,9 @@ export default function AgentDashboard({ user }: AgentDashboardProps) {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-primary-blue mb-2 font-mon">Gerenciador de Promoções</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary-blue mb-2 font-mon">Painel do Agente</h1>
             <p className="text-gray-600 font-mon">
-              Adicione, edite e visualize as promoções disponíveis para os clientes
+              Gerencie suas promoções e visualize estatísticas de desempenho
             </p>
           </div>
 
@@ -152,6 +153,13 @@ export default function AgentDashboard({ user }: AgentDashboardProps) {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
           <TabsList className="mb-8 bg-gray-100 p-1 rounded-lg overflow-x-auto flex whitespace-nowrap">
             <TabsTrigger
+              value="dashboard"
+              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
+            >
+              <BarChart2 className="h-4 w-4 mr-2" />
+              <span>Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger
               value="promos"
               className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
             >
@@ -175,15 +183,28 @@ export default function AgentDashboard({ user }: AgentDashboardProps) {
               <span className="hidden sm:inline">Gerador de Imagens</span>
               <span className="sm:hidden">Imagens</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="estatisticas"
-              className="font-mon data-[state=active]:bg-white data-[state=active]:text-primary-blue"
-            >
-              <BarChart2 className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Estatísticas</span>
-              <span className="sm:hidden">Stats</span>
-            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
+                <span className="ml-2 text-gray-600 font-mon">Carregando dados...</span>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Meu Desempenho</h2>
+                  <AgentStats userPromos={promos} user={user} />
+                </div>
+
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Estatísticas de Promoções</h2>
+                  <PromoStats stats={stats} detailed />
+                </div>
+              </>
+            )}
+          </TabsContent>
 
           <TabsContent value="promos" className="space-y-4">
             {isLoading ? (
@@ -213,24 +234,8 @@ export default function AgentDashboard({ user }: AgentDashboardProps) {
               <PromoImageBulkGenerator promos={promos} />
             </div>
           </TabsContent>
-
-          <TabsContent value="estatisticas">
-            <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
-              <h2 className="text-xl font-bold text-primary-blue mb-6 font-mon">Estatísticas de Promoções</h2>
-
-              {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary-blue" />
-                  <span className="ml-2 text-gray-600 font-mon">Carregando estatísticas...</span>
-                </div>
-              ) : (
-                <PromoStats stats={stats} detailed />
-              )}
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
     </div>
   )
 }
-

@@ -14,7 +14,9 @@ import {
   Type,
   Move,
   Settings,
-  Trash2
+  Trash2,
+  Monitor,
+  Smartphone
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
 
@@ -26,6 +28,7 @@ interface LayoutConfig {
   id: string
   name: string
   type: 'png' | 'svg' | 'custom'
+  format: 'story' | 'feed'
   url?: string
   elements: {
     [key: string]: {
@@ -47,9 +50,10 @@ interface LayoutConfig {
 
 const defaultLayouts: LayoutConfig[] = [
   {
-    id: 'default-png',
-    name: 'Layout Padrão (PNG)',
+    id: 'default-story',
+    name: 'Layout Stories (1080x1920)',
     type: 'png',
+    format: 'story',
     url: '/assets/LAYOUTFINAL.png',
     colors: {
       primary: '#DC2626',
@@ -75,6 +79,38 @@ const defaultLayouts: LayoutConfig[] = [
       disclaimer: { x: 490, y: 1160, fontSize: 20, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
       contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
       contact: { x: 580, y: 1285, fontSize: 30, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' }
+    }
+  },
+  {
+    id: 'default-feed',
+    name: 'Layout Feed (1080x1350)',
+    type: 'png',
+    format: 'feed',
+    url: '/assets/LAYOUTFINAL.png',
+    colors: {
+      primary: '#DC2626',
+      secondary: '#FFFFFF',
+      accent: '#FED400',
+      background: '#1D3153'
+    },
+    elements: {
+      region: { x: 70, y: 200, fontSize: 42, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      destination: { x: 480, y: 280, fontSize: 54, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
+      hotel: { x: 480, y: 350, fontSize: 36, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      dates: { x: 480, y: 420, fontSize: 36, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      installments: { x: 510, y: 500, fontSize: 28, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
+      currency: { x: 510, y: 530, fontSize: 54, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      price: { x: 600, y: 480, fontSize: 110, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      installmentText: { x: 518, y: 620, fontSize: 26, fontWeight: '600', color: '#DC2626', fontFamily: 'Inter' },
+      flight: { x: 545, y: 680, fontSize: 28, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      perPerson: { x: 545, y: 720, fontSize: 28, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      nights: { x: 545, y: 760, fontSize: 28, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      regime: { x: 545, y: 800, fontSize: 28, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
+      departureLabel: { x: 410, y: 870, fontSize: 18, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
+      departure: { x: 410, y: 900, fontSize: 18, fontWeight: '900', color: '#DC2626', fontFamily: 'Inter' },
+      disclaimer: { x: 490, y: 950, fontSize: 18, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
+      contactLabel: { x: 580, y: 1020, fontSize: 28, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' },
+      contact: { x: 580, y: 1055, fontSize: 28, fontWeight: '700', color: '#DC2626', fontFamily: 'Inter' }
     }
   }
 ]
@@ -149,6 +185,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         id: `custom-${Date.now()}`,
         name: `Layout Personalizado - ${file.name}`,
         type: 'custom',
+        format: currentLayout.format,
         url: url,
         colors: currentLayout.colors,
         elements: { ...currentLayout.elements }
@@ -347,10 +384,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (!isDragging || !selectedElement || !templateRef.current) return
     
     const templateRect = templateRef.current.getBoundingClientRect()
-    const scale = 0.5 // Template is scaled down
+    const scale = currentLayout.format === 'feed' ? 0.4 : 0.5 // Different scale for feed format
     
     const newX = (event.clientX - templateRect.left - dragOffset.x) / scale
     const newY = (event.clientY - templateRect.top - dragOffset.y) / scale
+    
+    const maxX = currentLayout.format === 'feed' ? 1080 : 1080
+    const maxY = currentLayout.format === 'feed' ? 1350 : 1920
     
     setCurrentLayout(prev => ({
       ...prev,
@@ -358,8 +398,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         ...prev.elements,
         [selectedElement]: {
           ...prev.elements[selectedElement],
-          x: Math.max(0, Math.min(1080, newX)),
-          y: Math.max(0, Math.min(1920, newY))
+          x: Math.max(0, Math.min(maxX, newX)),
+          y: Math.max(0, Math.min(maxY, newY))
         }
       }
     }))
@@ -433,6 +473,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     setCurrentLayout(layout)
   }
 
+  // Switch between story and feed formats
+  const switchFormat = (format: 'story' | 'feed') => {
+    const defaultLayout = defaultLayouts.find(l => l.format === format)
+    if (defaultLayout) {
+      setCurrentLayout(defaultLayout)
+    }
+  }
+
   const generateImage = async () => {
     if (!templateRef.current) return
 
@@ -445,10 +493,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
+      const width = currentLayout.format === 'feed' ? 1080 : 1080
+      const height = currentLayout.format === 'feed' ? 1350 : 1920
+
       const dataUrl = await toPng(template, {
         quality: 1.0,
-        width: 1080,
-        height: 1920,
+        width: width,
+        height: height,
         backgroundColor: '#ffffff',
         pixelRatio: 2,
         cacheBust: true,
@@ -460,7 +511,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       template.style.transform = originalTransform
 
       const link = document.createElement("a")
-      link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
+      const formatSuffix = currentLayout.format === 'feed' ? 'feed' : 'story'
+      link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}-${formatSuffix}.png`
       link.href = dataUrl
       link.click()
     } catch (error) {
@@ -510,11 +562,59 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
+  // Get container dimensions based on format
+  const getContainerDimensions = () => {
+    if (currentLayout.format === 'feed') {
+      return { width: '432px', height: '540px', scale: 0.4 }
+    }
+    return { width: '540px', height: '960px', scale: 0.5 }
+  }
+
+  const { width: containerWidth, height: containerHeight, scale } = getContainerDimensions()
+
   return (
     <div className="flex h-full">
       {/* Left Sidebar - Controls */}
       <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
         <div className="p-4 space-y-6">
+          {/* Format Selection */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+              <Settings className="h-5 w-5 mr-2 text-primary-blue" />
+              Formato
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => switchFormat('story')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                  currentLayout.format === 'story' 
+                    ? 'bg-primary-blue text-white border-primary-blue' 
+                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                <Smartphone className="h-4 w-4" />
+                <span className="text-sm">Stories</span>
+              </button>
+              
+              <button
+                onClick={() => switchFormat('feed')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                  currentLayout.format === 'feed' 
+                    ? 'bg-primary-blue text-white border-primary-blue' 
+                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                <Monitor className="h-4 w-4" />
+                <span className="text-sm">Feed</span>
+              </button>
+            </div>
+            
+            <p className="text-xs text-gray-500">
+              {currentLayout.format === 'story' ? '1080x1920 (Stories)' : '1080x1350 (Feed)'}
+            </p>
+          </div>
+
           {/* Layout Selection */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-gray-700 flex items-center">
@@ -531,10 +631,16 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 }}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
               >
-                <option value={defaultLayouts[0].id}>Layout Padrão</option>
-                {savedLayouts.map(layout => (
-                  <option key={layout.id} value={layout.id}>{layout.name}</option>
-                ))}
+                {defaultLayouts
+                  .filter(l => l.format === currentLayout.format)
+                  .map(layout => (
+                    <option key={layout.id} value={layout.id}>{layout.name}</option>
+                  ))}
+                {savedLayouts
+                  .filter(l => l.format === currentLayout.format)
+                  .map(layout => (
+                    <option key={layout.id} value={layout.id}>{layout.name}</option>
+                  ))}
               </select>
               
               <div className="flex gap-2">
@@ -556,22 +662,24 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               </div>
               
               {/* Saved Layouts Management */}
-              {savedLayouts.length > 0 && (
+              {savedLayouts.filter(l => l.format === currentLayout.format).length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-gray-700">Layouts Salvos:</h4>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {savedLayouts.map(layout => (
-                      <div key={layout.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <span className="truncate flex-1">{layout.name}</span>
-                        <button
-                          onClick={() => deleteLayout(layout.id)}
-                          className="ml-2 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                          title="Deletar layout"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
+                    {savedLayouts
+                      .filter(l => l.format === currentLayout.format)
+                      .map(layout => (
+                        <div key={layout.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                          <span className="truncate flex-1">{layout.name}</span>
+                          <button
+                            onClick={() => deleteLayout(layout.id)}
+                            className="ml-2 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                            title="Deletar layout"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
@@ -736,12 +844,17 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           </div>
         )}
 
-        <div className="relative w-[540px] h-[960px] overflow-hidden border border-gray-300 rounded-lg shadow-lg bg-white">
+        <div 
+          className="relative overflow-hidden border border-gray-300 rounded-lg shadow-lg bg-white"
+          style={{ width: containerWidth, height: containerHeight }}
+        >
           <div
             ref={templateRef}
-            className="w-[540px] h-[960px] relative cursor-pointer"
+            className="relative cursor-pointer"
             style={{ 
-              transform: "scale(0.5)", 
+              width: containerWidth,
+              height: containerHeight,
+              transform: `scale(${scale})`, 
               transformOrigin: "top left",
               fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             }}
@@ -751,7 +864,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           >
             {/* Destination image as background */}
             {destinationImage && (
-              <div className="absolute top-0 left-0 w-[1080px] h-[1920px] overflow-hidden z-0">
+              <div 
+                className="absolute top-0 left-0 overflow-hidden z-0"
+                style={{ 
+                  width: currentLayout.format === 'feed' ? '1080px' : '1080px',
+                  height: currentLayout.format === 'feed' ? '1350px' : '1920px'
+                }}
+              >
                 <img
                   src={destinationImage || "/placeholder.svg"}
                   alt={promo.DESTINO}
@@ -762,7 +881,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             )}
             
             {/* Template overlay */}
-            <div className="absolute inset-0 w-[1080px] h-[1920px] z-10">
+            <div 
+              className="absolute inset-0 z-10"
+              style={{ 
+                width: currentLayout.format === 'feed' ? '1080px' : '1080px',
+                height: currentLayout.format === 'feed' ? '1350px' : '1920px'
+              }}
+            >
               {/* Background template image */}
               <img 
                 src={customLayoutUrl || currentLayout.url || "/assets/LAYOUTFINAL.png"} 
