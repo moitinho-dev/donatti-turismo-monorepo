@@ -852,8 +852,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             ref={templateRef}
             className="relative cursor-pointer"
             style={{ 
-              width: containerWidth,
-              height: containerHeight,
+              width: currentLayout.format === 'feed' ? '1080px' : '1080px',
+              height: currentLayout.format === 'feed' ? '1350px' : '1920px',
               transform: `scale(${scale})`, 
               transformOrigin: "top left",
               fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
