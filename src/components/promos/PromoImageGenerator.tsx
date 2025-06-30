@@ -86,7 +86,7 @@ const defaultLayouts: LayoutConfig[] = [
     name: 'Layout Feed (1080x1350)',
     type: 'png',
     format: 'feed',
-    url: '/assets/LAYOUTFINAL.png',
+    url: '/assets/LAYOUTFEED.png',
     colors: {
       primary: '#DC2626',
       secondary: '#FFFFFF',
@@ -893,6 +893,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 src={customLayoutUrl || currentLayout.url || "/assets/LAYOUTFINAL.png"} 
                 alt="Promo Template" 
                 className="w-full h-full object-cover" 
+                crossOrigin="anonymous"
               />
 
               {/* Text Overlays */}
