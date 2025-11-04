@@ -142,7 +142,23 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   }, [promo.VALOR])
 
   const parcelas = useMemo(() => {
-    return Number.parseInt(promo.PARCELAS || "10", 10)
+    // Handle both string and number types
+    let parcelasValue = promo.PARCELAS
+    
+    // If it's a number, convert to string first
+    if (typeof parcelasValue === 'number') {
+      parcelasValue = parcelasValue.toString()
+    }
+    
+    // If it's undefined, null, or empty string, use default
+    if (!parcelasValue || parcelasValue === '' || parcelasValue === 'undefined' || parcelasValue === 'null') {
+      parcelasValue = "15" // Default to 15 to match other parts of the app
+    }
+    
+    const parsed = Number.parseInt(parcelasValue, 10)
+    
+    // Ensure we have a valid number
+    return isNaN(parsed) || parsed <= 0 ? 15 : parsed
   }, [promo.PARCELAS])
 
   // Calculate installment value (value per installment)
@@ -152,6 +168,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     const totalValue = baseValue * parcelas * 2
     return totalValue / parcelas
   }, [baseValue, parcelas])
+
+  // Debug: Log promo.PARCELAS when it changes
+  useEffect(() => {
+    console.log('PromoImageGenerator - Full promo object:', promo)
+    console.log('PromoImageGenerator - promo.PARCELAS:', promo.PARCELAS, 'Type:', typeof promo.PARCELAS)
+    console.log('PromoImageGenerator - calculated parcelas:', parcelas)
+    console.log('PromoImageGenerator - installmentValue:', installmentValue)
+  }, [promo.PARCELAS, parcelas, installmentValue, promo])
 
   // Load saved layouts from localStorage
   useEffect(() => {
