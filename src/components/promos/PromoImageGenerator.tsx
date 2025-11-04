@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import type React from "react"
 import { toPng } from "html-to-image"
 import { 
@@ -135,9 +135,23 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const templateRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Calculate values
-  const baseValue = Number.parseFloat(promo.VALOR)
-  const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
+  // Calculate values - use useMemo to recalculate when promo changes
+  const baseValue = useMemo(() => {
+    const cleanedValue = promo.VALOR?.replace(/[^\d.,]/g, "") || "0"
+    return Number.parseFloat(cleanedValue.replace(",", ".")) || 0
+  }, [promo.VALOR])
+
+  const parcelas = useMemo(() => {
+    return Number.parseInt(promo.PARCELAS || "10", 10)
+  }, [promo.PARCELAS])
+
+  // Calculate installment value (value per installment)
+  const installmentValue = useMemo(() => {
+    if (baseValue === 0 || parcelas === 0) return 0
+    // Same calculation as in PromoForm: totalValue / parcelas where totalValue = baseValue * parcelas * 2
+    const totalValue = baseValue * parcelas * 2
+    return totalValue / parcelas
+  }, [baseValue, parcelas])
 
   // Load saved layouts from localStorage
   useEffect(() => {
@@ -547,8 +561,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       case 'dates': return formatDateRange()
       case 'installments': return `${parcelas}x de`
       case 'currency': return 'R$'
-      case 'price': return baseValue.toFixed(2).replace(".", ",")
-      case 'installmentText': return 'no cartão e 10x no boleto sem juros.'
+      case 'price': return installmentValue.toFixed(2).replace(".", ",")
+      case 'installmentText': return `no cartão e ${parcelas}x no boleto sem juros.`
       case 'flight': return 'Aéreo Ida e Volta'
       case 'perPerson': return 'Valor por pessoa'
       case 'nights': return `${promo.NUMERO_DE_NOITES} Noites`
