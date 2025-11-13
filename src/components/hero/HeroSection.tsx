@@ -41,7 +41,7 @@ export function HeroSection() {
                 src={content.herobanner || "/placeholder.svg"}
                 width={content.width}
                 height={content.height}
-                alt="Descubra o Rio de Janeiro com a Lemonde Tourisme"
+                alt="Pacotes de viagem nacionais e internacionais com a Donatti Turismo"
                 className="w-full h-auto object-cover"
                 priority
               />

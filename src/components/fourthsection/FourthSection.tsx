@@ -51,7 +51,7 @@ export function FourthSection() {
         >
           <h2 className="font-blo text-white text-4xl md:text-6xl mb-4">quem viaja com a gente confia!</h2>
           <p className="text-white/80 text-lg max-w-2xl mx-auto font-mon">
-            Veja o que nossos clientes dizem sobre suas experiências com a Lemonde Tourisme
+            Veja o que nossos clientes dizem sobre suas experiências com a Donatti Turismo
           </p>
         </motion.div>
 

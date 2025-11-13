@@ -12,7 +12,7 @@ export type ThirdContent = {
 const Third: ThirdContent[] = [
   {
     thirdtexto1: "pacotes? temos!", // Texto da primeira linha da terceira seção
-    thirdtexto2: "Que tal dar uma olhadinha naquele pacote perfeito para você e sua família?", // Texto da segunda linha da terceira seção
+    thirdtexto2: "Encontre o pacote perfeito para você e sua família em destinos nacionais e internacionais", // Texto da segunda linha da terceira seção
     thirdtexto3: "Voos de ida e volta", // Texto da terceira linha da terceira seção
     thirdtexto4: "Transfer de chegada e saída", // Texto da quarta linha da terceira seção
     thirdtexto5: "Café da manhã", // Texto da quinta linha da terceira seção

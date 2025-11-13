@@ -9,7 +9,7 @@ const Second: SecondContent[] = [
   {
     secondtexto1: "oiapoque ao chuí", // Texto da primeira linha da segunda seção
     secondtexto2:
-      "De norte á sul do Brasil,levamos você e sua família para os melhores destinos, com os melhores preços!", // Texto da segunda linha da segunda seção
+      "De norte a sul do Brasil, levamos você e sua família para os melhores destinos nacionais e internacionais, com os melhores preços!", // Texto da segunda linha da segunda seção
   },
 ]
 

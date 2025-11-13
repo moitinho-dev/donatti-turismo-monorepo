@@ -13,22 +13,23 @@ export type HeroContent = {
 // Array de objetos contendo informações do herói para diferentes seções do site
 const Hero: HeroContent[] = [
   {
-    herotexto1: "descubra o",
-    herotexto2: "RIO DE JANEIRO",
-    herotexto3: "Planejando ir para a cidade maravilhosa?",
+    herotexto1: "realize seu",
+    herotexto2: "SONHO DE VIAJAR",
+    herotexto3: "Pacotes especiais para sua próxima viagem",
     herotexto4:
-      "Aqui você encontra todas as informações necessárias para aproveitar ao máximo esse destino e vários outros.",
-    herotexto5: "Além do Rio, você merece lugares como estes...",
+      "Descubra os melhores destinos nacionais e internacionais com condições especiais. Atendimento personalizado e suporte completo para criar a viagem perfeita para você.",
+    herotexto5: "Explore destinos incríveis e viva experiências inesquecíveis...",
     herobanner: "/assets/HEROATT.png",
     width: 1132,
     height: 907,
   },
   {
     herotexto1: "descubra",
-    herotexto2: "SÃO PAULO",
-    herotexto3: "Planejando ir para a cidade?",
-    herotexto4: "Descubra as maravilhas de São Paulo e aproveite ao máximo sua viagem.",
-    herotexto5: "Além de São Paulo, você merece lugares como estes...",
+    herotexto2: "O MUNDO",
+    herotexto3: "Sua viagem dos sonhos começa aqui",
+    herotexto4:
+      "Pacotes completos para os melhores destinos do Brasil e do mundo. Condições especiais para reservas antecipadas e atendimento dedicado.",
+    herotexto5: "De norte a sul, do Brasil ao mundo, temos o destino perfeito para você...",
     herobanner: "/assets/HEROatt.png",
     width: 1920,
     height: 1080,

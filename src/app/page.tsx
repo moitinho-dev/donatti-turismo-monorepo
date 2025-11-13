@@ -12,7 +12,19 @@ export const metadata: Metadata = {
   title: "Donatti Turismo | Pacotes de Viagens e Passagens Aéreas",
   description:
     "Viaje mais pagando menos com a Donatti Turismo . Pacotes nacionais e internacionais, passagens aéreas, hospedagem e muito mais!",
-  keywords: ["viagens", "pacotes", "turismo", "passagens aéreas", "hospedagem", "Campo Grande", "Mato Grosso do Sul"],
+  keywords: [
+    "viagens",
+    "pacotes de viagem",
+    "turismo",
+    "passagens aéreas",
+    "hospedagem",
+    "Campo Grande",
+    "Mato Grosso do Sul",
+    "viagens nacionais",
+    "viagens internacionais",
+    "cruzeiros",
+    "seguro viagem",
+  ],
   openGraph: {
     title: "Donatti Turismo  | Pacotes de Viagens com Descontos!",
     description:
