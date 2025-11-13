@@ -1,0 +1,755 @@
+{
+
+    "collections": [
+    
+    {
+    
+    "name": "Hero",
+    
+    "slug": "hero",
+    
+    "records": [
+    
+    {
+    
+    "id": "hero-1",
+    
+    "title": "Blackfridaydonattiturismo",
+    
+    "subtitle": "OS MELHORES DESTINOS COM CONDIÇÕES IMPERDÍVEIS",
+    
+    "badge": "OFERTAS POR TEMPO LIMITADO",
+    
+    "ctaLabel": "Buscar pacotes",
+    
+    "ctaUrl": "#buscar-pacotes",
+    
+    "validUntil": "2025-11-30"
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Vantagens",
+    
+    "slug": "vantagens",
+    
+    "records": [
+    
+    {
+    
+    "id": "vant-1",
+    
+    "title": "Parcelamento Facilitado",
+    
+    "description": "Parcele sua viagem em até 12x com condições especiais"
+    
+    },
+    
+    {
+    
+    "id": "vant-2",
+    
+    "title": "Atendimento Personalizado",
+    
+    "description": "Equipe especializada para tirar todas as suas dúvidas"
+    
+    },
+    
+    {
+    
+    "id": "vant-3",
+    
+    "title": "Suporte Completo",
+    
+    "description": "Assistência antes, durante e depois da sua viagem"
+    
+    },
+    
+    {
+    
+    "id": "vant-4",
+    
+    "title": "Melhores Preços",
+    
+    "description": "Negociamos direto com fornecedores para oferecer as melhores tarifas"
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Pacotes Destaque",
+    
+    "slug": "pacotes-destaque",
+    
+    "records": [
+    
+    {
+    
+    "id": "dest-1",
+    
+    "title": "Natal - RN",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1299,
+    
+    "currency": "BRL",
+    
+    "nights": 4,
+    
+    "days": 5,
+    
+    "inclusions": ["Aéreo", "Hotel", "Café da Manhã", "Transfer"],
+    
+    "bullets": [
+    
+    "Hotel bem localizado",
+    
+    "Parcelamento em até 10x sem juros",
+    
+    "Saídas de diversas capitais"
+    
+    ],
+    
+    "installmentInfo": "10x sem juros",
+    
+    "ctaLabel": "VER OFERTA",
+    
+    "ctaUrl": "#"
+    
+    },
+    
+    {
+    
+    "id": "dest-2",
+    
+    "title": "Rio de Janeiro - RJ",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 899,
+    
+    "currency": "BRL",
+    
+    "nights": 3,
+    
+    "days": 4,
+    
+    "inclusions": ["Aéreo", "Hotel", "Café da Manhã"],
+    
+    "bullets": [
+    
+    "Hotéis em Copacabana e Ipanema",
+    
+    "Parcelamento facilitado",
+    
+    "Melhor custo-benefício"
+    
+    ],
+    
+    "installmentInfo": "",
+    
+    "ctaLabel": "VER OFERTA",
+    
+    "ctaUrl": "#"
+    
+    },
+    
+    {
+    
+    "id": "dest-3",
+    
+    "title": "Porto de Galinhas - PE",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1499,
+    
+    "currency": "BRL",
+    
+    "nights": 4,
+    
+    "days": 5,
+    
+    "inclusions": ["Aéreo", "Resort", "Meia Pensão", "Transfer"],
+    
+    "bullets": [
+    
+    "Resort all inclusive disponível",
+    
+    "Piscinas naturais inclusas",
+    
+    "Parcele em até 12x"
+    
+    ],
+    
+    "installmentInfo": "12x",
+    
+    "ctaLabel": "VER OFERTA",
+    
+    "ctaUrl": "#"
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Pacotes Nacionais",
+    
+    "slug": "pacotes-nacionais",
+    
+    "records": [
+    
+    {
+    
+    "id": "nac-1",
+    
+    "title": "Maceió",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1199,
+    
+    "currency": "BRL",
+    
+    "inclusions": ["Aéreo", "Hotel", "Café"]
+    
+    },
+    
+    {
+    
+    "id": "nac-2",
+    
+    "title": "Fortaleza",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1099,
+    
+    "currency": "BRL",
+    
+    "inclusions": ["Aéreo", "Hotel", "Transfer"]
+    
+    },
+    
+    {
+    
+    "id": "nac-3",
+    
+    "title": "Florianópolis",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1399,
+    
+    "currency": "BRL",
+    
+    "inclusions": ["Aéreo", "Pousada", "Café"]
+    
+    },
+    
+    {
+    
+    "id": "nac-4",
+    
+    "title": "Salvador",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1149,
+    
+    "currency": "BRL",
+    
+    "inclusions": ["Aéreo", "Hotel", "Café"]
+    
+    },
+    
+    {
+    
+    "id": "nac-5",
+    
+    "title": "Fernando de Noronha",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 3299,
+    
+    "currency": "BRL",
+    
+    "inclusions": ["Aéreo", "Pousada", "Café"]
+    
+    },
+    
+    {
+    
+    "id": "nac-6",
+    
+    "title": "Gramado",
+    
+    "region": "Brasil",
+    
+    "startingPrice": 1599,
+    
+    "currency": "BRL",
+    
+    "inclusions": ["Aéreo", "Hotel", "Café Colonial"]
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Pacotes Internacionais",
+    
+    "slug": "pacotes-internacionais",
+    
+    "records": [
+    
+    {
+    
+    "id": "int-1",
+    
+    "title": "Orlando - EUA",
+    
+    "region": "Estados Unidos",
+    
+    "startingPrice": 4999,
+    
+    "currency": "BRL",
+    
+    "nights": 6,
+    
+    "days": 7,
+    
+    "inclusions": ["Aéreo", "Hotel", "Traslado"],
+    
+    "bullets": [
+    
+    "Hotéis próximos aos parques",
+    
+    "Opção com ingressos Disney",
+    
+    "Parcele em até 12x"
+    
+    ],
+    
+    "ctaLabel": "VER OFERTA",
+    
+    "ctaUrl": "#"
+    
+    },
+    
+    {
+    
+    "id": "int-2",
+    
+    "title": "Buenos Aires - Argentina",
+    
+    "region": "Argentina",
+    
+    "startingPrice": 2199,
+    
+    "currency": "BRL",
+    
+    "nights": 4,
+    
+    "days": 5,
+    
+    "inclusions": ["Aéreo", "Hotel", "City Tour"],
+    
+    "bullets": [
+    
+    "Hotel no centro",
+    
+    "Passeio incluso",
+    
+    "Parcelamento especial"
+    
+    ],
+    
+    "ctaLabel": "VER OFERTA",
+    
+    "ctaUrl": "#"
+    
+    },
+    
+    {
+    
+    "id": "int-3",
+    
+    "title": "Cancún - México",
+    
+    "region": "México",
+    
+    "startingPrice": 3799,
+    
+    "currency": "BRL",
+    
+    "nights": 5,
+    
+    "days": 6,
+    
+    "inclusions": ["Aéreo", "Resort All Inclusive"],
+    
+    "bullets": [
+    
+    "Resort 4 estrelas",
+    
+    "Tudo incluído",
+    
+    "Parcele sem juros"
+    
+    ],
+    
+    "ctaLabel": "VER OFERTA",
+    
+    "ctaUrl": "#"
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Filtros Origens",
+    
+    "slug": "filtros-origens",
+    
+    "records": [
+    
+    { "id": "org-1", "name": "Aracaju" },
+    
+    { "id": "org-2", "name": "Belém" },
+    
+    { "id": "org-3", "name": "Belo Horizonte" },
+    
+    { "id": "org-4", "name": "Brasília" },
+    
+    { "id": "org-5", "name": "Campo Grande" },
+    
+    { "id": "org-6", "name": "Curitiba" },
+    
+    { "id": "org-7", "name": "Florianópolis" },
+    
+    { "id": "org-8", "name": "Fortaleza" },
+    
+    { "id": "org-9", "name": "Goiânia" },
+    
+    { "id": "org-10", "name": "Manaus" },
+    
+    { "id": "org-11", "name": "Natal" },
+    
+    { "id": "org-12", "name": "Porto Alegre" },
+    
+    { "id": "org-13", "name": "Recife" },
+    
+    { "id": "org-14", "name": "Rio de Janeiro" },
+    
+    { "id": "org-15", "name": "Salvador" },
+    
+    { "id": "org-16", "name": "São Paulo" }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Filtros Destinos",
+    
+    "slug": "filtros-destinos",
+    
+    "records": [
+    
+    { "id": "dst-1", "name": "Natal", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-2", "name": "Rio de Janeiro", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-3", "name": "Porto de Galinhas", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-4", "name": "Maceió", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-5", "name": "Fortaleza", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-6", "name": "Florianópolis", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-7", "name": "Salvador", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-8", "name": "Fernando de Noronha", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-9", "name": "Gramado", "region": "Brasil", "isInternational": false },
+    
+    { "id": "dst-10", "name": "Orlando", "region": "Estados Unidos", "isInternational": true },
+    
+    { "id": "dst-11", "name": "Buenos Aires", "region": "Argentina", "isInternational": true },
+    
+    { "id": "dst-12", "name": "Cancún", "region": "México", "isInternational": true }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Filtros Preferencias",
+    
+    "slug": "filtros-preferencias",
+    
+    "records": [
+    
+    { "id": "pref-1", "name": "Café da Manhã", "key": "breakfast" },
+    
+    { "id": "pref-2", "name": "All Inclusive", "key": "allInclusive" },
+    
+    { "id": "pref-3", "name": "Transfer Incluso", "key": "transfer" }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "FAQ",
+    
+    "slug": "faq",
+    
+    "records": [
+    
+    {
+    
+    "id": "faq-1",
+    
+    "question": "Posso parcelar minha viagem?",
+    
+    "answer": "Sim! Oferecemos parcelamento em até 12x no cartão de crédito com condições especiais.",
+    
+    "order": 1
+    
+    },
+    
+    {
+    
+    "id": "faq-2",
+    
+    "question": "O que está incluso nos pacotes?",
+    
+    "answer": "Cada pacote tem suas inclusões especificadas. Geralmente incluem aéreo, hotel, café da manhã e transfer.",
+    
+    "order": 2
+    
+    },
+    
+    {
+    
+    "id": "faq-3",
+    
+    "question": "Posso alterar as datas da minha viagem?",
+    
+    "answer": "Sim, consulte nossa equipe sobre as condições de alteração.",
+    
+    "order": 3
+    
+    },
+    
+    {
+    
+    "id": "faq-4",
+    
+    "question": "Vocês oferecem seguro viagem?",
+    
+    "answer": "Sim, recomendamos e oferecemos seguro viagem para todos os destinos.",
+    
+    "order": 4
+    
+    },
+    
+    {
+    
+    "id": "faq-5",
+    
+    "question": "Como funciona o atendimento durante a viagem?",
+    
+    "answer": "Você terá suporte 24h através do nosso WhatsApp para qualquer necessidade.",
+    
+    "order": 5
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Contato",
+    
+    "slug": "contato",
+    
+    "records": [
+    
+    {
+    
+    "id": "contato-1",
+    
+    "whatsappLabel": "WhatsApp",
+    
+    "whatsappNumber": "(67) 9637-2769",
+    
+    "whatsappUrl": "#",
+    
+    "email": "[contato@donattiturismo.com.br](mailto:contato@donattiturismo.com.br)",
+    
+    "emailUrl": "[mailto:contato@donattiturismo.com.br](mailto:contato@donattiturismo.com.br)",
+    
+    "address": "Av. Tamandaré, 08 - Jardim Planalto Campo Grande/MS - CEP: 79.009-790",
+    
+    "businessHours": "Segunda a Sexta: 9h às 18h | Sábado: 9h às 12h"
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Rodape",
+    
+    "slug": "rodape",
+    
+    "records": [
+    
+    {
+    
+    "id": "rodape-1",
+    
+    "legalLine": "2025 - DONATTI TURISMO® - TODOS OS DIREITOS RESERVADOS",
+    
+    "companyLines": [
+    
+    "Realizing sonhos desde 2020",
+    
+    "Avenida Tamandaré, 8 - Vila Planalto Campo Grande, MS - CEP: 79.009-790"
+    
+    ],
+    
+    "links": [
+    
+    { "label": "Termos de Uso", "url": "#" },
+    
+    { "label": "Política de Privacidade", "url": "#" },
+    
+    { "label": "Política de Cancelamento", "url": "#" }
+    
+    ]
+    
+    }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Redes Sociais",
+    
+    "slug": "redes-sociais",
+    
+    "records": [
+    
+    { "id": "soc-1", "network": "Instagram", "label": "Instagram", "url": "#" },
+    
+    { "id": "soc-2", "network": "Facebook", "label": "Facebook", "url": "#" },
+    
+    { "id": "soc-3", "network": "WhatsApp", "label": "WhatsApp", "url": "#" }
+    
+    ]
+    
+    },
+    
+    {
+    
+    "name": "Testimonials",
+    
+    "slug": "testimonials",
+    
+    "records": [
+    
+    {
+    
+    "id": "testi-1",
+    
+    "name": "Natalia Pamela",
+    
+    "rating": 5,
+    
+    "content": "Viajo com a Donatti desde 2021, e só tive experiências maravilhosas, preço, atendimento, dúvidas todas esclarecidas. A Tati da todo apoio e suporte, recomendo de olhos fechados!",
+    
+    "sourceLabel": "Ver no Google Maps",
+    
+    "sourceUrl": "https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8",
+    
+    "date": "2025-01-01"
+    
+    },
+    
+    {
+    
+    "id": "testi-2",
+    
+    "name": "Daniel Neves",
+    
+    "rating": 5,
+    
+    "content": "O atendimento é mega diferenciado, você tem suporte vip! Eles procuram as melhores opções baseado nas espectativas e no bolso do cliente. Super recomendo!",
+    
+    "sourceLabel": "Ver no Google Maps",
+    
+    "sourceUrl": "https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8",
+    
+    "date": "2025-01-01"
+    
+    },
+    
+    {
+    
+    "id": "testi-3",
+    
+    "name": "Milton César Machado",
+    
+    "rating": 5,
+    
+    "content": "Tati e equipe nota 1000! Viajar com segurança e credibilidade é com a equipe da Tati! Muito obrigado! Até o ano que vem!",
+    
+    "sourceLabel": "Ver no Google Maps",
+    
+    "sourceUrl": "https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8",
+    
+    "date": "2025-01-01"
+    
+    }
+    
+    ]
+    
+    }
+    
+    ]
+    
+    }
