@@ -1,32 +1,84 @@
-@tailwind base; /* Importa estilos base do Tailwind CSS */
-@tailwind components; /* Importa estilos de componentes do Tailwind CSS */
-@tailwind utilities; /* Importa utilitários do Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Definindo fontes personalizadas usando @font-face */
+:root {
+  /* Donatti Turismo brand colors - orange/golden yellow primary with black */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 38 100% 50%;
+  --primary-foreground: 0 0% 10%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 10%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 38 100% 50%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 14%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 14%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 38 100% 50%;
+  --primary-foreground: 0 0% 10%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 18%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 38 100% 50%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 38 100% 50%;
+}
+
 @layer base {
-  @font-face {
-    font-family: "BLOVERLY";
-    src: url("../../public/fonts/BLOVERLY.ttf");
+  * {
+    @apply border-border;
   }
-
-  @font-face {
-    font-family: "BetterSignatureFont";
-    src: url("../../public/fonts/BetterSignatureFont.ttf");
+  body {
+    @apply bg-background text-foreground;
   }
+}
 
-  @font-face {
-    font-family: "Montserrat";
-    src: url("../../public/fonts/Montserrat.ttf");
-  }
+@font-face {
+  font-family: "BLOVERLY";
+  src: url("../../public/fonts/BLOVERLY.ttf");
+}
 
+@font-face {
+  font-family: "BetterSignatureFont";
+  src: url("../../public/fonts/BetterSignatureFont.ttf");
+}
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("../../public/fonts/Montserrat.ttf");
+}
+
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
   html {
-    font-size: 16px;
-  }
-
-  @media (min-width: 768px) {
-    html {
-      font-size: 18px;
-    }
+    font-size: 18px;
   }
 }
 

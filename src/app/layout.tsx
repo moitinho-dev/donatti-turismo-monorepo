@@ -1,11 +1,16 @@
 "use client"
 import type React from "react"
-import { Inter } from "next/font/google"
+import { Montserrat } from "next/font/google"
 import "./globals.css"
 import { SessionProvider } from "next-auth/react"
 
-// Configurando a fonte Inter com suporte ao subset 'latin'
-const inter = Inter({ subsets: ["latin"] })
+
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700', '800']
+})
 
 // Componente funcional para o layout principal da aplicação
 export default function RootLayout({
@@ -15,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     // Estrutura básica do HTML
-    <html lang="pt-BR">
+    <html lang="pt-BR" className="dark">
       <head>
         {/* Google Tag Manager */}
         <script
@@ -26,7 +31,7 @@ export default function RootLayout({
         {/* End Google Tag Manager */}
       </head>
       {/* Corpo da página com classe para estilos específicos */}
-      <body className="max-w-[2000px] mx-auto">
+      <body className={`${montserrat.variable} font-sans antialiased max-w-[2000px] mx-auto`}>
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe
@@ -41,6 +46,7 @@ export default function RootLayout({
           {/* Renderizando o conteúdo das páginas filhas */}
           {children}
         </SessionProvider>
+      
       </body>
     </html>
   )
