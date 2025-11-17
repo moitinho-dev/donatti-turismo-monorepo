@@ -3,27 +3,65 @@
 @tailwind utilities;
 
 :root {
-  /* Donatti Turismo brand colors - orange/golden yellow primary with black */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
+  /* Dark Minimalist Theme - Donatti Turismo */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 6%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 6%;
+  --popover-foreground: 0 0% 98%;
   --primary: 38 100% 50%;
   --primary-foreground: 0 0% 10%;
-  --secondary: 0 0% 96%;
-  --secondary-foreground: 0 0% 10%;
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 45%;
-  --accent: 0 0% 10%;
-  --accent-foreground: 0 0% 100%;
+  --secondary: 0 0% 8%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 38 100% 50%;
+  --accent-foreground: 0 0% 10%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
+  --border: 0 0% 15%;
+  --input: 0 0% 12%;
   --ring: 38 100% 50%;
   --radius: 0.75rem;
+
+  /* Extended Design Tokens - Donatti */
+  --brand-primary: #F59E0B;
+  --brand-secondary: #FF8C00;
+  --bg-primary: #0F0F10;
+  --bg-elevated: #1A1B1E;
+  --bg-overlay: rgba(10, 10, 10, 0.9);
+  --text-primary: #F5F5F7;
+  --text-secondary: #C9CBD1;
+  --text-tertiary: #9CA3AF;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+
+  /* Spacing System (8px base) */
+  --spacing-1: 0.5rem;   /* 8px */
+  --spacing-2: 0.75rem;  /* 12px */
+  --spacing-3: 1rem;     /* 16px */
+  --spacing-4: 1.5rem;   /* 24px */
+  --spacing-5: 2rem;     /* 32px */
+  --spacing-6: 3rem;     /* 48px */
+  --spacing-7: 4rem;     /* 64px */
+  --spacing-8: 6rem;     /* 96px */
+
+  /* Border Radius */
+  --radius-sm: 0.5rem;   /* 8px */
+  --radius-md: 0.75rem;  /* 12px */
+  --radius-lg: 1rem;     /* 16px */
+  --radius-xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 40px rgba(245, 158, 11, 0.25);
 }
 
 .dark {
@@ -55,6 +93,213 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ============================================
+   DARK MINIMALIST THEME - DONATTI TURISMO
+   ============================================ */
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient blur from top */
+.gradient-blur-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 600px;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 179, 0, 0.15) 0%, transparent 70%);
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Cursor ring effect */
+.cursor-ring {
+  pointer-events: none;
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 179, 0, 0.08) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 9999;
+  mix-blend-mode: screen;
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #FFB300 0%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover glow */
+.card-glow:hover {
+  box-shadow: 0 0 40px rgba(255, 179, 0, 0.2);
+  border-color: rgba(255, 179, 0, 0.3);
+}
+
+/* Stats counter animation */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-animate {
+  animation: countUp 0.6s ease-out forwards;
+}
+
+/* Badge styles */
+.badge-urgency {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.badge-benefit {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22C55E;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.badge-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3B82F6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+/* Price display */
+.price-old {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}
+
+.price-current {
+  background: linear-gradient(135deg, #F59E0B 0%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.price-installment {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.price-pix {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22C55E;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Trust seals */
+.trust-seal {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.trust-seal:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Sticky countdown */
+.sticky-countdown {
+  position: fixed;
+  top: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  padding: 0.75rem 1.5rem;
+  box-shadow: var(--shadow-xl);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sticky-countdown.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 @font-face {
@@ -95,5 +340,219 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 body {
   zoom: 1.02;
+}
+
+/* ============================================
+   DESIGN TOKENS CUSTOMIZADOS - DONATTI TURISMO
+   Performance, Acessibilidade e UX
+   ============================================ */
+
+:root {
+  /* Spacing personalizado para consistência */
+  --space-1: 0.5rem;   /* 8px */
+  --space-2: 0.75rem;  /* 12px */
+  --space-3: 1rem;     /* 16px */
+  --space-4: 1.5rem;   /* 24px */
+  --space-5: 2rem;     /* 32px */
+  --space-6: 3rem;     /* 48px */
+  --space-7: 4rem;     /* 64px */
+  --space-8: 6rem;     /* 96px */
+
+  /* Typography tokens */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-5xl: 3rem;      /* 48px */
+
+  /* Line height tokens */
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.7;
+
+  /* Transition tokens para consistência */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
+  --transition-slow: 350ms ease-in-out;
+
+  /* Shadow tokens */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.2);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+
+  /* Focus ring para acessibilidade */
+  --focus-ring: 0 0 0 3px hsl(var(--ring) / 0.5);
+}
+
+/* Respeitar preferência de movimento reduzido - Acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Melhorar contraste para modo de alto contraste - Acessibilidade */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 30%;
+  }
+
+  .dark {
+    --border: 0 0% 70%;
+  }
+}
+
+/* Focus visível aprimorado - Acessibilidade WCAG AA */
+*:focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth scroll nativo */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Anti-aliasing melhorado */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Helper para SR-only (Screen Reader Only) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visível para SR-only */
+.sr-only:focus,
+.sr-only:active {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Performance: Will-change para elementos que animam */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Scrollbar customizado (opcional - melhora UX) */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+  }
+}
+
+/* Scrollbar Webkit */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Print styles otimizados */
+@media print {
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  abbr[title]::after {
+    content: " (" attr(title) ")";
+  }
+
+  pre,
+  blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Esconder elementos não necessários na impressão */
+  header[role="banner"],
+  footer[role="contentinfo"],
+  nav,
+  button,
+  .btn {
+    display: none !important;
+  }
 }
 
