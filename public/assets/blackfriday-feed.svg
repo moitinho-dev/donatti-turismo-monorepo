@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1350" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="feed-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0c1220"/>
+    </linearGradient>
+    <radialGradient id="feed-glow" cx="0.8" cy="0.1" r="0.6">
+      <stop offset="0%" stop-color="#fde047" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#fde047" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="feed-angle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1350" fill="url(#feed-bg)"/>
+  <rect width="1080" height="1350" fill="url(#feed-glow)"/>
+
+  <path d="M0 880 Q 540 1020 1080 820 L1080 1350 L0 1350 Z" fill="#0a101b"/>
+  <path d="M0 1000 Q 540 1180 1080 960 L1080 1350 L0 1350 Z" fill="#0d1624" opacity="0.8"/>
+
+  <rect x="-120" y="120" width="520" height="1100" transform="rotate(-18)" fill="url(#feed-angle)" opacity="0.6"/>
+  <rect x="520" y="-200" width="520" height="1100" transform="rotate(18)" fill="url(#feed-angle)" opacity="0.4"/>
+
+  <circle cx="220" cy="120" r="160" fill="#38bdf8" opacity="0.08"/>
+  <circle cx="900" cy="320" r="200" fill="#fde047" opacity="0.08"/>
+
+  <rect x="70" y="930" width="940" height="300" rx="36" ry="36" fill="#0b1220" opacity="0.85" stroke="#1e293b" stroke-opacity="0.35"/>
+</svg>
+

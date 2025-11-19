@@ -50,70 +50,72 @@ interface LayoutConfig {
 
 const defaultLayouts: LayoutConfig[] = [
   {
-    id: 'default-story',
-    name: 'Layout Stories (1080x1920)',
-    type: 'png',
+    id: 'blackfriday-story',
+    name: 'Black Friday Story (1080x1920)',
+    type: 'svg',
     format: 'story',
-    url: '/assets/LAYOUTFINAL.png',
+    url: '/assets/blackfriday-story.svg',
     colors: {
-      primary: '#DC2626',
-      secondary: '#FFFFFF',
-      accent: '#FED400',
-      background: '#1D3153'
+      primary: '#FBBF24',
+      secondary: '#F8FAFC',
+      accent: '#38BDF8',
+      background: '#020617',
     },
     elements: {
-      region: { x: 766, y: 274, fontSize: 42, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
-      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
-      hotel: { x: 480, y: 450, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      dates: { x: 480, y: 530, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      installments: { x: 510, y: 620, fontSize: 30, fontWeight: '700', color: '#F79E08', fontFamily: 'Inter' },
-      currency: { x: 510, y: 660, fontSize: 60, fontWeight: '900', color: '#F79E08', fontFamily: 'Inter' },
-      price: { x: 600, y: 605, fontSize: 114, fontWeight: '900', color: '#F79E08', fontFamily: 'Inter' },
-      installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: '600', color: '#F79E08', fontFamily: 'Inter' },
-      flight: { x: 545, y: 835, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      perPerson: { x: 545, y: 885, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      nights: { x: 545, y: 935, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      regime: { x: 545, y: 980, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: '700', color: '#000000', fontFamily: 'Inter' },
-      departure: { x: 410, y: 1100, fontSize: 20, fontWeight: '900', color: '#000000', fontFamily: 'Inter' },
-      disclaimer: { x: 470, y: 1160, fontSize: 20, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
-      contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: '700', color: '#000000', fontFamily: 'Inter' },
-      contact: { x: 580, y: 1285, fontSize: 30, fontWeight: '700', color: '#000000', fontFamily: 'Inter' }
-    }
+      region: { x: 96, y: 140, fontSize: 38, fontWeight: '700', color: '#FBBF24', fontFamily: 'Inter' },
+      destination: { x: 96, y: 220, fontSize: 80, fontWeight: '900', color: '#F8FAFC', fontFamily: 'Inter' },
+      hotel: { x: 96, y: 320, fontSize: 42, fontWeight: '600', color: '#E2E8F0', fontFamily: 'Inter' },
+      dates: { x: 96, y: 380, fontSize: 34, fontWeight: '500', color: '#E2E8F0', fontFamily: 'Inter' },
+      installments: { x: 96, y: 520, fontSize: 34, fontWeight: '700', color: '#FBBF24', fontFamily: 'Inter' },
+      currency: { x: 96, y: 565, fontSize: 60, fontWeight: '900', color: '#FBBF24', fontFamily: 'Inter' },
+      price: { x: 190, y: 500, fontSize: 140, fontWeight: '900', color: '#FBBF24', fontFamily: 'Inter' },
+      installmentText: { x: 96, y: 650, fontSize: 28, fontWeight: '600', color: '#E2E8F0', fontFamily: 'Inter' },
+      flight: { x: 96, y: 740, fontSize: 30, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      perPerson: { x: 96, y: 790, fontSize: 28, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      nights: { x: 96, y: 840, fontSize: 28, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      regime: { x: 96, y: 890, fontSize: 28, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      departureLabel: { x: 96, y: 1080, fontSize: 24, fontWeight: '600', color: '#94A3B8', fontFamily: 'Inter' },
+      departure: { x: 96, y: 1120, fontSize: 28, fontWeight: '700', color: '#F8FAFC', fontFamily: 'Inter' },
+      disclaimer: { x: 96, y: 1380, fontSize: 22, fontWeight: '500', color: '#94A3B8', fontFamily: 'Inter' },
+      contactLabel: { x: 96, y: 1570, fontSize: 28, fontWeight: '700', color: '#FBBF24', fontFamily: 'Inter' },
+      contact: { x: 96, y: 1620, fontSize: 32, fontWeight: '800', color: '#F8FAFC', fontFamily: 'Inter' },
+    },
   },
   {
-    id: 'default-feed',
-    name: 'Layout Feed (1080x1350)',
-    type: 'png',
+    id: 'blackfriday-feed',
+    name: 'Black Friday Feed (1080x1350)',
+    type: 'svg',
     format: 'feed',
-    url: '/assets/LAYOUTFEED.png',
+    url: '/assets/blackfriday-feed.svg',
     colors: {
-      primary: '#DC2626',
-      secondary: '#FFFFFF',
-      accent: '#FED400',
-      background: '#1D3153'
+      primary: '#FBBF24',
+      secondary: '#F8FAFC',
+      accent: '#38BDF8',
+      background: '#020617',
     },
     elements: {
-      region: { x: 823, y: 96, fontSize: 42, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      destination: { x: 605, y: 185, fontSize: 45, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
-      hotel: { x: 605, y: 249, fontSize: 36, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      dates: { x: 605, y: 299, fontSize: 36, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      installments: { x: 620, y: 400, fontSize: 25, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
-      currency: { x: 620, y: 422, fontSize: 60, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      price: { x: 705, y: 382, fontSize: 92, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      installmentText: { x: 677, y: 507, fontSize: 24, fontWeight: '600', color: '#002043', fontFamily: 'Inter' },
-      flight: { x: 659, y:551, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      perPerson: { x: 659, y: 592, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      nights: { x: 659, y: 633, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      regime: { x: 659, y: 674, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      departureLabel: { x: 546, y: 740, fontSize: 18, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
-      departure: { x: 546, y: 762, fontSize: 18, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      disclaimer: { x: 602, y: 817, fontSize: 18, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
-      contactLabel: { x: 667, y: 889, fontSize: 28, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
-      contact: { x: 667, y: 927, fontSize: 28, fontWeight: '700', color: '#002043', fontFamily: 'Inter' }
-    }
-  }
+      region: { x: 80, y: 90, fontSize: 32, fontWeight: '700', color: '#FBBF24', fontFamily: 'Inter' },
+      destination: { x: 80, y: 150, fontSize: 64, fontWeight: '900', color: '#F8FAFC', fontFamily: 'Inter' },
+      hotel: { x: 80, y: 225, fontSize: 34, fontWeight: '600', color: '#E2E8F0', fontFamily: 'Inter' },
+      dates: { x: 80, y: 275, fontSize: 30, fontWeight: '500', color: '#E2E8F0', fontFamily: 'Inter' },
+      installments: { x: 80, y: 360, fontSize: 30, fontWeight: '700', color: '#FBBF24', fontFamily: 'Inter' },
+      currency: { x: 80, y: 400, fontSize: 54, fontWeight: '900', color: '#FBBF24', fontFamily: 'Inter' },
+      price: { x: 160, y: 350, fontSize: 110, fontWeight: '900', color: '#FBBF24', fontFamily: 'Inter' },
+      installmentText: { x: 80, y: 470, fontSize: 24, fontWeight: '600', color: '#E2E8F0', fontFamily: 'Inter' },
+      flight: { x: 80, y: 540, fontSize: 26, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      perPerson: { x: 80, y: 580, fontSize: 26, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      nights: { x: 80, y: 620, fontSize: 26, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      regime: { x: 80, y: 660, fontSize: 26, fontWeight: '600', color: '#F8FAFC', fontFamily: 'Inter' },
+      departureLabel: { x: 80, y: 750, fontSize: 20, fontWeight: '600', color: '#94A3B8', fontFamily: 'Inter' },
+      departure: { x: 80, y: 785, fontSize: 24, fontWeight: '700', color: '#F8FAFC', fontFamily: 'Inter' },
+      disclaimer: { x: 80, y: 860, fontSize: 20, fontWeight: '500', color: '#94A3B8', fontFamily: 'Inter' },
+      contactLabel: { x: 80, y: 980, fontSize: 24, fontWeight: '700', color: '#FBBF24', fontFamily: 'Inter' },
+      contact: { x: 80, y: 1020, fontSize: 28, fontWeight: '800', color: '#F8FAFC', fontFamily: 'Inter' },
+    },
+  },
 ]
+
+const cloneLayout = (layout: LayoutConfig): LayoutConfig => JSON.parse(JSON.stringify(layout))
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
@@ -125,12 +127,12 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [selectedRegion, setSelectedRegion] = useState<string>("")
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
-  const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(defaultLayouts[0])
+  const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(() => cloneLayout(defaultLayouts[0]))
   const [savedLayouts, setSavedLayouts] = useState<LayoutConfig[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [customLayoutFile, setCustomLayoutFile] = useState<File | null>(null)
-  const [customLayoutUrl, setCustomLayoutUrl] = useState<string | null>(null)
+  const [isUploadingLayout, setIsUploadingLayout] = useState(false)
+  const layoutOverridesRef = useRef<Record<string, LayoutConfig>>({})
   
   const templateRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -189,6 +191,30 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }, [])
 
+  // Load layout overrides (positions/colors)
+  useEffect(() => {
+    const storedOverrides = localStorage.getItem('promo-layout-overrides')
+    if (storedOverrides) {
+      try {
+        const parsed = JSON.parse(storedOverrides) as Record<string, LayoutConfig>
+        layoutOverridesRef.current = parsed
+        const initialOverride = parsed[defaultLayouts[0].id]
+        if (initialOverride) {
+          setCurrentLayout(cloneLayout(initialOverride))
+        }
+      } catch (e) {
+        console.error('Error loading layout overrides:', e)
+      }
+    }
+  }, [])
+
+  // Persist current layout overrides automatically
+  useEffect(() => {
+    if (!currentLayout?.id) return
+    layoutOverridesRef.current[currentLayout.id] = cloneLayout(currentLayout)
+    localStorage.setItem('promo-layout-overrides', JSON.stringify(layoutOverridesRef.current))
+  }, [currentLayout])
+
   // Initialize
   useEffect(() => {
     const loadFonts = async () => {
@@ -211,25 +237,55 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   }, [promo.DESTINO])
 
   // Handle custom layout file upload
-  const handleLayoutUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLayoutUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) {
-      setCustomLayoutFile(file)
-      const url = URL.createObjectURL(file)
-      setCustomLayoutUrl(url)
-      
-      // Create new layout config
-      const newLayout: LayoutConfig = {
-        id: `custom-${Date.now()}`,
-        name: `Layout Personalizado - ${file.name}`,
-        type: 'custom',
-        format: currentLayout.format,
-        url: url,
-        colors: currentLayout.colors,
-        elements: { ...currentLayout.elements }
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("format", currentLayout.format)
+
+    try {
+      setIsUploadingLayout(true)
+      const response = await fetch("/api/layouts/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      const result = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(result?.error || "Não foi possível enviar o layout")
       }
-      
-      setCurrentLayout(newLayout)
+
+      const baseLayout = cloneLayout(currentLayout)
+      const newLayout: LayoutConfig = {
+        ...baseLayout,
+        id: result?.id || `uploaded-${Date.now()}`,
+        name:
+          result?.name ||
+          `${currentLayout.format === "feed" ? "Feed" : "Story"} - ${result?.originalName || file.name}`,
+        type: "custom",
+        format: currentLayout.format,
+        url: result?.url,
+      }
+
+      const updatedLayouts = [...savedLayouts, newLayout]
+      setSavedLayouts(updatedLayouts)
+      localStorage.setItem("promo-layouts", JSON.stringify(updatedLayouts))
+
+      layoutOverridesRef.current[newLayout.id] = cloneLayout(newLayout)
+      localStorage.setItem("promo-layout-overrides", JSON.stringify(layoutOverridesRef.current))
+
+      setCurrentLayout(cloneLayout(newLayout))
+      alert("Layout enviado e salvo com sucesso!")
+    } catch (uploadError) {
+      console.error("Erro ao enviar layout:", uploadError)
+      alert(uploadError instanceof Error ? uploadError.message : "Erro desconhecido ao enviar layout")
+    } finally {
+      setIsUploadingLayout(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
@@ -477,8 +533,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     const layoutName = prompt('Nome do layout:')
     if (!layoutName) return
     
+    const layoutClone = cloneLayout(currentLayout)
     const newLayout: LayoutConfig = {
-      ...currentLayout,
+      ...layoutClone,
       id: `saved-${Date.now()}`,
       name: layoutName
     }
@@ -486,6 +543,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     const updatedLayouts = [...savedLayouts, newLayout]
     setSavedLayouts(updatedLayouts)
     localStorage.setItem('promo-layouts', JSON.stringify(updatedLayouts))
+    setCurrentLayout(newLayout)
     
     alert('Layout salvo com sucesso!')
   }
@@ -496,10 +554,15 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       const updatedLayouts = savedLayouts.filter(layout => layout.id !== layoutId)
       setSavedLayouts(updatedLayouts)
       localStorage.setItem('promo-layouts', JSON.stringify(updatedLayouts))
+      if (layoutOverridesRef.current[layoutId]) {
+        delete layoutOverridesRef.current[layoutId]
+        localStorage.setItem('promo-layout-overrides', JSON.stringify(layoutOverridesRef.current))
+      }
       
       // If the deleted layout is currently selected, switch to default
       if (currentLayout.id === layoutId) {
-        setCurrentLayout(defaultLayouts[0])
+        const defaultLayout = defaultLayouts.find((l) => l.format === currentLayout.format) || defaultLayouts[0]
+        loadLayout(defaultLayout)
       }
       
       alert('Layout deletado com sucesso!')
@@ -508,14 +571,15 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   // Load saved layout
   const loadLayout = (layout: LayoutConfig) => {
-    setCurrentLayout(layout)
+    const override = layoutOverridesRef.current[layout.id]
+    setCurrentLayout(cloneLayout(override || layout))
   }
 
   // Switch between story and feed formats
   const switchFormat = (format: 'story' | 'feed') => {
     const defaultLayout = defaultLayouts.find(l => l.format === format)
     if (defaultLayout) {
-      setCurrentLayout(defaultLayout)
+      loadLayout(defaultLayout)
     }
   }
 
@@ -609,6 +673,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   }
 
   const { width: containerWidth, height: containerHeight, scale } = getContainerDimensions()
+  const templateImage = currentLayout.url || null
 
   return (
     <div className="flex h-full">
@@ -683,11 +748,12 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               
               <div className="flex gap-2">
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                  onClick={() => !isUploadingLayout && fileInputRef.current?.click()}
+                  disabled={isUploadingLayout}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Upload className="h-4 w-4" />
-                  Upload Layout
+                  {isUploadingLayout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {isUploadingLayout ? "Enviando..." : "Upload Layout"}
                 </button>
                 
                 <button
@@ -927,12 +993,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               }}
             >
               {/* Background template image */}
-              <img 
-                src={customLayoutUrl || currentLayout.url || "/assets/LAYOUTFINAL.png"} 
-                alt="Promo Template" 
-                className="w-full h-full object-cover" 
-                crossOrigin="anonymous"
-              />
+              {templateImage && (
+                <img 
+                  src={templateImage} 
+                  alt="Promo Template" 
+                  className="w-full h-full object-cover" 
+                  crossOrigin="anonymous"
+                />
+              )}
 
               {/* Text Overlays */}
               <div className="absolute inset-0">
