@@ -674,6 +674,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   const { width: containerWidth, height: containerHeight, scale } = getContainerDimensions()
   const templateImage = currentLayout.url || null
+  const layoutsForCurrentFormat = useMemo(() => {
+    const defaults = defaultLayouts.filter((layout) => layout.format === currentLayout.format)
+    const custom = savedLayouts.filter((layout) => layout.format === currentLayout.format)
+    return [...defaults, ...custom]
+  }, [currentLayout.format, savedLayouts])
 
   return (
     <div className="flex h-full">
@@ -719,83 +724,109 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           </div>
 
           {/* Layout Selection */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-              <Settings className="h-5 w-5 mr-2 text-primary-blue" />
-              Layout
-            </h3>
-            
-            <div className="space-y-2">
-              <select
-                value={currentLayout.id}
-                onChange={(e) => {
-                  const layout = [...defaultLayouts, ...savedLayouts].find(l => l.id === e.target.value)
-                  if (layout) loadLayout(layout)
-                }}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-              >
-                {defaultLayouts
-                  .filter(l => l.format === currentLayout.format)
-                  .map(layout => (
-                    <option key={layout.id} value={layout.id}>{layout.name}</option>
-                  ))}
-                {savedLayouts
-                  .filter(l => l.format === currentLayout.format)
-                  .map(layout => (
-                    <option key={layout.id} value={layout.id}>{layout.name}</option>
-                  ))}
-              </select>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => !isUploadingLayout && fileInputRef.current?.click()}
-                  disabled={isUploadingLayout}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isUploadingLayout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {isUploadingLayout ? "Enviando..." : "Upload Layout"}
-                </button>
-                
-                <button
-                  onClick={saveCurrentLayout}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors text-sm"
-                >
-                  <Save className="h-4 w-4" />
-                  Salvar
-                </button>
-              </div>
-              
-              {/* Saved Layouts Management */}
-              {savedLayouts.filter(l => l.format === currentLayout.format).length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700">Layouts Salvos:</h4>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {savedLayouts
-                      .filter(l => l.format === currentLayout.format)
-                      .map(layout => (
-                        <div key={layout.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                          <span className="truncate flex-1">{layout.name}</span>
-                          <button
-                            onClick={() => deleteLayout(layout.id)}
-                            className="ml-2 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                            title="Deletar layout"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleLayoutUpload}
-                className="hidden"
-              />
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                <Settings className="h-5 w-5 mr-2 text-primary-blue" />
+                Escolha o layout base
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Primeiro selecione a arte. Depois ajuste posições e fontes. O layout ativo aparece destacado.
+              </p>
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {layoutsForCurrentFormat.map((layout) => {
+                const isActive = currentLayout.id === layout.id
+                return (
+                  <button
+                    key={layout.id}
+                    type="button"
+                    onClick={() => loadLayout(layout)}
+                    className={`relative rounded-xl border p-2 text-left transition-all ${
+                      isActive
+                        ? "border-primary-blue ring-2 ring-primary-blue/40 bg-primary-blue/5"
+                        : "border-gray-200 hover:border-primary-blue/60 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="aspect-[4/5] w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
+                      <img
+                        src={layout.url || "/assets/LAYOUTFINAL.png"}
+                        alt={layout.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{layout.name}</p>
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                        {layout.type === "custom" ? "Personalizado" : "Padrão"}
+                      </span>
+                    </div>
+                    {isActive && (
+                      <span className="absolute right-2 top-2 rounded-full bg-primary-blue px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                        Atual
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => !isUploadingLayout && fileInputRef.current?.click()}
+                disabled={isUploadingLayout}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isUploadingLayout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {isUploadingLayout ? "Enviando..." : "Upload Layout"}
+              </button>
+
+              <button
+                onClick={saveCurrentLayout}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors text-sm"
+              >
+                <Save className="h-4 w-4" />
+                Salvar
+              </button>
+            </div>
+
+            {/* Saved Layouts Management */}
+            {savedLayouts.filter((l) => l.format === currentLayout.format).length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700">Meus layouts</h4>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {savedLayouts
+                    .filter((l) => l.format === currentLayout.format)
+                    .map((layout) => (
+                      <div
+                        key={layout.id}
+                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+                      >
+                        <div className="flex-1 truncate">
+                          <p className="font-semibold text-gray-800 truncate">{layout.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{layout.url ?? "Sem preview"}</p>
+                        </div>
+                        <button
+                          onClick={() => deleteLayout(layout.id)}
+                          className="ml-2 rounded-full p-1 text-red-600 hover:bg-red-100 transition-colors"
+                          title="Deletar layout"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLayoutUpload}
+              className="hidden"
+            />
           </div>
 
           {/* Edit Mode Toggle */}
