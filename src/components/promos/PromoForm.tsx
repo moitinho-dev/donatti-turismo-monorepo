@@ -196,7 +196,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       return "0.00"
     }
 
-    // Salva o valor total digitado pelo usuário (sem transformações)
+    // Salva o valor total digitado pelo usuário
     return numericValue.toFixed(2)
   }
 

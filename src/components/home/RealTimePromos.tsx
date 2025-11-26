@@ -189,12 +189,9 @@ export default function RealTimePromos({ searchQuery = '' }: RealTimePromosProps
 
   const parseCurrencyValue = (value: string): number => {
     if (!value) return 0
-
-    const cleanedValue = value.replace(/[^\d.,]/g, '')
-    const numericValue = parseFloat(cleanedValue.replace(',', '.'))
-    const valueAfterCalculation = numericValue * 15 * 2
-
-    return valueAfterCalculation
+    // VALOR é o valor total salvo
+    const numericValue = parseFloat(value)
+    return isNaN(numericValue) ? 0 : numericValue
   }
 
   const formatCurrency = (value: number): string => {

@@ -187,11 +187,11 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     return airports.length > 0 ? airports.join(" / ") : "-"
   }
 
-  // Format price
+  // Format price - VALOR é o valor total, divide por parcelas para ter o valor da parcela
   const formatPrice = (promo: any) => {
-    const value = parseFloat(promo.VALOR?.replace(/[^\d.,]/g, "").replace(",", ".") || "0")
+    const value = parseFloat(promo.VALOR || "0")
     const parcelas = parseInt(promo.PARCELAS || "15")
-    const installment = (value * parcelas * 2) / parcelas
+    const installment = value / parcelas
     return installment.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
   }
 

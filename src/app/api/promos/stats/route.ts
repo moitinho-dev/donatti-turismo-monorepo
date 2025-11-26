@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
     const destinations = new Set(promos.map((promo) => promo.destino))
     const uniqueDestinations = destinations.size
 
-    // Average value
+    // Average value - valor é o valor total salvo
     const totalValue = promos.reduce((sum, promo) => {
-      const value = Number.parseFloat(promo.valor) * 2 * 15
+      const value = Number.parseFloat(promo.valor)
       return sum + (isNaN(value) ? 0 : value)
     }, 0)
     const averageValue = totalPromos > 0 ? totalValue / totalPromos : 0

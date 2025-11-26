@@ -20,13 +20,12 @@ const PromoStats: React.FC<PromoStatsProps> = ({ promos }) => {
   // Destinos únicos - using Array.from instead of spread operator
   const uniqueDestinations = Array.from(new Set(promos.map((promo) => promo.DESTINO))).length
 
-  // Média de valor
+  // Média de valor - VALOR é o valor total salvo
   const averageValue =
     promos.length > 0
       ? promos.reduce((sum, promo) => {
-          const cleanedValue = promo.VALOR.replace(/[^\d.,]/g, "")
-          const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-          return sum + (isNaN(numericValue) ? 0 : numericValue * 15 * 2)
+          const numericValue = Number.parseFloat(promo.VALOR)
+          return sum + (isNaN(numericValue) ? 0 : numericValue)
         }, 0) / promos.length
       : 0
 

@@ -48,11 +48,9 @@ const ExportButton: React.FC<ExportButtonProps> = ({ promos }) => {
         return "0,00"
       }
 
-      const cleanedValue = value.replace(/[^\d.,]/g, "")
-      const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-      const valueAfterCalculation = numericValue * 15 * 2
-
-      return valueAfterCalculation.toFixed(2).replace(".", ",")
+      // VALOR é o valor total salvo
+      const numericValue = Number.parseFloat(value)
+      return isNaN(numericValue) ? "0,00" : numericValue.toFixed(2).replace(".", ",")
     }
 
     // Criar cabeçalhos para o CSV

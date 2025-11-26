@@ -67,11 +67,11 @@ export async function GET(req: NextRequest) {
       // Format creation date
       const formattedCreatedAt = format(promo.createdAt, "dd/MM/yyyy HH:mm", { locale: ptBR })
 
-      // Calculate values
+      // Calculate values - valor é o valor total salvo
       const baseValue = Number.parseFloat(promo.valor)
       const parcelas = promo.parcelas || 10
-      const totalValue = (baseValue * parcelas * 2).toFixed(2).replace(".", ",")
-      const installmentValue = ((baseValue * parcelas * 2) / parcelas).toFixed(2).replace(".", ",")
+      const totalValue = baseValue.toFixed(2).replace(".", ",")
+      const installmentValue = (baseValue / parcelas).toFixed(2).replace(".", ",")
 
       // Determine regime
       let regime = "Não especificado"

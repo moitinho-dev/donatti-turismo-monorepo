@@ -17,9 +17,9 @@ export function AgentStats({ userPromos, user }: AgentStatsProps) {
   const destinations = new Set(userPromos.map((promo) => promo.DESTINO))
   const uniqueDestinations = destinations.size
 
-  // Average value
+  // Average value - VALOR é o valor total salvo
   const totalValue = userPromos.reduce((sum, promo) => {
-    const value = Number.parseFloat(promo.VALOR) * 2 * 15
+    const value = Number.parseFloat(promo.VALOR)
     return sum + (isNaN(value) ? 0 : value)
   }, 0)
   const averageValue = totalPromos > 0 ? totalValue / totalPromos : 0
