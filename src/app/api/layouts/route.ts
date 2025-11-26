@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { nanoid } from "nanoid"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import prisma from "@/lib/db"
 
 export interface ElementConfig {
   x: number
@@ -14,12 +13,24 @@ export interface ElementConfig {
   visible: boolean
 }
 
+export interface ImageArea {
+  id: string
+  name: string
+  type: "rectangle" | "polygon"
+  points: { x: number; y: number }[]
+  zIndex: number
+  imageUrl?: string
+  fit: "cover" | "contain" | "fill"
+  visible: boolean
+}
+
 export interface LayoutConfig {
   id: string
   name: string
   type: "png" | "svg" | "custom"
   format: "story" | "feed"
   url?: string
+  imageUrl?: string
   isDefault?: boolean
   createdAt: string
   updatedAt: string
@@ -27,6 +38,7 @@ export interface LayoutConfig {
   elements: {
     [key: string]: ElementConfig
   }
+  imageAreas?: ImageArea[]
   colors: {
     primary: string
     secondary: string
@@ -86,6 +98,71 @@ const defaultColors = {
   background: "#1D3153",
 }
 
+// Convert Prisma layout to API format
+function toLayoutConfig(layout: {
+  id: string
+  name: string
+  type: string
+  format: string
+  imageUrl: string | null
+  isDefault: boolean
+  elements: unknown
+  imageAreas: unknown
+  colors: unknown
+  createdAt: Date
+  updatedAt: Date
+  createdById: string
+}): LayoutConfig {
+  return {
+    id: layout.id,
+    name: layout.name,
+    type: layout.type as "png" | "svg" | "custom",
+    format: layout.format as "story" | "feed",
+    url: layout.imageUrl || undefined,
+    imageUrl: layout.imageUrl || undefined,
+    isDefault: layout.isDefault,
+    createdAt: layout.createdAt.toISOString(),
+    updatedAt: layout.updatedAt.toISOString(),
+    createdBy: layout.createdById,
+    elements: layout.elements as Record<string, ElementConfig>,
+    imageAreas: (layout.imageAreas as ImageArea[]) || [],
+    colors: layout.colors as { primary: string; secondary: string; accent: string; background: string },
+  }
+}
+
+// Seed default layouts if none exist
+async function seedDefaultLayouts(systemUserId: string) {
+  const count = await prisma.layout.count()
+  if (count === 0) {
+    await prisma.layout.createMany({
+      data: [
+        {
+          id: "default-story",
+          name: "Layout Stories Padrão",
+          type: "png",
+          format: "story",
+          imageUrl: "/assets/LAYOUTFINAL.png",
+          isDefault: true,
+          elements: JSON.parse(JSON.stringify(defaultStoryElements)),
+          colors: JSON.parse(JSON.stringify(defaultColors)),
+          createdById: systemUserId,
+        },
+        {
+          id: "default-feed",
+          name: "Layout Feed Padrão",
+          type: "png",
+          format: "feed",
+          imageUrl: "/assets/LAYOUTFEED.png",
+          isDefault: true,
+          elements: JSON.parse(JSON.stringify(defaultFeedElements)),
+          colors: JSON.parse(JSON.stringify(defaultColors)),
+          createdById: systemUserId,
+        },
+      ],
+    })
+  }
+}
+
 // GET - List all layouts or get specific layout
 export async function GET(req: NextRequest) {
   try {
@@ -98,65 +175,30 @@ export async function GET(req: NextRequest) {
     const id = url.searchParams.get("id")
     const format = url.searchParams.get("format") as "story" | "feed" | null
 
-    let layouts = (await redis.get<LayoutConfig[]>(REDIS_KEYS.LAYOUTS)) || []
-
-    // If no layouts exist, create default ones
-    if (layouts.length === 0) {
-      const now = new Date().toISOString()
-      const defaultLayouts: LayoutConfig[] = [
-        {
-          id: "default-story",
-          name: "Layout Stories Padrão",
-          type: "png",
-          format: "story",
-          url: "/assets/LAYOUTFINAL.png",
-          isDefault: true,
-          createdAt: now,
-          updatedAt: now,
-          createdBy: "system",
-          elements: defaultStoryElements,
-          colors: defaultColors,
-        },
-        {
-          id: "default-feed",
-          name: "Layout Feed Padrão",
-          type: "png",
-          format: "feed",
-          url: "/assets/LAYOUTFEED.png",
-          isDefault: true,
-          createdAt: now,
-          updatedAt: now,
-          createdBy: "system",
-          elements: defaultFeedElements,
-          colors: defaultColors,
-        },
-      ]
-      await redis.set(REDIS_KEYS.LAYOUTS, defaultLayouts)
-      layouts = defaultLayouts
-    }
+    // Seed default layouts if needed
+    await seedDefaultLayouts(session.user.id)
 
     // Return specific layout
     if (id) {
-      const layout = layouts.find((l) => l.id === id)
+      const layout = await prisma.layout.findUnique({
+        where: { id },
+      })
       if (!layout) {
         return NextResponse.json({ error: "Layout não encontrado" }, { status: 404 })
       }
-      return NextResponse.json(layout)
+      return NextResponse.json(toLayoutConfig(layout))
     }
 
-    // Filter by format if provided
-    if (format) {
-      layouts = layouts.filter((l) => l.format === format)
-    }
-
-    // Sort: default layouts first, then by creation date
-    layouts.sort((a, b) => {
-      if (a.isDefault && !b.isDefault) return -1
-      if (!a.isDefault && b.isDefault) return 1
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    // Get all layouts with optional format filter
+    const layouts = await prisma.layout.findMany({
+      where: format ? { format } : undefined,
+      orderBy: [
+        { isDefault: "desc" },
+        { createdAt: "desc" },
+      ],
     })
 
-    return NextResponse.json(layouts)
+    return NextResponse.json(layouts.map(toLayoutConfig))
   } catch (error) {
     console.error("Error fetching layouts:", error)
     return NextResponse.json({ error: "Erro ao buscar layouts" }, { status: 500 })
@@ -178,28 +220,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Nome e formato são obrigatórios" }, { status: 400 })
     }
 
-    const now = new Date().toISOString()
     const defaultElements = format === "story" ? defaultStoryElements : defaultFeedElements
+    const defaultUrl = format === "story" ? "/assets/LAYOUTFINAL.png" : "/assets/LAYOUTFEED.png"
 
-    const newLayout: LayoutConfig = {
-      id: nanoid(),
-      name,
-      type: url ? "custom" : "png",
-      format,
-      url: url || (format === "story" ? "/assets/LAYOUTFINAL.png" : "/assets/LAYOUTFEED.png"),
-      isDefault: false,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: session.user.id,
-      elements: elements || defaultElements,
-      colors: colors || defaultColors,
-    }
+    const newLayout = await prisma.layout.create({
+      data: {
+        name,
+        type: url ? "custom" : "png",
+        format,
+        imageUrl: url || defaultUrl,
+        isDefault: false,
+        elements: elements || defaultElements,
+        colors: colors || defaultColors,
+        createdById: session.user.id,
+      },
+    })
 
-    const layouts = (await redis.get<LayoutConfig[]>(REDIS_KEYS.LAYOUTS)) || []
-    layouts.push(newLayout)
-    await redis.set(REDIS_KEYS.LAYOUTS, layouts)
-
-    return NextResponse.json(newLayout, { status: 201 })
+    return NextResponse.json(toLayoutConfig(newLayout), { status: 201 })
   } catch (error) {
     console.error("Error creating layout:", error)
     return NextResponse.json({ error: "Erro ao criar layout" }, { status: 500 })
@@ -215,44 +252,44 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { id, name, url, elements, colors, isDefault } = body
+    const { id, name, url, elements, imageAreas, colors, isDefault } = body
 
     if (!id) {
       return NextResponse.json({ error: "ID do layout é obrigatório" }, { status: 400 })
     }
 
-    const layouts = (await redis.get<LayoutConfig[]>(REDIS_KEYS.LAYOUTS)) || []
-    const layoutIndex = layouts.findIndex((l) => l.id === id)
+    const existingLayout = await prisma.layout.findUnique({
+      where: { id },
+    })
 
-    if (layoutIndex === -1) {
+    if (!existingLayout) {
       return NextResponse.json({ error: "Layout não encontrado" }, { status: 404 })
     }
 
-    const existingLayout = layouts[layoutIndex]
-
     // If setting as default, remove default from others of same format
     if (isDefault) {
-      layouts.forEach((l, i) => {
-        if (l.format === existingLayout.format && l.id !== id) {
-          layouts[i] = { ...l, isDefault: false }
-        }
+      await prisma.layout.updateMany({
+        where: {
+          format: existingLayout.format,
+          id: { not: id },
+        },
+        data: { isDefault: false },
       })
     }
 
-    const updatedLayout: LayoutConfig = {
-      ...existingLayout,
-      name: name || existingLayout.name,
-      url: url || existingLayout.url,
-      elements: elements || existingLayout.elements,
-      colors: colors || existingLayout.colors,
-      isDefault: isDefault !== undefined ? isDefault : existingLayout.isDefault,
-      updatedAt: new Date().toISOString(),
-    }
+    const updatedLayout = await prisma.layout.update({
+      where: { id },
+      data: {
+        name: name || undefined,
+        imageUrl: url || undefined,
+        elements: elements ? JSON.parse(JSON.stringify(elements)) : undefined,
+        imageAreas: imageAreas ? JSON.parse(JSON.stringify(imageAreas)) : undefined,
+        colors: colors ? JSON.parse(JSON.stringify(colors)) : undefined,
+        isDefault: isDefault !== undefined ? isDefault : undefined,
+      },
+    })
 
-    layouts[layoutIndex] = updatedLayout
-    await redis.set(REDIS_KEYS.LAYOUTS, layouts)
-
-    return NextResponse.json(updatedLayout)
+    return NextResponse.json(toLayoutConfig(updatedLayout))
   } catch (error) {
     console.error("Error updating layout:", error)
     return NextResponse.json({ error: "Erro ao atualizar layout" }, { status: 500 })
@@ -274,20 +311,22 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "ID do layout é obrigatório" }, { status: 400 })
     }
 
-    const layouts = (await redis.get<LayoutConfig[]>(REDIS_KEYS.LAYOUTS)) || []
-    const layout = layouts.find((l) => l.id === id)
+    const layout = await prisma.layout.findUnique({
+      where: { id },
+    })
 
     if (!layout) {
       return NextResponse.json({ error: "Layout não encontrado" }, { status: 404 })
     }
 
     // Prevent deletion of system default layouts
-    if (layout.createdBy === "system") {
+    if (layout.id.startsWith("default-")) {
       return NextResponse.json({ error: "Não é possível deletar layouts do sistema" }, { status: 403 })
     }
 
-    const updatedLayouts = layouts.filter((l) => l.id !== id)
-    await redis.set(REDIS_KEYS.LAYOUTS, updatedLayouts)
+    await prisma.layout.delete({
+      where: { id },
+    })
 
     return NextResponse.json({ success: true, message: "Layout deletado com sucesso" })
   } catch (error) {

@@ -22,9 +22,13 @@ import {
   Layers,
   Check,
   Star,
+  Plus,
+  Minus,
+  Square,
+  PenTool,
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
-import { useLayouts } from "@/hooks/useLayouts"
+import { useLayouts, type ImageArea } from "@/hooks/useLayouts"
 
 interface PromoImageGeneratorProps {
   promo: {
@@ -81,6 +85,10 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     updateElement,
     updateColor,
     toggleElementVisibility,
+    updateImageAreas,
+    addImageArea,
+    removeImageArea,
+    updateImageArea,
   } = useLayouts()
 
   const [isGenerating, setIsGenerating] = useState(false)
@@ -97,6 +105,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [isUploadingLayout, setIsUploadingLayout] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showLayerPanel, setShowLayerPanel] = useState(false)
+  const [showImageAreasPanel, setShowImageAreasPanel] = useState(false)
+  const [selectedImageArea, setSelectedImageArea] = useState<string | null>(null)
+  const [isDrawingArea, setIsDrawingArea] = useState(false)
+  const [drawingAreaStart, setDrawingAreaStart] = useState<{ x: number; y: number } | null>(null)
+  const [drawingAreaCurrent, setDrawingAreaCurrent] = useState<{ x: number; y: number } | null>(null)
   const [uploadName, setUploadName] = useState("")
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -211,6 +224,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       await updateLayout(currentLayout.id, {
         elements: currentLayout.elements,
         colors: currentLayout.colors,
+        imageAreas: currentLayout.imageAreas,
       })
     } catch (err) {
       setError("Erro ao salvar layout")
@@ -397,26 +411,79 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     })
   }
 
-  const handleMouseMove = (event: React.MouseEvent) => {
-    if (!isDragging || !selectedElement || !templateRef.current || !currentLayout) return
-
-    const templateRect = templateRef.current.getBoundingClientRect()
-    const scale = currentLayout.format === "feed" ? 0.4 : 0.5
-
-    const newX = (event.clientX - templateRect.left - dragOffset.x) / scale
-    const newY = (event.clientY - templateRect.top - dragOffset.y) / scale
-
-    const maxX = 1080
-    const maxY = currentLayout.format === "feed" ? 1350 : 1920
-
-    updateElement(selectedElement, {
-      x: Math.max(0, Math.min(maxX, newX)),
-      y: Math.max(0, Math.min(maxY, newY)),
-    })
-  }
-
   const handleMouseUp = () => {
     setIsDragging(false)
+
+    // Complete drawing area
+    if (isDrawingArea && drawingAreaStart && drawingAreaCurrent && currentLayout) {
+      const minX = Math.min(drawingAreaStart.x, drawingAreaCurrent.x)
+      const maxX = Math.max(drawingAreaStart.x, drawingAreaCurrent.x)
+      const minY = Math.min(drawingAreaStart.y, drawingAreaCurrent.y)
+      const maxY = Math.max(drawingAreaStart.y, drawingAreaCurrent.y)
+
+      // Only create area if it's big enough
+      if (maxX - minX > 20 && maxY - minY > 20) {
+        const newArea: ImageArea = {
+          id: `area-${Date.now()}`,
+          name: `Foto ${(currentLayout.imageAreas?.length || 0) + 1}`,
+          type: "rectangle",
+          points: [
+            { x: minX, y: minY },
+            { x: maxX, y: minY },
+            { x: maxX, y: maxY },
+            { x: minX, y: maxY },
+          ],
+          zIndex: -1,
+          fit: "cover",
+          visible: true,
+        }
+        addImageArea(newArea)
+        setSelectedImageArea(newArea.id)
+      }
+
+      setDrawingAreaStart(null)
+      setDrawingAreaCurrent(null)
+      setIsDrawingArea(false)
+    }
+  }
+
+  // Handle drawing area mouse events
+  const handlePreviewMouseDown = (event: React.MouseEvent) => {
+    if (!isDrawingArea || !templateRef.current) return
+
+    const templateRect = templateRef.current.getBoundingClientRect()
+    const x = (event.clientX - templateRect.left) / scale
+    const y = (event.clientY - templateRect.top) / scale
+
+    setDrawingAreaStart({ x, y })
+    setDrawingAreaCurrent({ x, y })
+  }
+
+  const handlePreviewMouseMove = (event: React.MouseEvent) => {
+    // Handle element dragging
+    if (isDragging && selectedElement && templateRef.current && currentLayout) {
+      const templateRect = templateRef.current.getBoundingClientRect()
+      const newX = (event.clientX - templateRect.left - dragOffset.x) / scale
+      const newY = (event.clientY - templateRect.top - dragOffset.y) / scale
+
+      const maxX = 1080
+      const maxY = currentLayout.format === "feed" ? 1350 : 1920
+
+      updateElement(selectedElement, {
+        x: Math.max(0, Math.min(maxX, newX)),
+        y: Math.max(0, Math.min(maxY, newY)),
+      })
+      return
+    }
+
+    // Handle drawing area
+    if (isDrawingArea && drawingAreaStart && templateRef.current) {
+      const templateRect = templateRef.current.getBoundingClientRect()
+      const x = (event.clientX - templateRect.left) / scale
+      const y = (event.clientY - templateRect.top) / scale
+
+      setDrawingAreaCurrent({ x, y })
+    }
   }
 
   // Generate image
@@ -754,6 +821,167 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             </div>
           )}
 
+          {/* Image Areas Panel */}
+          {currentLayout && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                  <Square className="h-5 w-5 mr-2 text-primary-blue" />
+                  Áreas de Foto
+                </h3>
+                <button
+                  onClick={() => setShowImageAreasPanel(!showImageAreasPanel)}
+                  className={`p-2 rounded-md transition-colors ${
+                    showImageAreasPanel
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {showImageAreasPanel ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {showImageAreasPanel && (
+                <div className="space-y-2 p-3 bg-blue-50 rounded-lg">
+                  {currentLayout.imageAreas && currentLayout.imageAreas.length > 0 ? (
+                    <>
+                      <p className="text-xs text-gray-500 mb-2">
+                        {currentLayout.imageAreas.length} área(s) configurada(s)
+                      </p>
+                      {currentLayout.imageAreas
+                        .sort((a, b) => a.zIndex - b.zIndex)
+                        .map((area) => (
+                          <div
+                            key={area.id}
+                            onClick={() => setSelectedImageArea(selectedImageArea === area.id ? null : area.id)}
+                            className={`p-2 rounded-md border cursor-pointer transition-colors ${
+                              selectedImageArea === area.id
+                                ? "border-blue-500 bg-blue-100"
+                                : "border-gray-200 bg-white hover:border-blue-300"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-700">{area.name}</span>
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 rounded text-gray-600">
+                                z: {area.zIndex}
+                              </span>
+                            </div>
+
+                            {selectedImageArea === area.id && (
+                              <div className="mt-2 pt-2 border-t border-gray-200 space-y-2">
+                                <div>
+                                  <label className="text-xs text-gray-500">Z-Index (ordem)</label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        updateImageArea(area.id, { zIndex: area.zIndex - 1 })
+                                      }}
+                                      className="p-1 bg-gray-100 hover:bg-gray-200 rounded"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      value={area.zIndex}
+                                      onChange={(e) => {
+                                        e.stopPropagation()
+                                        updateImageArea(area.id, { zIndex: parseInt(e.target.value) || 0 })
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="w-16 text-center p-1 border rounded text-sm"
+                                    />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        updateImageArea(area.id, { zIndex: area.zIndex + 1 })
+                                      }}
+                                      className="p-1 bg-gray-100 hover:bg-gray-200 rounded"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <p className="text-[10px] text-gray-400 mt-1">
+                                    Negativo = atrás do template
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-500">Ajuste</label>
+                                  <select
+                                    value={area.fit}
+                                    onChange={(e) => {
+                                      e.stopPropagation()
+                                      updateImageArea(area.id, { fit: e.target.value as "cover" | "contain" | "fill" })
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-full p-1 border rounded text-sm mt-1"
+                                  >
+                                    <option value="cover">Cobrir</option>
+                                    <option value="contain">Conter</option>
+                                    <option value="fill">Esticar</option>
+                                  </select>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      updateImageArea(area.id, { visible: !area.visible })
+                                    }}
+                                    className={`text-xs px-2 py-1 rounded ${
+                                      area.visible
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-gray-100 text-gray-500"
+                                    }`}
+                                  >
+                                    {area.visible ? "Visível" : "Oculto"}
+                                  </button>
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (confirm("Remover esta área?")) {
+                                        removeImageArea(area.id)
+                                        setSelectedImageArea(null)
+                                      }
+                                    }}
+                                    className="text-xs px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <PenTool className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                      <p className="text-sm text-gray-500">Nenhuma área configurada</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Clique em "Desenhar Nova Área" e arraste no preview
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setIsDrawingArea(!isDrawingArea)}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm ${
+                      isDrawingArea
+                        ? "bg-green-600 text-white hover:bg-green-700"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    <PenTool className="h-4 w-4" />
+                    {isDrawingArea ? "Clique no preview para desenhar..." : "Desenhar Nova Área"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Layout Colors */}
           {currentLayout && (
             <div className="space-y-3">
@@ -902,7 +1130,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           >
             <div
               ref={templateRef}
-              className="relative cursor-pointer"
+              className={`relative ${isDrawingArea ? "cursor-crosshair" : "cursor-pointer"}`}
               style={{
                 width: "1080px",
                 height: currentLayout.format === "feed" ? "1350px" : "1920px",
@@ -910,12 +1138,58 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 transformOrigin: "top left",
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
-              onMouseMove={handleMouseMove}
+              onMouseDown={handlePreviewMouseDown}
+              onMouseMove={handlePreviewMouseMove}
               onMouseUp={handleMouseUp}
-              onClick={() => setSelectedElement(null)}
+              onMouseLeave={handleMouseUp}
+              onClick={() => !isDrawingArea && setSelectedElement(null)}
             >
-              {/* Destination image as background */}
-              {destinationImage && (
+              {/* Image Areas with negative z-index (behind template) */}
+              {currentLayout.imageAreas
+                ?.filter((area) => area.visible && area.zIndex < 0)
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((area) => {
+                  const minX = Math.min(...area.points.map((p) => p.x))
+                  const maxX = Math.max(...area.points.map((p) => p.x))
+                  const minY = Math.min(...area.points.map((p) => p.y))
+                  const maxY = Math.max(...area.points.map((p) => p.y))
+                  return (
+                    <div
+                      key={area.id}
+                      className={`absolute overflow-hidden ${
+                        selectedImageArea === area.id ? "ring-4 ring-blue-500" : ""
+                      }`}
+                      style={{
+                        left: `${minX}px`,
+                        top: `${minY}px`,
+                        width: `${maxX - minX}px`,
+                        height: `${maxY - minY}px`,
+                        zIndex: area.zIndex,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedImageArea(area.id)
+                      }}
+                    >
+                      {destinationImage ? (
+                        <img
+                          src={destinationImage}
+                          alt={promo.DESTINO}
+                          className="w-full h-full"
+                          style={{ objectFit: area.fit }}
+                          crossOrigin="anonymous"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <ImageIcon className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+              {/* Destination image as background (fallback when no areas defined) */}
+              {destinationImage && (!currentLayout.imageAreas || currentLayout.imageAreas.length === 0) && (
                 <div
                   className="absolute top-0 left-0 overflow-hidden z-0"
                   style={{
@@ -991,6 +1265,94 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                   })}
                 </div>
               </div>
+
+              {/* Image Areas with positive z-index (in front of template) */}
+              {currentLayout.imageAreas
+                ?.filter((area) => area.visible && area.zIndex >= 0)
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((area) => {
+                  const minX = Math.min(...area.points.map((p) => p.x))
+                  const maxX = Math.max(...area.points.map((p) => p.x))
+                  const minY = Math.min(...area.points.map((p) => p.y))
+                  const maxY = Math.max(...area.points.map((p) => p.y))
+                  return (
+                    <div
+                      key={area.id}
+                      className={`absolute overflow-hidden ${
+                        selectedImageArea === area.id ? "ring-4 ring-blue-500" : ""
+                      }`}
+                      style={{
+                        left: `${minX}px`,
+                        top: `${minY}px`,
+                        width: `${maxX - minX}px`,
+                        height: `${maxY - minY}px`,
+                        zIndex: 20 + area.zIndex,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedImageArea(area.id)
+                      }}
+                    >
+                      {destinationImage ? (
+                        <img
+                          src={destinationImage}
+                          alt={promo.DESTINO}
+                          className="w-full h-full"
+                          style={{ objectFit: area.fit }}
+                          crossOrigin="anonymous"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <ImageIcon className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+              {/* Drawing rectangle preview */}
+              {isDrawingArea && drawingAreaStart && drawingAreaCurrent && (
+                <div
+                  className="absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-30 pointer-events-none"
+                  style={{
+                    left: `${Math.min(drawingAreaStart.x, drawingAreaCurrent.x)}px`,
+                    top: `${Math.min(drawingAreaStart.y, drawingAreaCurrent.y)}px`,
+                    width: `${Math.abs(drawingAreaCurrent.x - drawingAreaStart.x)}px`,
+                    height: `${Math.abs(drawingAreaCurrent.y - drawingAreaStart.y)}px`,
+                    zIndex: 100,
+                  }}
+                />
+              )}
+
+              {/* Area outlines in edit mode */}
+              {(isEditMode || showImageAreasPanel) &&
+                currentLayout.imageAreas?.map((area) => {
+                  const minX = Math.min(...area.points.map((p) => p.x))
+                  const maxX = Math.max(...area.points.map((p) => p.x))
+                  const minY = Math.min(...area.points.map((p) => p.y))
+                  const maxY = Math.max(...area.points.map((p) => p.y))
+                  return (
+                    <div
+                      key={`outline-${area.id}`}
+                      className={`absolute border-2 pointer-events-none ${
+                        selectedImageArea === area.id
+                          ? "border-blue-500 border-solid"
+                          : "border-yellow-400 border-dashed"
+                      }`}
+                      style={{
+                        left: `${minX}px`,
+                        top: `${minY}px`,
+                        width: `${maxX - minX}px`,
+                        height: `${maxY - minY}px`,
+                        zIndex: 101,
+                      }}
+                    >
+                      <div className="absolute -top-6 left-0 bg-yellow-400 text-black text-xs px-2 py-0.5 rounded whitespace-nowrap">
+                        {area.name} (z: {area.zIndex})
+                      </div>
+                    </div>
+                  )
+                })}
             </div>
           </div>
         )}

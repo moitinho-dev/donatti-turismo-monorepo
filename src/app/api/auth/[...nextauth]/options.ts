@@ -1,7 +1,6 @@
 import CredentialsProvider from "next-auth/providers/credentials"
 import type { NextAuthOptions, DefaultSession } from "next-auth"
-import { redis, REDIS_KEYS } from "@/lib/redis"
-import type { User } from "@/types/user"
+import prisma from "@/lib/db"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -27,42 +26,16 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Initialize Redis if needed
-          await initializeRedisIfNeeded()
+          // Initialize database with default users if needed
+          await initializeDatabaseIfNeeded()
 
-          // Get users from Redis
-          const users = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
+          // Find user by email
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          })
 
-          // Find user by email and password
-          const user = users.find(
-            (u) => u.email === credentials.email && u.password === credentials.password && u.active,
-          )
-
-          if (user) {
-            // Update last login
-            const updatedUsers = users.map((u) => {
-              if (u.id === user.id) {
-                return {
-                  ...u,
-                  lastLogin: new Date().toISOString(),
-                }
-              }
-              return u
-            })
-
-            // Save updated users
-            await redis.set(REDIS_KEYS.USERS, updatedUsers)
-
-            // Record login session
-            const sessions = (await redis.get<any[]>(REDIS_KEYS.USER_SESSIONS)) || []
-            sessions.push({
-              userId: user.id,
-              email: user.email,
-              loginTime: new Date().toISOString(),
-              userAgent: credentials.userAgent || "Unknown",
-            })
-            await redis.set(REDIS_KEYS.USER_SESSIONS, sessions)
-
+          // Verify password (simple comparison for now - consider bcrypt in production)
+          if (user && user.password === credentials.password) {
             // Return user data for session
             return {
               id: user.id,
@@ -114,35 +87,37 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
 }
 
-// Helper function to initialize Redis with default users if needed
-async function initializeRedisIfNeeded() {
-  const usersExist = await redis.exists(REDIS_KEYS.USERS)
+// Helper function to initialize database with default users if needed
+async function initializeDatabaseIfNeeded() {
+  try {
+    // Check if any users exist
+    const userCount = await prisma.user.count()
 
-  if (!usersExist) {
-    // Create default admin user
-    const defaultAdmin = {
-      id: "admin-default",
-      email: "admin@donatti.com",
-      name: "Administrador",
-      password: "lemonde123",
-      role: "admin",
-      createdAt: new Date().toISOString(),
-      active: true,
+    if (userCount === 0) {
+      // Create default admin user
+      await prisma.user.create({
+        data: {
+          email: "admin@donatti.com",
+          name: "Administrador",
+          password: "admin@123",
+          role: "admin",
+        },
+      })
+
+      // Create default agent user
+      await prisma.user.create({
+        data: {
+          email: "agente@donatti.com",
+          name: "Agente de Turismo",
+          password: "agente@123",
+          role: "agent",
+        },
+      })
+
+      console.log("Database initialized with default users")
     }
-
-    // Create default agent user
-    const defaultAgent = {
-      id: "agent-default",
-      email: "agente@donatti.com",
-      name: "Agente de Turismo",
-      password: "lemonde123",
-      role: "agent",
-      createdAt: new Date().toISOString(),
-      active: true,
-    }
-
-    await redis.set(REDIS_KEYS.USERS, [defaultAdmin, defaultAgent])
-    console.log("Redis initialized with default users")
+  } catch (error) {
+    console.error("Error initializing database:", error)
   }
 }
 

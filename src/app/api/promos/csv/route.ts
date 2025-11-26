@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import prisma from "@/lib/db"
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,33 +19,35 @@ export async function GET(req: NextRequest) {
     const startDate = url.searchParams.get("startDate")
     const endDate = url.searchParams.get("endDate")
 
-    // Get promos from Redis
-    const promos = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
-
-    // Filter promos based on type
-    let filteredPromos = promos
+    // Build where clause for filtering
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    const where: { createdAt?: { gte?: Date; lt?: Date } } = {}
+
     if (type === "today") {
-      // Filter promos created today
-      filteredPromos = promos.filter((promo) => {
-        const createdAt = new Date(promo.createdAt)
-        return createdAt >= today && createdAt < tomorrow
-      })
+      where.createdAt = {
+        gte: today,
+        lt: tomorrow,
+      }
     } else if (type === "custom" && startDate && endDate) {
-      // Filter promos in custom date range
       const start = new Date(startDate)
       const end = new Date(endDate)
       end.setDate(end.getDate() + 1) // Include the end date
 
-      filteredPromos = promos.filter((promo) => {
-        const createdAt = new Date(promo.createdAt as string)
-        return createdAt >= start && createdAt < end
-      })
+      where.createdAt = {
+        gte: start,
+        lt: end,
+      }
     }
+
+    // Get promos from database
+    const promos = await prisma.promo.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    })
 
     // Generate CSV content
     const headers = [
@@ -61,41 +63,40 @@ export async function GET(req: NextRequest) {
       "Aeroporto de Saída",
     ]
 
-    const rows = filteredPromos.map((promo) => {
+    const rows = promos.map((promo) => {
       // Format creation date
-      const createdAt = new Date(promo.createdAt)
-      const formattedCreatedAt = format(createdAt, "dd/MM/yyyy HH:mm", { locale: ptBR })
+      const formattedCreatedAt = format(promo.createdAt, "dd/MM/yyyy HH:mm", { locale: ptBR })
 
       // Calculate values
-      const baseValue = Number.parseFloat(promo.VALOR)
-      const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
+      const baseValue = Number.parseFloat(promo.valor)
+      const parcelas = promo.parcelas || 10
       const totalValue = (baseValue * parcelas * 2).toFixed(2).replace(".", ",")
       const installmentValue = ((baseValue * parcelas * 2) / parcelas).toFixed(2).replace(".", ",")
 
       // Determine regime
       let regime = "Não especificado"
-      if (promo.ALL_INCLUSIVE) regime = "All Inclusive"
-      else if (promo.PENSAO_COMPLETA) regime = "Pensão Completa"
-      else if (promo.MEIA_PENSAO) regime = "Meia Pensão"
-      else if (promo.COM_CAFE) regime = "Com Café"
-      else if (promo.SEM_CAFE) regime = "Sem Café"
+      if (promo.allInclusive) regime = "All Inclusive"
+      else if (promo.pensaoCompleta) regime = "Pensão Completa"
+      else if (promo.meiaPensao) regime = "Meia Pensão"
+      else if (promo.comCafe) regime = "Com Café"
+      else if (promo.semCafe) regime = "Sem Café"
 
       // Determine departure airport
       let departure = "Não especificado"
-      if (promo.CG && promo.SP) departure = "Campo Grande e São Paulo"
-      else if (promo.CG) departure = "Campo Grande"
-      else if (promo.SP) departure = "São Paulo"
+      if (promo.cg && promo.sp) departure = "Campo Grande e São Paulo"
+      else if (promo.cg) departure = "Campo Grande"
+      else if (promo.sp) departure = "São Paulo"
 
       return [
         promo.id,
         formattedCreatedAt,
-        promo.DESTINO,
-        promo.HOTEL,
-        promo.DATA_FORMATADA,
+        promo.destino,
+        promo.hotel,
+        promo.dataFormatada,
         totalValue,
         installmentValue,
         regime,
-        promo.NUMERO_DE_NOITES,
+        promo.numeroDeNoites,
         departure,
       ]
     })
@@ -104,11 +105,11 @@ export async function GET(req: NextRequest) {
     const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(","))].join("\n")
 
     // Set filename based on type
-    let filename = "promos-lemonde-todas.csv"
+    let filename = "promos-donatti-todas.csv"
     if (type === "today") {
-      filename = `promos-lemonde-${format(today, "dd-MM-yyyy", { locale: ptBR })}.csv`
+      filename = `promos-donatti-${format(today, "dd-MM-yyyy", { locale: ptBR })}.csv`
     } else if (type === "custom") {
-      filename = `promos-lemonde-${format(new Date(startDate!), "dd-MM-yyyy", { locale: ptBR })}-a-${format(new Date(endDate!), "dd-MM-yyyy", { locale: ptBR })}.csv`
+      filename = `promos-donatti-${format(new Date(startDate!), "dd-MM-yyyy", { locale: ptBR })}-a-${format(new Date(endDate!), "dd-MM-yyyy", { locale: ptBR })}.csv`
     }
 
     // Return CSV file
@@ -123,4 +124,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar CSV" }, { status: 500 })
   }
 }
-

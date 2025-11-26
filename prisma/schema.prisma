@@ -108,12 +108,14 @@ model Layout {
   format      String   @default("story") // story, feed
   isDefault   Boolean  @default(false)
 
-  // Template image stored as base64 or URL
-  imageUrl    String?  @db.Text
-  imageData   Bytes?   // Store template image binary
+  // Template image URL (local path or external URL)
+  imageUrl    String?
 
-  // Element configurations as JSON
+  // Element configurations as JSON (text elements)
   elements    Json
+
+  // Image areas for photos (JSON array of ImageArea objects)
+  imageAreas  Json?
 
   // Color configurations as JSON
   colors      Json

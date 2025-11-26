@@ -4,9 +4,8 @@ import { authOptions } from "../../auth/[...nextauth]/options"
 import { promises as fs } from "fs"
 import path from "path"
 import crypto from "crypto"
-import { nanoid } from "nanoid"
-import { redis, REDIS_KEYS } from "@/lib/redis"
-import type { LayoutConfig, ElementConfig } from "../route"
+import prisma from "@/lib/db"
+import type { ElementConfig } from "../route"
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024 // 8MB
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
@@ -18,45 +17,48 @@ const mimeToExtension: Record<string, string> = {
   "image/svg+xml": "svg",
 }
 
+// Default font family for all elements
+const DEFAULT_FONT = "'Montserrat', sans-serif"
+
 // Default element configurations
 const defaultStoryElements: Record<string, ElementConfig> = {
-  region: { x: 766, y: 274, fontSize: 42, fontWeight: "900", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  destination: { x: 480, y: 360, fontSize: 60, fontWeight: "900", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  hotel: { x: 480, y: 450, fontSize: 40, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  dates: { x: 480, y: 530, fontSize: 40, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  installments: { x: 510, y: 620, fontSize: 30, fontWeight: "700", color: "#F79E08", fontFamily: "Inter", visible: true },
-  currency: { x: 510, y: 660, fontSize: 60, fontWeight: "900", color: "#F79E08", fontFamily: "Inter", visible: true },
-  price: { x: 600, y: 605, fontSize: 114, fontWeight: "900", color: "#F79E08", fontFamily: "Inter", visible: true },
-  installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: "600", color: "#F79E08", fontFamily: "Inter", visible: true },
-  flight: { x: 545, y: 835, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  perPerson: { x: 545, y: 885, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  nights: { x: 545, y: 935, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  regime: { x: 545, y: 980, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: "700", color: "#000000", fontFamily: "Inter", visible: true },
-  departure: { x: 410, y: 1100, fontSize: 20, fontWeight: "900", color: "#000000", fontFamily: "Inter", visible: true },
-  disclaimer: { x: 470, y: 1160, fontSize: 20, fontWeight: "500", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: "700", color: "#000000", fontFamily: "Inter", visible: true },
-  contact: { x: 580, y: 1285, fontSize: 30, fontWeight: "700", color: "#000000", fontFamily: "Inter", visible: true },
+  region: { x: 766, y: 274, fontSize: 42, fontWeight: "900", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  destination: { x: 480, y: 360, fontSize: 60, fontWeight: "900", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  hotel: { x: 480, y: 450, fontSize: 40, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  dates: { x: 480, y: 530, fontSize: 40, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  installments: { x: 510, y: 620, fontSize: 30, fontWeight: "700", color: "#F79E08", fontFamily: DEFAULT_FONT, visible: true },
+  currency: { x: 510, y: 660, fontSize: 60, fontWeight: "900", color: "#F79E08", fontFamily: DEFAULT_FONT, visible: true },
+  price: { x: 600, y: 605, fontSize: 114, fontWeight: "900", color: "#F79E08", fontFamily: DEFAULT_FONT, visible: true },
+  installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: "600", color: "#F79E08", fontFamily: DEFAULT_FONT, visible: true },
+  flight: { x: 545, y: 835, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  perPerson: { x: 545, y: 885, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  nights: { x: 545, y: 935, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  regime: { x: 545, y: 980, fontSize: 30, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: "700", color: "#000000", fontFamily: DEFAULT_FONT, visible: true },
+  departure: { x: 410, y: 1100, fontSize: 20, fontWeight: "900", color: "#000000", fontFamily: DEFAULT_FONT, visible: true },
+  disclaimer: { x: 470, y: 1160, fontSize: 20, fontWeight: "500", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: "700", color: "#000000", fontFamily: DEFAULT_FONT, visible: true },
+  contact: { x: 580, y: 1285, fontSize: 30, fontWeight: "700", color: "#000000", fontFamily: DEFAULT_FONT, visible: true },
 }
 
 const defaultFeedElements: Record<string, ElementConfig> = {
-  region: { x: 823, y: 96, fontSize: 42, fontWeight: "900", color: "#002043", fontFamily: "Inter", visible: true },
-  destination: { x: 605, y: 185, fontSize: 45, fontWeight: "900", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  hotel: { x: 605, y: 249, fontSize: 36, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  dates: { x: 605, y: 299, fontSize: 36, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  installments: { x: 620, y: 400, fontSize: 25, fontWeight: "700", color: "#002043", fontFamily: "Inter", visible: true },
-  currency: { x: 620, y: 422, fontSize: 60, fontWeight: "900", color: "#002043", fontFamily: "Inter", visible: true },
-  price: { x: 705, y: 382, fontSize: 92, fontWeight: "900", color: "#002043", fontFamily: "Inter", visible: true },
-  installmentText: { x: 677, y: 507, fontSize: 24, fontWeight: "600", color: "#002043", fontFamily: "Inter", visible: true },
-  flight: { x: 659, y: 551, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  perPerson: { x: 659, y: 592, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  nights: { x: 659, y: 633, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  regime: { x: 659, y: 674, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  departureLabel: { x: 546, y: 740, fontSize: 18, fontWeight: "700", color: "#002043", fontFamily: "Inter", visible: true },
-  departure: { x: 546, y: 762, fontSize: 18, fontWeight: "900", color: "#002043", fontFamily: "Inter", visible: true },
-  disclaimer: { x: 602, y: 817, fontSize: 18, fontWeight: "500", color: "#FFFFFF", fontFamily: "Inter", visible: true },
-  contactLabel: { x: 667, y: 889, fontSize: 28, fontWeight: "700", color: "#002043", fontFamily: "Inter", visible: true },
-  contact: { x: 667, y: 927, fontSize: 28, fontWeight: "700", color: "#002043", fontFamily: "Inter", visible: true },
+  region: { x: 823, y: 96, fontSize: 42, fontWeight: "900", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  destination: { x: 605, y: 185, fontSize: 45, fontWeight: "900", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  hotel: { x: 605, y: 249, fontSize: 36, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  dates: { x: 605, y: 299, fontSize: 36, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  installments: { x: 620, y: 400, fontSize: 25, fontWeight: "700", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  currency: { x: 620, y: 422, fontSize: 60, fontWeight: "900", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  price: { x: 705, y: 382, fontSize: 92, fontWeight: "900", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  installmentText: { x: 677, y: 507, fontSize: 24, fontWeight: "600", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  flight: { x: 659, y: 551, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  perPerson: { x: 659, y: 592, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  nights: { x: 659, y: 633, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  regime: { x: 659, y: 674, fontSize: 27, fontWeight: "700", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  departureLabel: { x: 546, y: 740, fontSize: 18, fontWeight: "700", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  departure: { x: 546, y: 762, fontSize: 18, fontWeight: "900", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  disclaimer: { x: 602, y: 817, fontSize: 18, fontWeight: "500", color: "#FFFFFF", fontFamily: DEFAULT_FONT, visible: true },
+  contactLabel: { x: 667, y: 889, fontSize: 28, fontWeight: "700", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
+  contact: { x: 667, y: 927, fontSize: 28, fontWeight: "700", color: "#002043", fontFamily: DEFAULT_FONT, visible: true },
 }
 
 const defaultColors = {
@@ -100,7 +102,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Formato de arquivo não suportado" }, { status: 400 })
     }
 
+    // Read file as buffer
     const buffer = Buffer.from(await file.arrayBuffer())
+
+    // Save file to public/uploads/layouts
     const uploadDir = path.join(process.cwd(), "public", "uploads", "layouts")
     await fs.mkdir(uploadDir, { recursive: true })
 
@@ -109,34 +114,47 @@ export async function POST(request: Request) {
     const filePath = path.join(uploadDir, filename)
     await fs.writeFile(filePath, buffer)
 
-    const url = `/uploads/layouts/${filename}`
+    // URL path for the uploaded file
+    const imageUrl = `/uploads/layouts/${filename}`
+
     const baseName = originalName.replace(/\.[^/.]+$/, "")
-    const now = new Date().toISOString()
+    const name = layoutName || `${format === "feed" ? "Feed" : "Story"} - ${baseName}`
 
     // Create new layout in database
-    const newLayout: LayoutConfig = {
-      id: nanoid(),
-      name: layoutName || `${format === "feed" ? "Feed" : "Story"} - ${baseName}`,
-      type: "custom",
-      format,
-      url,
-      isDefault: false,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: session.user.id,
-      elements: format === "story" ? defaultStoryElements : defaultFeedElements,
-      colors: defaultColors,
-    }
+    const elements = format === "story" ? defaultStoryElements : defaultFeedElements
+    const newLayout = await prisma.layout.create({
+      data: {
+        name,
+        type: "custom",
+        format,
+        imageUrl,
+        isDefault: false,
+        elements: JSON.parse(JSON.stringify(elements)),
+        colors: JSON.parse(JSON.stringify(defaultColors)),
+        createdById: session.user.id,
+      },
+    })
 
-    // Save to Redis
-    const layouts = (await redis.get<LayoutConfig[]>(REDIS_KEYS.LAYOUTS)) || []
-    layouts.push(newLayout)
-    await redis.set(REDIS_KEYS.LAYOUTS, layouts)
-
-    return NextResponse.json(newLayout, { status: 201 })
+    // Return layout in expected format
+    return NextResponse.json(
+      {
+        id: newLayout.id,
+        name: newLayout.name,
+        type: newLayout.type,
+        format: newLayout.format,
+        url: newLayout.imageUrl,
+        imageUrl: newLayout.imageUrl,
+        isDefault: newLayout.isDefault,
+        createdAt: newLayout.createdAt.toISOString(),
+        updatedAt: newLayout.updatedAt.toISOString(),
+        createdBy: newLayout.createdById,
+        elements: newLayout.elements,
+        colors: newLayout.colors,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error("Erro ao processar upload do layout:", error)
     return NextResponse.json({ error: "Erro ao processar upload" }, { status: 500 })
   }
 }
-

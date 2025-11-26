@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import prisma from "@/lib/db"
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,26 +13,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    // Get promos from Redis
-    const promos = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
+    // Get promos from database
+    const promos = await prisma.promo.findMany()
 
     // Calculate overall stats
     const totalPromos = promos.length
 
-    // Unique destinations - using Array.from instead of spread operator
-    const destinations = new Set(promos.map((promo) => promo.DESTINO))
+    // Unique destinations
+    const destinations = new Set(promos.map((promo) => promo.destino))
     const uniqueDestinations = destinations.size
 
     // Average value
     const totalValue = promos.reduce((sum, promo) => {
-      const value = Number.parseFloat(promo.VALOR) * 2 * 15
+      const value = Number.parseFloat(promo.valor) * 2 * 15
       return sum + (isNaN(value) ? 0 : value)
     }, 0)
     const averageValue = totalPromos > 0 ? totalValue / totalPromos : 0
 
     // Average nights
     const totalNights = promos.reduce((sum, promo) => {
-      const nights = Number.parseInt(promo.NUMERO_DE_NOITES, 10)
+      const nights = Number.parseInt(promo.numeroDeNoites, 10)
       return sum + (isNaN(nights) ? 0 : nights)
     }, 0)
     const averageNights = totalPromos > 0 ? totalNights / totalPromos : 0
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     // Most popular destination
     const destinationCounts: Record<string, number> = promos.reduce(
       (counts, promo) => {
-        const dest = promo.DESTINO
+        const dest = promo.destino
         counts[dest] = (counts[dest] || 0) + 1
         return counts
       },
@@ -99,4 +99,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar estatísticas" }, { status: 500 })
   }
 }
-

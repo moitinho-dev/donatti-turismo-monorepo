@@ -12,6 +12,17 @@ export interface ElementConfig {
   visible: boolean
 }
 
+export interface ImageArea {
+  id: string
+  name: string
+  type: "rectangle" | "polygon"
+  points: { x: number; y: number }[]
+  zIndex: number
+  imageUrl?: string
+  fit: "cover" | "contain" | "fill"
+  visible: boolean
+}
+
 export interface LayoutConfig {
   id: string
   name: string
@@ -25,6 +36,7 @@ export interface LayoutConfig {
   elements: {
     [key: string]: ElementConfig
   }
+  imageAreas?: ImageArea[]
   colors: {
     primary: string
     secondary: string
@@ -49,6 +61,10 @@ interface UseLayoutsReturn {
   updateElement: (elementId: string, updates: Partial<ElementConfig>) => void
   updateColor: (colorKey: string, value: string) => void
   toggleElementVisibility: (elementId: string) => void
+  updateImageAreas: (areas: ImageArea[]) => void
+  addImageArea: (area: ImageArea) => void
+  removeImageArea: (areaId: string) => void
+  updateImageArea: (areaId: string, updates: Partial<ImageArea>) => void
 }
 
 export function useLayouts(): UseLayoutsReturn {
@@ -271,6 +287,52 @@ export function useLayouts(): UseLayoutsReturn {
     })
   }, [currentLayout])
 
+  const updateImageAreas = useCallback((areas: ImageArea[]) => {
+    if (!currentLayout) return
+    setCurrentLayout((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        imageAreas: areas,
+      }
+    })
+  }, [currentLayout])
+
+  const addImageArea = useCallback((area: ImageArea) => {
+    if (!currentLayout) return
+    setCurrentLayout((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        imageAreas: [...(prev.imageAreas || []), area],
+      }
+    })
+  }, [currentLayout])
+
+  const removeImageArea = useCallback((areaId: string) => {
+    if (!currentLayout) return
+    setCurrentLayout((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        imageAreas: (prev.imageAreas || []).filter((a) => a.id !== areaId),
+      }
+    })
+  }, [currentLayout])
+
+  const updateImageArea = useCallback((areaId: string, updates: Partial<ImageArea>) => {
+    if (!currentLayout) return
+    setCurrentLayout((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        imageAreas: (prev.imageAreas || []).map((a) =>
+          a.id === areaId ? { ...a, ...updates } : a
+        ),
+      }
+    })
+  }, [currentLayout])
+
   return {
     layouts,
     currentLayout,
@@ -287,5 +349,9 @@ export function useLayouts(): UseLayoutsReturn {
     updateElement,
     updateColor,
     toggleElementVisibility,
+    updateImageAreas,
+    addImageArea,
+    removeImageArea,
+    updateImageArea,
   }
 }

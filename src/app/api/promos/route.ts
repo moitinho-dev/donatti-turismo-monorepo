@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { nanoid } from "nanoid"
 import { z } from "zod"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import prisma from "@/lib/db"
 
 // Schema for promo validation
 const promoSchema = z.object({
@@ -22,11 +21,52 @@ const promoSchema = z.object({
   SP: z.boolean().optional(),
   CG: z.boolean().optional(),
   AEREO: z.boolean().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-  createdBy: z.string().optional(),
-  createdByName: z.string().optional(),
 })
+
+// Convert database promo to API format
+function toApiFormat(promo: {
+  id: string
+  destino: string
+  hotel: string
+  dataFormatada: string
+  valor: string
+  parcelas: number
+  comCafe: boolean
+  semCafe: boolean
+  meiaPensao: boolean
+  pensaoCompleta: boolean
+  allInclusive: boolean
+  numeroDeNoites: string
+  sp: boolean
+  cg: boolean
+  aereo: boolean
+  createdAt: Date
+  updatedAt: Date
+  createdById: string
+  createdBy?: { name: string | null }
+}) {
+  return {
+    id: promo.id,
+    DESTINO: promo.destino,
+    HOTEL: promo.hotel,
+    DATA_FORMATADA: promo.dataFormatada,
+    VALOR: promo.valor,
+    PARCELAS: promo.parcelas,
+    COM_CAFE: promo.comCafe,
+    SEM_CAFE: promo.semCafe,
+    MEIA_PENSAO: promo.meiaPensao,
+    PENSAO_COMPLETA: promo.pensaoCompleta,
+    ALL_INCLUSIVE: promo.allInclusive,
+    NUMERO_DE_NOITES: promo.numeroDeNoites,
+    SP: promo.sp,
+    CG: promo.cg,
+    AEREO: promo.aereo,
+    createdAt: promo.createdAt.toISOString(),
+    updatedAt: promo.updatedAt.toISOString(),
+    createdBy: promo.createdById,
+    createdByName: promo.createdBy?.name || null,
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,47 +83,48 @@ export async function GET(req: NextRequest) {
     const endDate = url.searchParams.get("endDate")
     const userId = url.searchParams.get("userId")
 
-    // Get promos from Redis
-    const promosData = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
-
     // If ID is provided, return specific promo
     if (id) {
-      const promo = promosData.find((p) => p.id === id)
+      const promo = await prisma.promo.findUnique({
+        where: { id },
+        include: { createdBy: { select: { name: true } } },
+      })
       if (!promo) {
         return NextResponse.json({ error: "Promoção não encontrada" }, { status: 404 })
       }
-      return NextResponse.json(promo)
+      return NextResponse.json(toApiFormat(promo))
     }
 
-    // Apply filters
-    let filteredPromos = promosData
+    // Build where clause for filters
+    const where: {
+      createdAt?: { gte?: Date; lte?: Date }
+      createdById?: string
+    } = {}
 
     // Filter by date range if provided
     if (startDate && endDate) {
-      const start = new Date(startDate).getTime()
-      const end = new Date(endDate).getTime()
-
-      filteredPromos = filteredPromos.filter((promo) => {
-        const createdAt = new Date(promo.createdAt as string).getTime()
-        return createdAt >= start && createdAt <= end
-      })
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      }
     }
 
-    // Filter by user ID if provided and user is admin
+    // Filter by user ID
     if (userId && session.user.role === "admin") {
-      filteredPromos = filteredPromos.filter((promo) => promo.createdBy === userId)
-    }
-    // If user is agent, only show their own promos
-    else if (session.user.role === "agent") {
-      filteredPromos = filteredPromos.filter((promo) => promo.createdBy === session.user.id)
+      where.createdById = userId
+    } else if (session.user.role === "agent") {
+      // Agents can only see their own promos
+      where.createdById = session.user.id
     }
 
-    // Sort by creation date (newest first)
-    filteredPromos.sort((a, b) => {
-      return new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime()
+    // Get promos from database
+    const promos = await prisma.promo.findMany({
+      where,
+      include: { createdBy: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
     })
 
-    return NextResponse.json(filteredPromos)
+    return NextResponse.json(promos.map(toApiFormat))
   } catch (error) {
     console.error("Error fetching promos:", error)
     return NextResponse.json({ error: "Erro ao buscar promoções" }, { status: 500 })
@@ -107,48 +148,75 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dados inválidos", details: validationResult.error.format() }, { status: 400 })
     }
 
-    const promoData = validationResult.data
+    const data = validationResult.data
+    const isUpdate = !!data.id
 
-    // Generate ID if not provided (new promo)
-    const isNewPromo = !promoData.id
-    const promoId = promoData.id || nanoid()
-    const now = new Date().toISOString()
+    // Parse parcelas to number
+    const parcelas = typeof data.PARCELAS === "string" ? parseInt(data.PARCELAS, 10) || 15 : data.PARCELAS || 15
 
-    // Set timestamps and user info
-    if (isNewPromo) {
-      promoData.createdAt = now
-      promoData.createdBy = session.user.id
-      promoData.createdByName = session.user.name
-    }
-    promoData.updatedAt = now
-    promoData.id = promoId
+    if (isUpdate) {
+      // Check if promo exists
+      const existingPromo = await prisma.promo.findUnique({
+        where: { id: data.id },
+      })
 
-    // Get current promos from Redis
-    const promosData = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
-
-    // Save to Redis
-    if (isNewPromo) {
-      promosData.push(promoData)
-    } else {
-      const index = promosData.findIndex((p) => p.id === promoId)
-      if (index !== -1) {
-        // Preserve the original creator when updating
-        const originalCreatedBy = promosData[index].createdBy
-        const originalCreatedByName = promosData[index].createdByName
-        promosData[index] = {
-          ...promoData,
-          createdBy: originalCreatedBy,
-          createdByName: originalCreatedByName,
-        }
-      } else {
-        promosData.push(promoData)
+      if (!existingPromo) {
+        return NextResponse.json({ error: "Promoção não encontrada" }, { status: 404 })
       }
+
+      // Check permission to update
+      if (session.user.role !== "admin" && existingPromo.createdById !== session.user.id) {
+        return NextResponse.json({ error: "Você não tem permissão para editar esta promoção" }, { status: 403 })
+      }
+
+      // Update promo
+      const updatedPromo = await prisma.promo.update({
+        where: { id: data.id },
+        data: {
+          destino: data.DESTINO,
+          hotel: data.HOTEL,
+          dataFormatada: data.DATA_FORMATADA,
+          valor: data.VALOR,
+          parcelas,
+          comCafe: data.COM_CAFE || false,
+          semCafe: data.SEM_CAFE || false,
+          meiaPensao: data.MEIA_PENSAO || false,
+          pensaoCompleta: data.PENSAO_COMPLETA || false,
+          allInclusive: data.ALL_INCLUSIVE || false,
+          numeroDeNoites: data.NUMERO_DE_NOITES,
+          sp: data.SP || false,
+          cg: data.CG || false,
+          aereo: data.AEREO || false,
+        },
+        include: { createdBy: { select: { name: true } } },
+      })
+
+      return NextResponse.json(toApiFormat(updatedPromo))
+    } else {
+      // Create new promo
+      const newPromo = await prisma.promo.create({
+        data: {
+          destino: data.DESTINO,
+          hotel: data.HOTEL,
+          dataFormatada: data.DATA_FORMATADA,
+          valor: data.VALOR,
+          parcelas,
+          comCafe: data.COM_CAFE || false,
+          semCafe: data.SEM_CAFE || false,
+          meiaPensao: data.MEIA_PENSAO || false,
+          pensaoCompleta: data.PENSAO_COMPLETA || false,
+          allInclusive: data.ALL_INCLUSIVE || false,
+          numeroDeNoites: data.NUMERO_DE_NOITES,
+          sp: data.SP || false,
+          cg: data.CG || false,
+          aereo: data.AEREO || false,
+          createdById: session.user.id,
+        },
+        include: { createdBy: { select: { name: true } } },
+      })
+
+      return NextResponse.json(toApiFormat(newPromo), { status: 201 })
     }
-
-    // Update Redis
-    await redis.set(REDIS_KEYS.PROMOS, promosData)
-
-    return NextResponse.json(promoData, { status: isNewPromo ? 201 : 200 })
   } catch (error) {
     console.error("Error saving promo:", error)
     return NextResponse.json({ error: "Erro ao salvar promoção" }, { status: 500 })
@@ -171,25 +239,24 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "ID da promoção não fornecido" }, { status: 400 })
     }
 
-    // Get current promos from Redis
-    const promosData = (await redis.get<any[]>(REDIS_KEYS.PROMOS)) || []
-
     // Check if promo exists
-    const promo = promosData.find((p) => p.id === id)
+    const promo = await prisma.promo.findUnique({
+      where: { id },
+    })
+
     if (!promo) {
       return NextResponse.json({ error: "Promoção não encontrada" }, { status: 404 })
     }
 
     // Check if user has permission to delete
-    if (session.user.role !== "admin" && promo.createdBy !== session.user.id) {
+    if (session.user.role !== "admin" && promo.createdById !== session.user.id) {
       return NextResponse.json({ error: "Você não tem permissão para excluir esta promoção" }, { status: 403 })
     }
 
     // Delete promo
-    const updatedPromos = promosData.filter((p) => p.id !== id)
-
-    // Update Redis
-    await redis.set(REDIS_KEYS.PROMOS, updatedPromos)
+    await prisma.promo.delete({
+      where: { id },
+    })
 
     return NextResponse.json({ success: true, message: "Promoção excluída com sucesso" })
   } catch (error) {
@@ -197,4 +264,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao excluir promoção" }, { status: 500 })
   }
 }
-
