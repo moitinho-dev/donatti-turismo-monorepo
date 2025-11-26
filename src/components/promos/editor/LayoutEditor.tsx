@@ -153,6 +153,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
   const [snapEnabled, setSnapEnabled] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -192,8 +193,11 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
 
   // Calculate promo values
   const promoValues = useMemo(() => {
+    // Remove tudo exceto números, pontos e vírgulas
     const cleanedValue = promo.VALOR?.replace(/[^\d.,]/g, "") || "0"
-    const totalValue = Number.parseFloat(cleanedValue.replace(",", ".")) || 0
+    // Remove pontos de milhar (ex: 5.000,00 -> 5000,00) e converte vírgula para ponto decimal
+    const normalizedValue = cleanedValue.replace(/\./g, "").replace(",", ".")
+    const totalValue = Number.parseFloat(normalizedValue) || 0
     let parcelasValue = promo.PARCELAS
     if (typeof parcelasValue === "number") parcelasValue = parcelasValue.toString()
     if (!parcelasValue) parcelasValue = "15"

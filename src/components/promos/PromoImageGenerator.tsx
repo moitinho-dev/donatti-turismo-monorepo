@@ -119,8 +119,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   // Calculate values
   const baseValue = useMemo(() => {
+    // Remove tudo exceto números, pontos e vírgulas
     const cleanedValue = promo.VALOR?.replace(/[^\d.,]/g, "") || "0"
-    return Number.parseFloat(cleanedValue.replace(",", ".")) || 0
+    // Remove pontos de milhar (ex: 5.000,00 -> 5000,00) e converte vírgula para ponto decimal
+    const normalizedValue = cleanedValue.replace(/\./g, "").replace(",", ".")
+    return Number.parseFloat(normalizedValue) || 0
   }, [promo.VALOR])
 
   const parcelas = useMemo(() => {
