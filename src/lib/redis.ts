@@ -11,6 +11,8 @@ export const REDIS_KEYS = {
   PROMOS: "lemonde:promos",
   USERS: "lemonde:users",
   USER_SESSIONS: "lemonde:user_sessions",
+  LAYOUTS: "lemonde:layouts",
+  LAYOUT_SETTINGS: "lemonde:layout_settings",
 }
 
 // Initialize Redis with default data if needed

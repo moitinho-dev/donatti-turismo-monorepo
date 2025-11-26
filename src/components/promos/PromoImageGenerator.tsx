@@ -1,14 +1,14 @@
 "use client"
-import { useState, useRef, useEffect, useMemo } from "react"
+
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import type React from "react"
 import { toPng } from "html-to-image"
-import { 
-  Loader2, 
-  Download, 
-  ImageIcon, 
-  RefreshCw, 
-  Edit3, 
-  Save, 
+import {
+  Loader2,
+  Download,
+  ImageIcon,
+  Edit3,
+  Save,
   Upload,
   Palette,
   Type,
@@ -16,108 +16,73 @@ import {
   Settings,
   Trash2,
   Monitor,
-  Smartphone
+  Smartphone,
+  Eye,
+  EyeOff,
+  Layers,
+  Check,
+  Star,
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
+import { useLayouts } from "@/hooks/useLayouts"
 
 interface PromoImageGeneratorProps {
-  promo: any
-}
-
-interface LayoutConfig {
-  id: string
-  name: string
-  type: 'png' | 'svg' | 'custom'
-  format: 'story' | 'feed'
-  url?: string
-  elements: {
-    [key: string]: {
-      x: number
-      y: number
-      fontSize: number
-      fontWeight: string
-      color: string
-      fontFamily: string
-    }
-  }
-  colors: {
-    primary: string
-    secondary: string
-    accent: string
-    background: string
+  promo: {
+    DESTINO: string
+    HOTEL: string
+    DATA_FORMATADA: string
+    VALOR: string
+    PARCELAS?: string | number
+    COM_CAFE?: boolean
+    SEM_CAFE?: boolean
+    MEIA_PENSAO?: boolean
+    PENSAO_COMPLETA?: boolean
+    ALL_INCLUSIVE?: boolean
+    NUMERO_DE_NOITES: string
+    SP?: boolean
+    CG?: boolean
+    AEREO?: boolean
   }
 }
 
-const defaultLayouts: LayoutConfig[] = [
-  {
-    id: 'default-story',
-    name: 'Layout Stories (1080x1920)',
-    type: 'png',
-    format: 'story',
-    url: '/assets/LAYOUTFINAL.png',
-    colors: {
-      primary: '#DC2626',
-      secondary: '#FFFFFF',
-      accent: '#FED400',
-      background: '#1D3153'
-    },
-    elements: {
-      region: { x: 766, y: 274, fontSize: 42, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
-      destination: { x: 480, y: 360, fontSize: 60, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
-      hotel: { x: 480, y: 450, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      dates: { x: 480, y: 530, fontSize: 40, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      installments: { x: 510, y: 620, fontSize: 30, fontWeight: '700', color: '#F79E08', fontFamily: 'Inter' },
-      currency: { x: 510, y: 660, fontSize: 60, fontWeight: '900', color: '#F79E08', fontFamily: 'Inter' },
-      price: { x: 600, y: 605, fontSize: 114, fontWeight: '900', color: '#F79E08', fontFamily: 'Inter' },
-      installmentText: { x: 518, y: 760, fontSize: 28, fontWeight: '600', color: '#F79E08', fontFamily: 'Inter' },
-      flight: { x: 545, y: 835, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      perPerson: { x: 545, y: 885, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      nights: { x: 545, y: 935, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      regime: { x: 545, y: 980, fontSize: 30, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      departureLabel: { x: 410, y: 1070, fontSize: 20, fontWeight: '700', color: '#000000', fontFamily: 'Inter' },
-      departure: { x: 410, y: 1100, fontSize: 20, fontWeight: '900', color: '#000000', fontFamily: 'Inter' },
-      disclaimer: { x: 470, y: 1160, fontSize: 20, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
-      contactLabel: { x: 580, y: 1250, fontSize: 30, fontWeight: '700', color: '#000000', fontFamily: 'Inter' },
-      contact: { x: 580, y: 1285, fontSize: 30, fontWeight: '700', color: '#000000', fontFamily: 'Inter' }
-    }
-  },
-  {
-    id: 'default-feed',
-    name: 'Layout Feed (1080x1350)',
-    type: 'png',
-    format: 'feed',
-    url: '/assets/LAYOUTFEED.png',
-    colors: {
-      primary: '#DC2626',
-      secondary: '#FFFFFF',
-      accent: '#FED400',
-      background: '#1D3153'
-    },
-    elements: {
-      region: { x: 823, y: 96, fontSize: 42, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      destination: { x: 605, y: 185, fontSize: 45, fontWeight: '900', color: '#FFFFFF', fontFamily: 'Inter' },
-      hotel: { x: 605, y: 249, fontSize: 36, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      dates: { x: 605, y: 299, fontSize: 36, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      installments: { x: 620, y: 400, fontSize: 25, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
-      currency: { x: 620, y: 422, fontSize: 60, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      price: { x: 705, y: 382, fontSize: 92, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      installmentText: { x: 677, y: 507, fontSize: 24, fontWeight: '600', color: '#002043', fontFamily: 'Inter' },
-      flight: { x: 659, y:551, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      perPerson: { x: 659, y: 592, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      nights: { x: 659, y: 633, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      regime: { x: 659, y: 674, fontSize: 27, fontWeight: '700', color: '#FFFFFF', fontFamily: 'Inter' },
-      departureLabel: { x: 546, y: 740, fontSize: 18, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
-      departure: { x: 546, y: 762, fontSize: 18, fontWeight: '900', color: '#002043', fontFamily: 'Inter' },
-      disclaimer: { x: 602, y: 817, fontSize: 18, fontWeight: '500', color: '#FFFFFF', fontFamily: 'Inter' },
-      contactLabel: { x: 667, y: 889, fontSize: 28, fontWeight: '700', color: '#002043', fontFamily: 'Inter' },
-      contact: { x: 667, y: 927, fontSize: 28, fontWeight: '700', color: '#002043', fontFamily: 'Inter' }
-    }
-  }
-]
-
-const cloneLayout = (layout: LayoutConfig): LayoutConfig => JSON.parse(JSON.stringify(layout))
+// Element labels for UI
+const elementLabels: Record<string, string> = {
+  region: "Região",
+  destination: "Destino",
+  hotel: "Hotel",
+  dates: "Datas",
+  installments: "Parcelas",
+  currency: "Moeda (R$)",
+  price: "Preço",
+  installmentText: "Texto Parcelas",
+  flight: "Aéreo",
+  perPerson: "Por Pessoa",
+  nights: "Noites",
+  regime: "Regime",
+  departureLabel: "Label Saída",
+  departure: "Aeroporto Saída",
+  disclaimer: "Disclaimer",
+  contactLabel: "Label Contato",
+  contact: "Contato",
+}
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
+  const {
+    layouts,
+    currentLayout,
+    isLoading: isLoadingLayouts,
+    error: layoutError,
+    fetchLayouts,
+    updateLayout,
+    deleteLayout,
+    uploadLayout,
+    setAsDefault,
+    setCurrentLayout,
+    updateElement,
+    updateColor,
+    toggleElementVisibility,
+  } = useLayouts()
+
   const [isGenerating, setIsGenerating] = useState(false)
   const [destinationImage, setDestinationImage] = useState<string | null>(null)
   const [isLoadingImage, setIsLoadingImage] = useState(false)
@@ -127,169 +92,148 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [selectedRegion, setSelectedRegion] = useState<string>("")
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
-  const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(() => cloneLayout(defaultLayouts[0]))
-  const [savedLayouts, setSavedLayouts] = useState<LayoutConfig[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isUploadingLayout, setIsUploadingLayout] = useState(false)
-  const layoutOverridesRef = useRef<Record<string, LayoutConfig>>({})
-  
+  const [isSaving, setIsSaving] = useState(false)
+  const [showLayerPanel, setShowLayerPanel] = useState(false)
+  const [uploadName, setUploadName] = useState("")
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+
   const templateRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Calculate values - use useMemo to recalculate when promo changes
+  // Calculate values
   const baseValue = useMemo(() => {
     const cleanedValue = promo.VALOR?.replace(/[^\d.,]/g, "") || "0"
     return Number.parseFloat(cleanedValue.replace(",", ".")) || 0
   }, [promo.VALOR])
 
   const parcelas = useMemo(() => {
-    // Handle both string and number types
     let parcelasValue = promo.PARCELAS
-    
-    // If it's a number, convert to string first
-    if (typeof parcelasValue === 'number') {
+    if (typeof parcelasValue === "number") {
       parcelasValue = parcelasValue.toString()
     }
-    
-    // If it's undefined, null, or empty string, use default
-    if (!parcelasValue || parcelasValue === '' || parcelasValue === 'undefined' || parcelasValue === 'null') {
-      parcelasValue = "15" // Default to 15 to match other parts of the app
+    if (!parcelasValue || parcelasValue === "" || parcelasValue === "undefined" || parcelasValue === "null") {
+      parcelasValue = "15"
     }
-    
     const parsed = Number.parseInt(parcelasValue, 10)
-    
-    // Ensure we have a valid number
     return isNaN(parsed) || parsed <= 0 ? 15 : parsed
   }, [promo.PARCELAS])
 
-  // Calculate installment value (value per installment)
   const installmentValue = useMemo(() => {
     if (baseValue === 0 || parcelas === 0) return 0
-    // Same calculation as in PromoForm: totalValue / parcelas where totalValue = baseValue * parcelas * 2
     const totalValue = baseValue * parcelas * 2
     return totalValue / parcelas
   }, [baseValue, parcelas])
 
-  // Debug: Log promo.PARCELAS when it changes
+  // Load layouts on mount
   useEffect(() => {
-    console.log('PromoImageGenerator - Full promo object:', promo)
-    console.log('PromoImageGenerator - promo.PARCELAS:', promo.PARCELAS, 'Type:', typeof promo.PARCELAS)
-    console.log('PromoImageGenerator - calculated parcelas:', parcelas)
-    console.log('PromoImageGenerator - installmentValue:', installmentValue)
-  }, [promo.PARCELAS, parcelas, installmentValue, promo])
-
-  // Load saved layouts from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('promo-layouts')
-    if (saved) {
-      try {
-        setSavedLayouts(JSON.parse(saved))
-      } catch (e) {
-        console.error('Error loading saved layouts:', e)
-      }
-    }
+    fetchLayouts(currentLayout?.format || "story")
   }, [])
-
-  // Load layout overrides (positions/colors)
-  useEffect(() => {
-    const storedOverrides = localStorage.getItem('promo-layout-overrides')
-    if (storedOverrides) {
-      try {
-        const parsed = JSON.parse(storedOverrides) as Record<string, LayoutConfig>
-        layoutOverridesRef.current = parsed
-        const initialOverride = parsed[defaultLayouts[0].id]
-        if (initialOverride) {
-          setCurrentLayout(cloneLayout(initialOverride))
-        }
-      } catch (e) {
-        console.error('Error loading layout overrides:', e)
-      }
-    }
-  }, [])
-
-  // Persist current layout overrides automatically
-  useEffect(() => {
-    if (!currentLayout?.id) return
-    layoutOverridesRef.current[currentLayout.id] = cloneLayout(currentLayout)
-    localStorage.setItem('promo-layout-overrides', JSON.stringify(layoutOverridesRef.current))
-  }, [currentLayout])
 
   // Initialize
   useEffect(() => {
     const loadFonts = async () => {
-      const link = document.createElement('link')
-      link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
-      link.rel = 'stylesheet'
+      const link = document.createElement("link")
+      link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      link.rel = "stylesheet"
       document.head.appendChild(link)
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
-    
     loadFonts()
     setSelectedRegion(getRegion(promo.DESTINO))
   }, [promo.DESTINO])
 
-  // Fetch destination images when component mounts or destination changes
+  // Fetch destination images
   useEffect(() => {
     if (promo.DESTINO) {
       fetchDestinationImages()
     }
   }, [promo.DESTINO])
 
-  // Handle custom layout file upload
-  const handleLayoutUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Get visibility based on promo data
+  const getElementVisibilityFromPromo = useCallback(
+    (elementId: string): boolean => {
+      switch (elementId) {
+        case "flight":
+          return promo.AEREO === true
+        case "regime":
+          return !!(promo.ALL_INCLUSIVE || promo.PENSAO_COMPLETA || promo.MEIA_PENSAO || promo.COM_CAFE || promo.SEM_CAFE)
+        case "departure":
+        case "departureLabel":
+          return promo.SP === true || promo.CG === true
+        default:
+          return true
+      }
+    },
+    [promo]
+  )
+
+  // Handle layout file upload
+  const handleLayoutFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("format", currentLayout.format)
-
-    try {
-      setIsUploadingLayout(true)
-      const response = await fetch("/api/layouts/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      const result = await response.json().catch(() => null)
-      if (!response.ok) {
-        throw new Error(result?.error || "Não foi possível enviar o layout")
-      }
-
-      const baseLayout = cloneLayout(currentLayout)
-      const newLayout: LayoutConfig = {
-        ...baseLayout,
-        id: result?.id || `uploaded-${Date.now()}`,
-        name:
-          result?.name ||
-          `${currentLayout.format === "feed" ? "Feed" : "Story"} - ${result?.originalName || file.name}`,
-        type: "custom",
-        format: currentLayout.format,
-        url: result?.url,
-      }
-
-      const updatedLayouts = [...savedLayouts, newLayout]
-      setSavedLayouts(updatedLayouts)
-      localStorage.setItem("promo-layouts", JSON.stringify(updatedLayouts))
-
-      layoutOverridesRef.current[newLayout.id] = cloneLayout(newLayout)
-      localStorage.setItem("promo-layout-overrides", JSON.stringify(layoutOverridesRef.current))
-
-      setCurrentLayout(cloneLayout(newLayout))
-      alert("Layout enviado e salvo com sucesso!")
-    } catch (uploadError) {
-      console.error("Erro ao enviar layout:", uploadError)
-      alert(uploadError instanceof Error ? uploadError.message : "Erro desconhecido ao enviar layout")
-    } finally {
-      setIsUploadingLayout(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
+    setPendingFile(file)
+    setUploadName(file.name.replace(/\.[^/.]+$/, ""))
+    setShowUploadModal(true)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
   }
 
-  // Function to fetch destination images from API
+  const handleUploadConfirm = async () => {
+    if (!pendingFile || !currentLayout) return
+
+    setIsUploadingLayout(true)
+    try {
+      const result = await uploadLayout(pendingFile, currentLayout.format, uploadName)
+      if (result) {
+        await fetchLayouts(currentLayout.format)
+      }
+    } catch (err) {
+      setError("Erro ao fazer upload do layout")
+    } finally {
+      setIsUploadingLayout(false)
+      setShowUploadModal(false)
+      setPendingFile(null)
+      setUploadName("")
+    }
+  }
+
+  // Save current layout changes to database
+  const handleSaveLayout = async () => {
+    if (!currentLayout) return
+
+    setIsSaving(true)
+    try {
+      await updateLayout(currentLayout.id, {
+        elements: currentLayout.elements,
+        colors: currentLayout.colors,
+      })
+    } catch (err) {
+      setError("Erro ao salvar layout")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Set layout as default
+  const handleSetAsDefault = async () => {
+    if (!currentLayout) return
+    await setAsDefault(currentLayout.id)
+    await fetchLayouts(currentLayout.format)
+  }
+
+  // Delete layout
+  const handleDeleteLayout = async (layoutId: string) => {
+    if (!confirm("Tem certeza que deseja deletar este layout?")) return
+    await deleteLayout(layoutId)
+    await fetchLayouts(currentLayout?.format || "story")
+  }
+
+  // Fetch destination images
   const fetchDestinationImages = async (customQuery?: string) => {
     const searchQuery = customQuery || promo.DESTINO
     if (!searchQuery) return
@@ -300,13 +244,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
     try {
       const response = await fetch(`/api/image-search?query=${encodeURIComponent(searchQuery)}&limit=30`)
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch destination images")
-      }
+      if (!response.ok) throw new Error("Failed to fetch destination images")
 
       const data = await response.json()
-
       if (data.results && data.results.length > 0) {
         setAvailableImages(data.results)
         if (!destinationImage) {
@@ -317,7 +257,6 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         setAvailableImages([])
       }
     } catch (err) {
-      console.error("Error fetching destination images:", err)
       setError("Erro ao buscar imagens do destino")
       setAvailableImages([])
     } finally {
@@ -330,51 +269,51 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     const dest = destination.toLowerCase().trim()
 
     const northeastCities = [
-      "natal", "recife", "fortaleza", "salvador", "maceió", "maceio", "joão pessoa", "joao pessoa", 
-      "aracaju", "são luís", "sao luis", "teresina", "porto de galinhas", "porto seguro", "pipa", 
-      "maragogi", "jericoacoara", "fernando de noronha", "canoa quebrada", "praia do forte", 
-      "costa do sauípe", "costa do sauipe", "ilhéus", "ilheus", "lençóis maranhenses", 
-      "lencois maranhenses", "chapada diamantina", "bahia", "ceará", "ceara", "maranhão", 
-      "maranhao", "pernambuco", "alagoas", "sergipe", "paraíba", "paraiba", "piauí", "piaui", 
-      "rio grande do norte"
+      "natal", "recife", "fortaleza", "salvador", "maceió", "maceio", "joão pessoa", "joao pessoa",
+      "aracaju", "são luís", "sao luis", "teresina", "porto de galinhas", "porto seguro", "pipa",
+      "maragogi", "jericoacoara", "fernando de noronha", "canoa quebrada", "praia do forte",
+      "costa do sauípe", "costa do sauipe", "ilhéus", "ilheus", "lençóis maranhenses",
+      "lencois maranhenses", "chapada diamantina", "bahia", "ceará", "ceara", "maranhão",
+      "maranhao", "pernambuco", "alagoas", "sergipe", "paraíba", "paraiba", "piauí", "piaui",
+      "rio grande do norte",
     ]
 
     const southCities = [
-      "florianópolis", "florianopolis", "porto alegre", "gramado", "curitiba", "foz do iguaçu", 
-      "foz do iguacu", "balneário camboriú", "balneario camboriu", "blumenau", "bombinhas", 
-      "canela", "bento gonçalves", "bento goncalves", "santa catarina", "paraná", "parana", 
-      "rio grande do sul", "camboriú", "camboriu", "joinville", "londrina", "maringá", "maringa"
+      "florianópolis", "florianopolis", "porto alegre", "gramado", "curitiba", "foz do iguaçu",
+      "foz do iguacu", "balneário camboriú", "balneario camboriu", "blumenau", "bombinhas",
+      "canela", "bento gonçalves", "bento goncalves", "santa catarina", "paraná", "parana",
+      "rio grande do sul", "camboriú", "camboriu", "joinville", "londrina", "maringá", "maringa",
     ]
 
     const southeastCities = [
-      "rio de janeiro", "são paulo", "sao paulo", "belo horizonte", "vitória", "vitoria", 
-      "búzios", "buzios", "paraty", "campos do jordão", "campos do jordao", "angra dos reis", 
-      "cabo frio", "petrópolis", "petropolis", "ouro preto", "tiradentes", "guarujá", "guaruja", 
-      "ubatuba", "ilhabela", "minas gerais", "espírito santo", "espirito santo", "arraial do cabo", 
-      "são sebastião", "sao sebastiao", "aparecida", "poços de caldas", "pocos de caldas"
+      "rio de janeiro", "são paulo", "sao paulo", "belo horizonte", "vitória", "vitoria",
+      "búzios", "buzios", "paraty", "campos do jordão", "campos do jordao", "angra dos reis",
+      "cabo frio", "petrópolis", "petropolis", "ouro preto", "tiradentes", "guarujá", "guaruja",
+      "ubatuba", "ilhabela", "minas gerais", "espírito santo", "espirito santo", "arraial do cabo",
+      "são sebastião", "sao sebastiao", "aparecida", "poços de caldas", "pocos de caldas",
     ]
 
     const centralCities = [
-      "brasília", "brasilia", "goiânia", "goiania", "cuiabá", "cuiaba", "campo grande", "bonito", 
-      "caldas novas", "pirenópolis", "pirenopolis", "chapada dos veadeiros", "pantanal", "goiás", 
-      "goias", "mato grosso", "mato grosso do sul", "distrito federal", "chapada dos guimarães", 
-      "chapada dos guimaraes", "corumbá", "corumba"
+      "brasília", "brasilia", "goiânia", "goiania", "cuiabá", "cuiaba", "campo grande", "bonito",
+      "caldas novas", "pirenópolis", "pirenopolis", "chapada dos veadeiros", "pantanal", "goiás",
+      "goias", "mato grosso", "mato grosso do sul", "distrito federal", "chapada dos guimarães",
+      "chapada dos guimaraes", "corumbá", "corumba",
     ]
 
     const northCities = [
-      "manaus", "belém", "belem", "palmas", "rio branco", "porto velho", "boa vista", "macapá", 
-      "macapa", "alter do chão", "alter do chao", "são gabriel da cachoeira", 
-      "sao gabriel da cachoeira", "monte roraima", "amazonas", "pará", "para", "tocantins", 
-      "acre", "rondônia", "rondonia", "roraima", "amapá", "amapa", "santarém", "santarem"
+      "manaus", "belém", "belem", "palmas", "rio branco", "porto velho", "boa vista", "macapá",
+      "macapa", "alter do chão", "alter do chao", "são gabriel da cachoeira",
+      "sao gabriel da cachoeira", "monte roraima", "amazonas", "pará", "para", "tocantins",
+      "acre", "rondônia", "rondonia", "roraima", "amapá", "amapa", "santarém", "santarem",
     ]
 
     const internationalKeywords = [
-      "cancun", "miami", "orlando", "nova york", "las vegas", "paris", "londres", "roma", 
-      "madri", "lisboa", "tóquio", "toquio", "dubai", "buenos aires", "santiago", "toronto", 
-      "vancouver", "amsterdam", "berlim", "viena", "atenas", "bangkok", "pequim", "sydney", 
-      "auckland", "cidade do cabo", "cairo", "istambul", "jerusalém", "jerusalem", "havana", 
-      "punta cana", "méxico", "mexico", "eua", "usa", "estados unidos", "europa", "ásia", 
-      "asia", "áfrica", "africa", "oceania", "caribe"
+      "cancun", "miami", "orlando", "nova york", "las vegas", "paris", "londres", "roma",
+      "madri", "lisboa", "tóquio", "toquio", "dubai", "buenos aires", "santiago", "toronto",
+      "vancouver", "amsterdam", "berlim", "viena", "atenas", "bangkok", "pequim", "sydney",
+      "auckland", "cidade do cabo", "cairo", "istambul", "jerusalém", "jerusalem", "havana",
+      "punta cana", "méxico", "mexico", "eua", "usa", "estados unidos", "europa", "ásia",
+      "asia", "áfrica", "africa", "oceania", "caribe",
     ]
 
     const brazilKeywords = ["brasil", "brazil"]
@@ -389,10 +328,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       return "Brasil"
     }
 
-    if (internationalKeywords.some((keyword) => dest.includes(keyword))) {
-      return "Exterior"
-    }
-
+    if (internationalKeywords.some((keyword) => dest.includes(keyword))) return "Exterior"
     if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
     if (southCities.some((city) => dest.includes(city))) return "Sul"
     if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
@@ -422,7 +358,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (promo.MEIA_PENSAO) return "Meia pensão"
     if (promo.COM_CAFE) return "Com café da manhã"
     if (promo.SEM_CAFE) return "Sem café da manhã"
-    return "Sem café da manhã"
+    return ""
   }
 
   // Get departure airport
@@ -430,7 +366,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (promo.CG && !promo.SP) return "Campo Grande (CGR)"
     if (promo.SP && !promo.CG) return "São Paulo (GRU)"
     if (promo.CG && promo.SP) return "Campo Grande (CGR) ou São Paulo (GRU)"
-    return "Campo Grande (CGR)"
+    return ""
   }
 
   // Format date range
@@ -438,247 +374,165 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     try {
       const datePattern = /(\d{1,2})\/(\d{1,2}) até (\d{1,2})\/(\d{1,2}) de (\d{4})/
       const match = promo.DATA_FORMATADA.match(datePattern)
-
       if (match) {
-        const [_, startDay, startMonth, endDay, endMonth, year] = match
+        const [, startDay, startMonth, endDay, endMonth, year] = match
         return `${startDay}/${startMonth} até ${endDay}/${endMonth} de ${year}`
       }
-
       return promo.DATA_FORMATADA
-    } catch (error) {
-      console.error("Error formatting date range:", error)
+    } catch {
       return promo.DATA_FORMATADA
     }
-  }
-
-  // Handle element click for selection
-  const handleElementClick = (elementId: string, event: React.MouseEvent) => {
-    if (!isEditMode) return
-    
-    event.stopPropagation()
-    setSelectedElement(elementId)
   }
 
   // Handle element drag
   const handleMouseDown = (elementId: string, event: React.MouseEvent) => {
     if (!isEditMode) return
-    
     event.preventDefault()
     setSelectedElement(elementId)
     setIsDragging(true)
-    
     const rect = event.currentTarget.getBoundingClientRect()
     setDragOffset({
       x: event.clientX - rect.left,
-      y: event.clientY - rect.top
+      y: event.clientY - rect.top,
     })
   }
 
   const handleMouseMove = (event: React.MouseEvent) => {
-    if (!isDragging || !selectedElement || !templateRef.current) return
-    
+    if (!isDragging || !selectedElement || !templateRef.current || !currentLayout) return
+
     const templateRect = templateRef.current.getBoundingClientRect()
-    const scale = currentLayout.format === 'feed' ? 0.4 : 0.5 // Different scale for feed format
-    
+    const scale = currentLayout.format === "feed" ? 0.4 : 0.5
+
     const newX = (event.clientX - templateRect.left - dragOffset.x) / scale
     const newY = (event.clientY - templateRect.top - dragOffset.y) / scale
-    
-    const maxX = currentLayout.format === 'feed' ? 1080 : 1080
-    const maxY = currentLayout.format === 'feed' ? 1350 : 1920
-    
-    setCurrentLayout(prev => ({
-      ...prev,
-      elements: {
-        ...prev.elements,
-        [selectedElement]: {
-          ...prev.elements[selectedElement],
-          x: Math.max(0, Math.min(maxX, newX)),
-          y: Math.max(0, Math.min(maxY, newY))
-        }
-      }
-    }))
+
+    const maxX = 1080
+    const maxY = currentLayout.format === "feed" ? 1350 : 1920
+
+    updateElement(selectedElement, {
+      x: Math.max(0, Math.min(maxX, newX)),
+      y: Math.max(0, Math.min(maxY, newY)),
+    })
   }
 
   const handleMouseUp = () => {
     setIsDragging(false)
   }
 
-  // Update element property
-  const updateElementProperty = (elementId: string, property: string, value: any) => {
-    setCurrentLayout(prev => ({
-      ...prev,
-      elements: {
-        ...prev.elements,
-        [elementId]: {
-          ...prev.elements[elementId],
-          [property]: value
-        }
-      }
-    }))
-  }
-
-  // Update layout colors
-  const updateLayoutColor = (colorKey: string, value: string) => {
-    setCurrentLayout(prev => ({
-      ...prev,
-      colors: {
-        ...prev.colors,
-        [colorKey]: value
-      }
-    }))
-  }
-
-  // Save current layout
-  const saveCurrentLayout = () => {
-    const layoutName = prompt('Nome do layout:')
-    if (!layoutName) return
-    
-    const layoutClone = cloneLayout(currentLayout)
-    const newLayout: LayoutConfig = {
-      ...layoutClone,
-      id: `saved-${Date.now()}`,
-      name: layoutName
-    }
-    
-    const updatedLayouts = [...savedLayouts, newLayout]
-    setSavedLayouts(updatedLayouts)
-    localStorage.setItem('promo-layouts', JSON.stringify(updatedLayouts))
-    setCurrentLayout(newLayout)
-    
-    alert('Layout salvo com sucesso!')
-  }
-
-  // Delete saved layout
-  const deleteLayout = (layoutId: string) => {
-    if (confirm('Tem certeza que deseja deletar este layout?')) {
-      const updatedLayouts = savedLayouts.filter(layout => layout.id !== layoutId)
-      setSavedLayouts(updatedLayouts)
-      localStorage.setItem('promo-layouts', JSON.stringify(updatedLayouts))
-      if (layoutOverridesRef.current[layoutId]) {
-        delete layoutOverridesRef.current[layoutId]
-        localStorage.setItem('promo-layout-overrides', JSON.stringify(layoutOverridesRef.current))
-      }
-      
-      // If the deleted layout is currently selected, switch to default
-      if (currentLayout.id === layoutId) {
-        const defaultLayout = defaultLayouts.find((l) => l.format === currentLayout.format) || defaultLayouts[0]
-        loadLayout(defaultLayout)
-      }
-      
-      alert('Layout deletado com sucesso!')
-    }
-  }
-
-  // Load saved layout
-  const loadLayout = (layout: LayoutConfig) => {
-    const override = layoutOverridesRef.current[layout.id]
-    setCurrentLayout(cloneLayout(override || layout))
-  }
-
-  // Switch between story and feed formats
-  const switchFormat = (format: 'story' | 'feed') => {
-    const defaultLayout = defaultLayouts.find(l => l.format === format)
-    if (defaultLayout) {
-      loadLayout(defaultLayout)
-    }
-  }
-
+  // Generate image
   const generateImage = async () => {
-    if (!templateRef.current) return
+    if (!templateRef.current || !currentLayout) return
 
     setIsGenerating(true)
-
     try {
       const template = templateRef.current
       const originalTransform = template.style.transform
       template.style.transform = ""
 
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
-      const width = currentLayout.format === 'feed' ? 1080 : 1080
-      const height = currentLayout.format === 'feed' ? 1350 : 1920
+      const width = 1080
+      const height = currentLayout.format === "feed" ? 1350 : 1920
 
       const dataUrl = await toPng(template, {
         quality: 1.0,
-        width: width,
-        height: height,
-        backgroundColor: '#ffffff',
+        width,
+        height,
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         cacheBust: true,
         style: {
           fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        }
+        },
       })
 
       template.style.transform = originalTransform
 
       const link = document.createElement("a")
-      const formatSuffix = currentLayout.format === 'feed' ? 'feed' : 'story'
+      const formatSuffix = currentLayout.format === "feed" ? "feed" : "story"
       link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}-${formatSuffix}.png`
       link.href = dataUrl
       link.click()
-    } catch (error) {
-      console.error("Error generating image:", error)
+    } catch (err) {
       setError("Erro ao gerar imagem. Tente novamente.")
     } finally {
       setIsGenerating(false)
     }
   }
 
-  // Handle image selection from gallery
-  const handleSelectImage = (imageUrl: string) => {
-    setDestinationImage(imageUrl)
-  }
-
-  // Handle custom search
-  const handleCustomSearch = (query: string) => {
-    fetchDestinationImages(query)
-  }
-
-  // Handle region selection
-  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedRegion(e.target.value)
-  }
-
   // Get element content
   const getElementContent = (elementId: string) => {
     switch (elementId) {
-      case 'region': return selectedRegion
-      case 'destination': return promo.DESTINO
-      case 'hotel': return promo.HOTEL
-      case 'dates': return formatDateRange()
-      case 'installments': return `${parcelas}x de`
-      case 'currency': return 'R$'
-      case 'price': return installmentValue.toFixed(2).replace(".", ",")
-      case 'installmentText': return `no cartão e ${parcelas}x no boleto sem juros.`
-      case 'flight': return 'Aéreo Ida e Volta'
-      case 'perPerson': return 'Valor por pessoa'
-      case 'nights': return `${promo.NUMERO_DE_NOITES} Noites`
-      case 'regime': return getRegimeAlimentacao()
-      case 'departureLabel': return 'saindo de'
-      case 'departure': return getDepartureAirport()
-      case 'disclaimer': return 'Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas.'
-      case 'contactLabel': return 'Contato e Whatsapp'
-      case 'contact': return '(67) 9 9637-2769'
-      default: return ''
+      case "region":
+        return selectedRegion
+      case "destination":
+        return promo.DESTINO
+      case "hotel":
+        return promo.HOTEL
+      case "dates":
+        return formatDateRange()
+      case "installments":
+        return `${parcelas}x de`
+      case "currency":
+        return "R$"
+      case "price":
+        return installmentValue.toFixed(2).replace(".", ",")
+      case "installmentText":
+        return `no cartão e ${parcelas}x no boleto sem juros.`
+      case "flight":
+        return promo.AEREO ? "Aéreo Ida e Volta" : ""
+      case "perPerson":
+        return "Valor por pessoa"
+      case "nights":
+        return `${promo.NUMERO_DE_NOITES} Noites`
+      case "regime":
+        return getRegimeAlimentacao()
+      case "departureLabel":
+        return "saindo de"
+      case "departure":
+        return getDepartureAirport()
+      case "disclaimer":
+        return "Preço por pessoa em apartamento duplo, sujeito a alteração sem aviso prévio, taxas inclusas."
+      case "contactLabel":
+        return "Contato e Whatsapp"
+      case "contact":
+        return "(67) 9 9637-2769"
+      default:
+        return ""
     }
   }
 
-  // Get container dimensions based on format
-  const getContainerDimensions = () => {
-    if (currentLayout.format === 'feed') {
-      return { width: '432px', height: '540px', scale: 0.4 }
+  // Switch format
+  const switchFormat = async (format: "story" | "feed") => {
+    await fetchLayouts(format)
+    const defaultLayout = layouts.find((l) => l.format === format && l.isDefault) || layouts.find((l) => l.format === format)
+    if (defaultLayout) {
+      setCurrentLayout(defaultLayout)
     }
-    return { width: '540px', height: '960px', scale: 0.5 }
+  }
+
+  // Get container dimensions
+  const getContainerDimensions = () => {
+    if (currentLayout?.format === "feed") {
+      return { width: "432px", height: "540px", scale: 0.4 }
+    }
+    return { width: "540px", height: "960px", scale: 0.5 }
   }
 
   const { width: containerWidth, height: containerHeight, scale } = getContainerDimensions()
-  const templateImage = currentLayout.url || null
-  const layoutsForCurrentFormat = useMemo(() => {
-    const defaults = defaultLayouts.filter((layout) => layout.format === currentLayout.format)
-    const custom = savedLayouts.filter((layout) => layout.format === currentLayout.format)
-    return [...defaults, ...custom]
-  }, [currentLayout.format, savedLayouts])
+  const templateImage = currentLayout?.url || null
+  const layoutsForCurrentFormat = useMemo(
+    () => layouts.filter((layout) => layout.format === (currentLayout?.format || "story")),
+    [layouts, currentLayout?.format]
+  )
+
+  // Check if element should be visible (from promo data + layout settings)
+  const isElementVisible = (elementId: string): boolean => {
+    if (!currentLayout?.elements[elementId]) return false
+    const layoutVisible = currentLayout.elements[elementId].visible
+    const promoVisible = getElementVisibilityFromPromo(elementId)
+    return layoutVisible && promoVisible
+  }
 
   return (
     <div className="flex h-full">
@@ -691,35 +545,35 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               <Settings className="h-5 w-5 mr-2 text-primary-blue" />
               Formato
             </h3>
-            
+
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => switchFormat('story')}
+                onClick={() => switchFormat("story")}
                 className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-                  currentLayout.format === 'story' 
-                    ? 'bg-primary-blue text-white border-primary-blue' 
-                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                  currentLayout?.format === "story"
+                    ? "bg-primary-blue text-white border-primary-blue"
+                    : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100"
                 }`}
               >
                 <Smartphone className="h-4 w-4" />
                 <span className="text-sm">Stories</span>
               </button>
-              
+
               <button
-                onClick={() => switchFormat('feed')}
+                onClick={() => switchFormat("feed")}
                 className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-                  currentLayout.format === 'feed' 
-                    ? 'bg-primary-blue text-white border-primary-blue' 
-                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                  currentLayout?.format === "feed"
+                    ? "bg-primary-blue text-white border-primary-blue"
+                    : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100"
                 }`}
               >
                 <Monitor className="h-4 w-4" />
                 <span className="text-sm">Feed</span>
               </button>
             </div>
-            
+
             <p className="text-xs text-gray-500">
-              {currentLayout.format === 'story' ? '1080x1920 (Stories)' : '1080x1350 (Feed)'}
+              {currentLayout?.format === "story" ? "1080x1920 (Stories)" : "1080x1350 (Feed)"}
             </p>
           </div>
 
@@ -727,155 +581,217 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-                <Settings className="h-5 w-5 mr-2 text-primary-blue" />
-                Escolha o layout base
+                <Layers className="h-5 w-5 mr-2 text-primary-blue" />
+                Layouts
               </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Primeiro selecione a arte. Depois ajuste posições e fontes. O layout ativo aparece destacado.
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Selecione ou faça upload de um layout</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {layoutsForCurrentFormat.map((layout) => {
-                const isActive = currentLayout.id === layout.id
-                return (
-                  <button
-                    key={layout.id}
-                    type="button"
-                    onClick={() => loadLayout(layout)}
-                    className={`relative rounded-xl border p-2 text-left transition-all ${
-                      isActive
-                        ? "border-primary-blue ring-2 ring-primary-blue/40 bg-primary-blue/5"
-                        : "border-gray-200 hover:border-primary-blue/60 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="aspect-[4/5] w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
-                      <img
-                        src={layout.url || "/assets/LAYOUTFINAL.png"}
-                        alt={layout.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="mt-2 space-y-1">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{layout.name}</p>
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                        {layout.type === "custom" ? "Personalizado" : "Padrão"}
-                      </span>
-                    </div>
-                    {isActive && (
-                      <span className="absolute right-2 top-2 rounded-full bg-primary-blue px-2 py-0.5 text-[10px] font-bold text-white shadow">
-                        Atual
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            {isLoadingLayouts ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary-blue" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                {layoutsForCurrentFormat.map((layout) => {
+                  const isActive = currentLayout?.id === layout.id
+                  return (
+                    <button
+                      key={layout.id}
+                      type="button"
+                      onClick={() => setCurrentLayout(layout)}
+                      className={`relative rounded-xl border p-2 text-left transition-all ${
+                        isActive
+                          ? "border-primary-blue ring-2 ring-primary-blue/40 bg-primary-blue/5"
+                          : "border-gray-200 hover:border-primary-blue/60 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="aspect-[4/5] w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
+                        <img
+                          src={layout.url || "/assets/LAYOUTFINAL.png"}
+                          alt={layout.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs font-semibold text-gray-800 truncate">{layout.name}</p>
+                        <div className="flex items-center gap-1">
+                          {layout.isDefault && (
+                            <span className="inline-flex items-center rounded-full bg-yellow-100 px-1.5 py-0.5 text-[9px] font-semibold text-yellow-700">
+                              <Star className="h-2.5 w-2.5 mr-0.5" />
+                              Padrão
+                            </span>
+                          )}
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-500">
+                            {layout.type === "custom" ? "Upload" : "Sistema"}
+                          </span>
+                        </div>
+                      </div>
+                      {isActive && (
+                        <span className="absolute right-1 top-1 rounded-full bg-primary-blue p-1">
+                          <Check className="h-3 w-3 text-white" />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
-                onClick={() => !isUploadingLayout && fileInputRef.current?.click()}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingLayout}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm disabled:opacity-60"
               >
                 {isUploadingLayout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {isUploadingLayout ? "Enviando..." : "Upload Layout"}
+                Upload
               </button>
 
-              <button
-                onClick={saveCurrentLayout}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors text-sm"
-              >
-                <Save className="h-4 w-4" />
-                Salvar
-              </button>
+              {currentLayout && !currentLayout.isDefault && (
+                <button
+                  onClick={handleSetAsDefault}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors text-sm"
+                >
+                  <Star className="h-4 w-4" />
+                  Padrão
+                </button>
+              )}
             </div>
 
-            {/* Saved Layouts Management */}
-            {savedLayouts.filter((l) => l.format === currentLayout.format).length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Meus layouts</h4>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {savedLayouts
-                    .filter((l) => l.format === currentLayout.format)
-                    .map((layout) => (
-                      <div
-                        key={layout.id}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
-                      >
-                        <div className="flex-1 truncate">
-                          <p className="font-semibold text-gray-800 truncate">{layout.name}</p>
-                          <p className="text-xs text-gray-500 truncate">{layout.url ?? "Sem preview"}</p>
-                        </div>
-                        <button
-                          onClick={() => deleteLayout(layout.id)}
-                          className="ml-2 rounded-full p-1 text-red-600 hover:bg-red-100 transition-colors"
-                          title="Deletar layout"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              </div>
+            {currentLayout && currentLayout.createdBy !== "system" && (
+              <button
+                onClick={() => handleDeleteLayout(currentLayout.id)}
+                className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors text-sm"
+              >
+                <Trash2 className="h-4 w-4" />
+                Deletar Layout
+              </button>
             )}
 
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleLayoutUpload}
+              onChange={handleLayoutFileSelect}
               className="hidden"
             />
           </div>
 
-          {/* Edit Mode Toggle */}
+          {/* Edit Mode & Layer Controls */}
           <div className="space-y-3">
-            <button
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                isEditMode 
-                  ? 'bg-green-100 text-green-700 border border-green-300' 
-                  : 'bg-gray-100 text-gray-700 border border-gray-300'
-              }`}
-            >
-              <Edit3 className="h-4 w-4" />
-              {isEditMode ? 'Sair da Edição' : 'Editar Layout'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                  isEditMode
+                    ? "bg-green-100 text-green-700 border border-green-300"
+                    : "bg-gray-100 text-gray-700 border border-gray-300"
+                }`}
+              >
+                <Edit3 className="h-4 w-4" />
+                {isEditMode ? "Editando" : "Editar"}
+              </button>
+
+              <button
+                onClick={() => setShowLayerPanel(!showLayerPanel)}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                  showLayerPanel
+                    ? "bg-purple-100 text-purple-700 border border-purple-300"
+                    : "bg-gray-100 text-gray-700 border border-gray-300"
+                }`}
+              >
+                <Layers className="h-4 w-4" />
+              </button>
+            </div>
+
+            {isEditMode && (
+              <button
+                onClick={handleSaveLayout}
+                disabled={isSaving}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar Alterações
+              </button>
+            )}
           </div>
 
-          {/* Layout Colors */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-              <Palette className="h-5 w-5 mr-2 text-primary-blue" />
-              Cores do Layout
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {Object.entries(currentLayout.colors).map(([key, value]) => (
-                <div key={key} className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600 capitalize">
-                    {key === 'primary' ? 'Primária' : 
-                     key === 'secondary' ? 'Secundária' : 
-                     key === 'accent' ? 'Destaque' : 'Fundo'}
-                  </label>
-                  <input
-                    type="color"
-                    value={value}
-                    onChange={(e) => updateLayoutColor(key, e.target.value)}
-                    className="w-full h-8 rounded border border-gray-300"
-                  />
-                </div>
-              ))}
+          {/* Layer Visibility Panel */}
+          {showLayerPanel && currentLayout && (
+            <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-700 flex items-center">
+                <Eye className="h-4 w-4 mr-2" />
+                Visibilidade das Camadas
+              </h4>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {Object.entries(currentLayout.elements).map(([elementId, element]) => {
+                  const promoVisible = getElementVisibilityFromPromo(elementId)
+                  return (
+                    <div
+                      key={elementId}
+                      className={`flex items-center justify-between p-2 rounded text-sm ${
+                        !promoVisible ? "opacity-50 bg-gray-100" : "hover:bg-gray-100"
+                      }`}
+                    >
+                      <span className="text-gray-700">{elementLabels[elementId] || elementId}</span>
+                      <button
+                        onClick={() => toggleElementVisibility(elementId)}
+                        disabled={!promoVisible}
+                        className={`p-1 rounded transition-colors ${
+                          element.visible && promoVisible
+                            ? "text-green-600 hover:bg-green-100"
+                            : "text-gray-400 hover:bg-gray-200"
+                        }`}
+                        title={!promoVisible ? "Desabilitado pela promo" : element.visible ? "Ocultar" : "Mostrar"}
+                      >
+                        {element.visible && promoVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Layout Colors */}
+          {currentLayout && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                <Palette className="h-5 w-5 mr-2 text-primary-blue" />
+                Cores
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(currentLayout.colors).map(([key, value]) => (
+                  <div key={key} className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600 capitalize">
+                      {key === "primary"
+                        ? "Primária"
+                        : key === "secondary"
+                          ? "Secundária"
+                          : key === "accent"
+                            ? "Destaque"
+                            : "Fundo"}
+                    </label>
+                    <input
+                      type="color"
+                      value={value}
+                      onChange={(e) => updateColor(key, e.target.value)}
+                      className="w-full h-8 rounded border border-gray-300 cursor-pointer"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Region Selection */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-gray-700">Região</h3>
             <select
               value={selectedRegion}
-              onChange={handleRegionChange}
+              onChange={(e) => setSelectedRegion(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="Nordeste">Nordeste</option>
@@ -889,31 +805,31 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           </div>
 
           {/* Element Properties */}
-          {isEditMode && selectedElement && (
-            <div className="space-y-3">
+          {isEditMode && selectedElement && currentLayout?.elements[selectedElement] && (
+            <div className="space-y-3 p-3 bg-blue-50 rounded-lg">
               <h3 className="text-lg font-semibold text-gray-700 flex items-center">
                 <Type className="h-5 w-5 mr-2 text-primary-blue" />
-                Propriedades do Elemento
+                {elementLabels[selectedElement] || selectedElement}
               </h3>
-              
+
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Tamanho da Fonte</label>
                   <input
                     type="number"
                     value={currentLayout.elements[selectedElement]?.fontSize || 16}
-                    onChange={(e) => updateElementProperty(selectedElement, 'fontSize', parseInt(e.target.value))}
+                    onChange={(e) => updateElement(selectedElement, { fontSize: parseInt(e.target.value) })}
                     className="w-full p-2 border border-gray-300 rounded-md text-sm"
                     min="8"
                     max="200"
                   />
                 </div>
-                
+
                 <div>
                   <label className="text-xs font-medium text-gray-600">Peso da Fonte</label>
                   <select
-                    value={currentLayout.elements[selectedElement]?.fontWeight || 'normal'}
-                    onChange={(e) => updateElementProperty(selectedElement, 'fontWeight', e.target.value)}
+                    value={currentLayout.elements[selectedElement]?.fontWeight || "normal"}
+                    onChange={(e) => updateElement(selectedElement, { fontWeight: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded-md text-sm"
                   >
                     <option value="400">Normal</option>
@@ -924,24 +840,24 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                     <option value="900">Black</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="text-xs font-medium text-gray-600">Cor</label>
                   <input
                     type="color"
-                    value={currentLayout.elements[selectedElement]?.color || '#000000'}
-                    onChange={(e) => updateElementProperty(selectedElement, 'color', e.target.value)}
-                    className="w-full h-8 rounded border border-gray-300"
+                    value={currentLayout.elements[selectedElement]?.color || "#000000"}
+                    onChange={(e) => updateElement(selectedElement, { color: e.target.value })}
+                    className="w-full h-8 rounded border border-gray-300 cursor-pointer"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs font-medium text-gray-600">Posição X</label>
                     <input
                       type="number"
-                      value={currentLayout.elements[selectedElement]?.x || 0}
-                      onChange={(e) => updateElementProperty(selectedElement, 'x', parseInt(e.target.value))}
+                      value={Math.round(currentLayout.elements[selectedElement]?.x || 0)}
+                      onChange={(e) => updateElement(selectedElement, { x: parseInt(e.target.value) })}
                       className="w-full p-2 border border-gray-300 rounded-md text-sm"
                     />
                   </div>
@@ -949,8 +865,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                     <label className="text-xs font-medium text-gray-600">Posição Y</label>
                     <input
                       type="number"
-                      value={currentLayout.elements[selectedElement]?.y || 0}
-                      onChange={(e) => updateElementProperty(selectedElement, 'y', parseInt(e.target.value))}
+                      value={Math.round(currentLayout.elements[selectedElement]?.y || 0)}
+                      onChange={(e) => updateElement(selectedElement, { y: parseInt(e.target.value) })}
                       className="w-full p-2 border border-gray-300 rounded-md text-sm"
                     />
                   </div>
@@ -962,7 +878,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
           {/* Generate Button */}
           <button
             onClick={generateImage}
-            disabled={isGenerating || !destinationImage}
+            disabled={isGenerating || !destinationImage || !currentLayout}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-blue text-white rounded-md hover:bg-second-blue transition-colors disabled:opacity-50 font-medium"
           >
             {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
@@ -973,101 +889,111 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
       {/* Center - Template Preview */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-50">
-        {error && (
+        {(error || layoutError) && (
           <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm w-full max-w-md">
-            {error}
+            {error || layoutError}
           </div>
         )}
 
-        <div 
-          className="relative overflow-hidden border border-gray-300 rounded-lg shadow-lg bg-white"
-          style={{ width: containerWidth, height: containerHeight }}
-        >
+        {currentLayout && (
           <div
-            ref={templateRef}
-            className="relative cursor-pointer"
-            style={{ 
-              width: currentLayout.format === 'feed' ? '1080px' : '1080px',
-              height: currentLayout.format === 'feed' ? '1350px' : '1920px',
-              transform: `scale(${scale})`, 
-              transformOrigin: "top left",
-              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-            }}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onClick={() => setSelectedElement(null)}
+            className="relative overflow-hidden border border-gray-300 rounded-lg shadow-lg bg-white"
+            style={{ width: containerWidth, height: containerHeight }}
           >
-            {/* Destination image as background */}
-            {destinationImage && (
-              <div 
-                className="absolute top-0 left-0 overflow-hidden z-0"
-                style={{ 
-                  width: currentLayout.format === 'feed' ? '1080px' : '1080px',
-                  height: currentLayout.format === 'feed' ? '1350px' : '1920px'
-                }}
-              >
-                <img
-                  src={destinationImage || "/placeholder.svg"}
-                  alt={promo.DESTINO}
-                  className="w-full h-full object-cover opacity-80"
-                  crossOrigin="anonymous"
-                />
-              </div>
-            )}
-            
-            {/* Template overlay */}
-            <div 
-              className="absolute inset-0 z-10"
-              style={{ 
-                width: currentLayout.format === 'feed' ? '1080px' : '1080px',
-                height: currentLayout.format === 'feed' ? '1350px' : '1920px'
+            <div
+              ref={templateRef}
+              className="relative cursor-pointer"
+              style={{
+                width: "1080px",
+                height: currentLayout.format === "feed" ? "1350px" : "1920px",
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onClick={() => setSelectedElement(null)}
             >
-              {/* Background template image */}
-              {templateImage && (
-                <img 
-                  src={templateImage} 
-                  alt="Promo Template" 
-                  className="w-full h-full object-cover" 
-                  crossOrigin="anonymous"
-                />
+              {/* Destination image as background */}
+              {destinationImage && (
+                <div
+                  className="absolute top-0 left-0 overflow-hidden z-0"
+                  style={{
+                    width: "1080px",
+                    height: currentLayout.format === "feed" ? "1350px" : "1920px",
+                  }}
+                >
+                  <img
+                    src={destinationImage}
+                    alt={promo.DESTINO}
+                    className="w-full h-full object-cover opacity-80"
+                    crossOrigin="anonymous"
+                  />
+                </div>
               )}
 
-              {/* Text Overlays */}
-              <div className="absolute inset-0">
-                {Object.entries(currentLayout.elements).map(([elementId, element]) => (
-                  <div
-                    key={elementId}
-                    className={`absolute cursor-pointer ${
-                      isEditMode ? 'hover:ring-2 hover:ring-blue-400' : ''
-                    } ${
-                      selectedElement === elementId ? 'ring-2 ring-blue-500 bg-blue-100 bg-opacity-20' : ''
-                    }`}
-                    style={{
-                      left: `${element.x}px`,
-                      top: `${element.y}px`,
-                      fontSize: `${element.fontSize}px`,
-                      fontWeight: element.fontWeight,
-                      color: element.color,
-                      fontFamily: element.fontFamily,
-                      userSelect: isEditMode ? 'none' : 'auto'
-                    }}
-                    onClick={(e) => handleElementClick(elementId, e)}
-                    onMouseDown={(e) => handleMouseDown(elementId, e)}
-                  >
-                    {getElementContent(elementId)}
-                    {isEditMode && selectedElement === elementId && (
-                      <div className="absolute -top-6 -left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                        <Move className="h-3 w-3 inline mr-1" />
-                        {elementId}
+              {/* Template overlay */}
+              <div
+                className="absolute inset-0 z-10"
+                style={{
+                  width: "1080px",
+                  height: currentLayout.format === "feed" ? "1350px" : "1920px",
+                }}
+              >
+                {templateImage && (
+                  <img
+                    src={templateImage}
+                    alt="Promo Template"
+                    className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                  />
+                )}
+
+                {/* Text Overlays */}
+                <div className="absolute inset-0">
+                  {Object.entries(currentLayout.elements).map(([elementId, element]) => {
+                    if (!isElementVisible(elementId)) return null
+
+                    const content = getElementContent(elementId)
+                    if (!content) return null
+
+                    return (
+                      <div
+                        key={elementId}
+                        className={`absolute cursor-pointer ${isEditMode ? "hover:ring-2 hover:ring-blue-400" : ""} ${
+                          selectedElement === elementId ? "ring-2 ring-blue-500 bg-blue-100 bg-opacity-20" : ""
+                        }`}
+                        style={{
+                          left: `${element.x}px`,
+                          top: `${element.y}px`,
+                          fontSize: `${element.fontSize}px`,
+                          fontWeight: element.fontWeight,
+                          color: element.color,
+                          fontFamily: element.fontFamily,
+                          userSelect: isEditMode ? "none" : "auto",
+                        }}
+                        onClick={(e) => {
+                          if (!isEditMode) return
+                          e.stopPropagation()
+                          setSelectedElement(elementId)
+                        }}
+                        onMouseDown={(e) => handleMouseDown(elementId, e)}
+                      >
+                        {content}
+                        {isEditMode && selectedElement === elementId && (
+                          <div className="absolute -top-6 -left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                            <Move className="h-3 w-3 inline mr-1" />
+                            {elementLabels[elementId] || elementId}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Right Sidebar - Image Gallery */}
@@ -1079,22 +1005,63 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
               Galeria de Imagens
             </h3>
             <p className="text-sm text-gray-500 mb-2">
-              {customSearchQuery
-                ? `Resultados para "${customSearchQuery}"`
-                : `Imagens para ${promo.DESTINO}`}
+              {customSearchQuery ? `Resultados para "${customSearchQuery}"` : `Imagens para ${promo.DESTINO}`}
             </p>
           </div>
 
           <ImageGallery
             images={availableImages}
-            onSelectImage={handleSelectImage}
+            onSelectImage={(url) => setDestinationImage(url)}
             selectedImageUrl={destinationImage}
             isLoading={isLoadingImage}
-            onSearch={handleCustomSearch}
+            onSearch={(query) => fetchDestinationImages(query)}
             destination={promo.DESTINO}
           />
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Upload de Layout</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Nome do Layout</label>
+                <input
+                  type="text"
+                  value={uploadName}
+                  onChange={(e) => setUploadName(e.target.value)}
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="Ex: Layout Black Friday"
+                />
+              </div>
+              <div className="text-sm text-gray-500">
+                Formato: {currentLayout?.format === "feed" ? "Feed (1080x1350)" : "Story (1080x1920)"}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false)
+                    setPendingFile(null)
+                    setUploadName("")
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleUploadConfirm}
+                  disabled={isUploadingLayout || !uploadName.trim()}
+                  className="flex-1 px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-second-blue disabled:opacity-50 flex items-center justify-center"
+                >
+                  {isUploadingLayout ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

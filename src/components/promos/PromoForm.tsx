@@ -485,38 +485,56 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
             </select>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-6">
             <label className="flex items-center gap-2 text-primary-blue font-mon font-medium mb-2">
               <Plane className="h-4 w-4" />
-              Aeroporto de Saída
+              Aéreo
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white">
-                <input
-                  type="checkbox"
-                  id="CG"
-                  className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
-                  checked={formData.CG}
-                  onChange={() => handleChange("CG", !formData.CG)}
-                />
-                <label htmlFor="CG" className="text-gray-800 font-mon">
-                  Campo Grande
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white">
-                <input
-                  type="checkbox"
-                  id="SP"
-                  className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
-                  checked={formData.SP}
-                  onChange={() => handleChange("SP", !formData.SP)}
-                />
-                <label htmlFor="SP" className="text-gray-800 font-mon">
-                  São Paulo
-                </label>
-              </div>
+            <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white mb-4">
+              <input
+                type="checkbox"
+                id="AEREO"
+                className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
+                checked={formData.AEREO}
+                onChange={() => handleChange("AEREO", !formData.AEREO)}
+              />
+              <label htmlFor="AEREO" className="text-gray-800 font-mon">
+                Inclui passagem aérea
+              </label>
             </div>
+
+            {formData.AEREO && (
+              <div>
+                <label className="text-sm text-gray-600 font-mon mb-2 block">Aeroporto de Saída</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white">
+                    <input
+                      type="checkbox"
+                      id="CG"
+                      className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
+                      checked={formData.CG}
+                      onChange={() => handleChange("CG", !formData.CG)}
+                    />
+                    <label htmlFor="CG" className="text-gray-800 font-mon">
+                      Campo Grande
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white">
+                    <input
+                      type="checkbox"
+                      id="SP"
+                      className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
+                      checked={formData.SP}
+                      onChange={() => handleChange("SP", !formData.SP)}
+                    />
+                    <label htmlFor="SP" className="text-gray-800 font-mon">
+                      São Paulo
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3">

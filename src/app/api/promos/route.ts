@@ -12,6 +12,7 @@ const promoSchema = z.object({
   HOTEL: z.string().min(1, "Hotel é obrigatório"),
   DATA_FORMATADA: z.string().min(1, "Data é obrigatória"),
   VALOR: z.string().min(1, "Valor é obrigatório"),
+  PARCELAS: z.union([z.string(), z.number()]).optional(),
   COM_CAFE: z.boolean().optional(),
   SEM_CAFE: z.boolean().optional(),
   MEIA_PENSAO: z.boolean().optional(),

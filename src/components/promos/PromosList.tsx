@@ -38,7 +38,7 @@ interface PromoData {
   updatedAt: string
   createdBy?: string
   createdByName?: string
-  PARCELAS?: string
+  PARCELAS?: string | number
 }
 
 interface PromosListProps {
@@ -207,14 +207,14 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
     return valueAfterCalculation.toFixed(2).replace(".", ",")
   }
 
-  const getInstallmentValue = (value: string, parcelas: string = "15") => {
+  const getInstallmentValue = (value: string, parcelas: string | number = "15") => {
     if (!value) {
       return "0,00"
     }
 
     const cleanedValue = value.replace(/[^\d.,]/g, "")
     const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const parcelasNum = Number.parseInt(parcelas, 10)
+    const parcelasNum = typeof parcelas === "number" ? parcelas : Number.parseInt(parcelas, 10)
     const installmentValue = (numericValue * 2 * parcelasNum) / parcelasNum
 
     return installmentValue.toFixed(2).replace(".", ",")

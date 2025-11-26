@@ -7,6 +7,7 @@ interface PromoData {
   HOTEL: string
   DATA_FORMATADA: string
   VALOR: string
+  PARCELAS?: string | number
   COM_CAFE?: boolean
   SEM_CAFE?: boolean
   MEIA_PENSAO?: boolean
@@ -18,6 +19,8 @@ interface PromoData {
   AEREO?: boolean
   createdAt: string
   updatedAt: string
+  createdBy?: string
+  createdByName?: string
 }
 
 interface StatsData {
