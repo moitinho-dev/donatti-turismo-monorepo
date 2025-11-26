@@ -69,18 +69,17 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         DATA_FORMATADA: promo.DATA_FORMATADA || "",
       }))
 
-      // Set formatted amount
+      // Set formatted amount - VALOR já é o valor total salvo (ex: "5000.00")
       if (promo.VALOR) {
-        const cleanedValue = promo.VALOR.replace(/[^\d.,]/g, "")
-        const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-        const parcelas = Number.parseInt(promo.PARCELAS || "10", 10)
-        const valueAfterCalculation = numericValue * parcelas * 2
-        setFormattedAmount(
-          valueAfterCalculation.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }),
-        )
+        const numericValue = Number.parseFloat(promo.VALOR)
+        if (!isNaN(numericValue)) {
+          setFormattedAmount(
+            numericValue.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }),
+          )
+        }
       }
 
       // Set regime alimentacao
@@ -98,21 +97,6 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       [field]: value,
     }))
 
-    // If changing parcelas, update the formatted amount
-    if (field === "PARCELAS" && typeof value === "string") {
-      const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
-      const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-      if (!isNaN(numericValue)) {
-        const parcelas = Number.parseInt(value, 10)
-        const valueAfterCalculation = numericValue * parcelas * 2
-        setFormattedAmount(
-          valueAfterCalculation.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }),
-        )
-      }
-    }
   }
 
   const handleChangeRegimeAlimentacao = (valor: string) => {
@@ -203,16 +187,17 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   }
 
   const parseCurrencyValue = (value: string) => {
-    const cleanedValue = value.replace(/[^\d,.-]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(/\./g, "").replace(",", "."))
+    // Remove tudo exceto números
+    const cleanedValue = value.replace(/[^\d]/g, "")
+    // Converte centavos para reais (ex: 500000 -> 5000.00)
+    const numericValue = Number.parseFloat(cleanedValue) / 100
 
     if (isNaN(numericValue)) {
       return "0.00"
     }
 
-    const parcelas = Number.parseInt(formData.PARCELAS || "10", 10)
-    const valueAfterCalculation = ((numericValue * 10) / 2 / parcelas).toFixed(2)
-    return valueAfterCalculation
+    // Salva o valor total digitado pelo usuário (sem transformações)
+    return numericValue.toFixed(2)
   }
 
   const formatCurrencyValue = (value: string) => {
@@ -299,16 +284,15 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
 
   // Calculate installment value for display
   const getInstallmentValue = () => {
-    const cleanedValue = formData.VALOR.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
+    // formData.VALOR já está no formato "5000.00" (valor total)
+    const numericValue = Number.parseFloat(formData.VALOR)
 
-    if (isNaN(numericValue)) {
+    if (isNaN(numericValue) || numericValue === 0) {
       return "R$ 0,00"
     }
 
-    const parcelas = Number.parseInt(formData.PARCELAS, 10)
-    const totalValue = numericValue * parcelas * 2
-    const installmentValue = totalValue / parcelas
+    const parcelas = Number.parseInt(formData.PARCELAS, 10) || 15
+    const installmentValue = numericValue / parcelas
 
     return installmentValue.toLocaleString("pt-BR", {
       style: "currency",

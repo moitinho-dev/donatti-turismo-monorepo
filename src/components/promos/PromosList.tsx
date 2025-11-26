@@ -199,12 +199,13 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
       return "0,00"
     }
 
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const parcelas = 15 // Valor padrão
-    const valueAfterCalculation = numericValue * parcelas * 2
+    // VALOR é o valor total salvo (ex: "5000.00")
+    const numericValue = Number.parseFloat(value)
+    if (isNaN(numericValue)) {
+      return "0,00"
+    }
 
-    return valueAfterCalculation.toFixed(2).replace(".", ",")
+    return numericValue.toFixed(2).replace(".", ",")
   }
 
   const getInstallmentValue = (value: string, parcelas: string | number = "15") => {
@@ -212,10 +213,14 @@ export function PromosList({ promos, onEdit, onDelete }: PromosListProps) {
       return "0,00"
     }
 
-    const cleanedValue = value.replace(/[^\d.,]/g, "")
-    const numericValue = Number.parseFloat(cleanedValue.replace(",", "."))
-    const parcelasNum = typeof parcelas === "number" ? parcelas : Number.parseInt(parcelas, 10)
-    const installmentValue = (numericValue * 2 * parcelasNum) / parcelasNum
+    // VALOR é o valor total salvo (ex: "5000.00")
+    const numericValue = Number.parseFloat(value)
+    if (isNaN(numericValue)) {
+      return "0,00"
+    }
+
+    const parcelasNum = typeof parcelas === "number" ? parcelas : Number.parseInt(parcelas, 10) || 15
+    const installmentValue = numericValue / parcelasNum
 
     return installmentValue.toFixed(2).replace(".", ",")
   }
