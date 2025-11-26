@@ -193,15 +193,14 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
   // Calculate promo values
   const promoValues = useMemo(() => {
     const cleanedValue = promo.VALOR?.replace(/[^\d.,]/g, "") || "0"
-    const baseValue = Number.parseFloat(cleanedValue.replace(",", ".")) || 0
+    const totalValue = Number.parseFloat(cleanedValue.replace(",", ".")) || 0
     let parcelasValue = promo.PARCELAS
     if (typeof parcelasValue === "number") parcelasValue = parcelasValue.toString()
     if (!parcelasValue) parcelasValue = "15"
     const parcelas = Number.parseInt(parcelasValue, 10) || 15
-    const totalValue = baseValue * parcelas * 2
     const installmentValue = totalValue / parcelas
 
-    return { baseValue, parcelas, installmentValue }
+    return { totalValue, parcelas, installmentValue }
   }, [promo.VALOR, promo.PARCELAS])
 
   // Get element content

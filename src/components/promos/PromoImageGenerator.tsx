@@ -137,8 +137,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   const installmentValue = useMemo(() => {
     if (baseValue === 0 || parcelas === 0) return 0
-    const totalValue = baseValue * parcelas * 2
-    return totalValue / parcelas
+    return baseValue / parcelas
   }, [baseValue, parcelas])
 
   // Load layouts on mount
