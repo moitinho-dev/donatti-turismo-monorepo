@@ -521,7 +521,11 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
 
   // Export image
   const handleExport = async () => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current) {
+      console.error("Canvas ref not found")
+      alert("Erro: Canvas não encontrado")
+      return
+    }
     setIsExporting(true)
     try {
       // Wait for fonts to be fully loaded
@@ -536,14 +540,59 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
         height: canvasHeight,
         pixelRatio: 2,
         style: { transform: "none" },
+        cacheBust: true,
+        skipAutoScale: true,
+        includeQueryParams: true,
         fontEmbedCSS: fontCSS || `
           @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         `,
       })
+
+      if (!dataUrl) {
+        throw new Error("Failed to generate image")
+      }
+
       const link = document.createElement("a")
       link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
       link.href = dataUrl
+      document.body.appendChild(link)
       link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Export error:", error)
+      // Try alternative export method using canvas
+      try {
+        const canvas = document.createElement("canvas")
+        canvas.width = CANVAS_WIDTH * 2
+        canvas.height = canvasHeight * 2
+        const ctx = canvas.getContext("2d")
+        if (ctx && canvasRef.current) {
+          ctx.scale(2, 2)
+          // Draw background color
+          ctx.fillStyle = "#ffffff"
+          ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight)
+
+          // Use html2canvas as fallback
+          const html2canvas = (await import("html2canvas")).default
+          const capturedCanvas = await html2canvas(canvasRef.current, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: "#ffffff",
+          })
+
+          const dataUrl = capturedCanvas.toDataURL("image/png")
+          const link = document.createElement("a")
+          link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
+          link.href = dataUrl
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        }
+      } catch (fallbackError) {
+        console.error("Fallback export also failed:", fallbackError)
+        alert("Erro ao exportar imagem. Tente novamente.")
+      }
     } finally {
       setIsExporting(false)
     }
