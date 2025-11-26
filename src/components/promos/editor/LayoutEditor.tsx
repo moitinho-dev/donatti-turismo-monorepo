@@ -604,14 +604,31 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
   // Upload layout
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !currentLayout) return
+    if (!file) return
 
-    const name = prompt("Nome do layout:")
-    if (!name) return
+    const format = selectedFormat || "story"
 
-    await uploadLayout(file, currentLayout.format, name)
-    await fetchLayouts(currentLayout.format)
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    // Use file name as layout name (without extension)
+    const baseName = file.name.replace(/\.[^/.]+$/, "")
+    const name = `${format === "feed" ? "Feed" : "Story"} - ${baseName}`
+
+    setIsUploading(true)
+    try {
+      const newLayout = await uploadLayout(file, format, name)
+      if (newLayout) {
+        await fetchLayouts(format)
+        // Auto-select the new layout
+        setCurrentLayout(newLayout)
+      } else {
+        alert("Erro ao fazer upload do template. Tente novamente.")
+      }
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("Erro ao fazer upload do template.")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
   }
 
   if (!currentLayout) {
@@ -761,10 +778,11 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm"
+            disabled={isUploading}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm disabled:opacity-50"
           >
-            <Upload className="h-4 w-4" />
-            Upload
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {isUploading ? "Enviando..." : "Upload"}
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
 
