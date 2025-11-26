@@ -72,7 +72,11 @@ export const dynamic = "force-dynamic"
 
 export async function POST(request: Request) {
   try {
+    console.log("[UPLOAD] Starting upload request...")
+
     const session = await getServerSession(authOptions)
+    console.log("[UPLOAD] Session:", session ? `User: ${session.user?.id}` : "No session")
+
     if (!session) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
@@ -81,6 +85,9 @@ export async function POST(request: Request) {
     const file = formData.get("file")
     const format = (formData.get("format") as "story" | "feed") || "story"
     const layoutName = formData.get("name") as string
+
+    console.log("[UPLOAD] File received:", file ? `${(file as File).name} (${(file as File).size} bytes)` : "No file")
+    console.log("[UPLOAD] Format:", format, "Name:", layoutName)
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "Arquivo inválido" }, { status: 400 })
@@ -98,27 +105,34 @@ export async function POST(request: Request) {
       mimeToExtension[mimeType] ||
       null
 
+    console.log("[UPLOAD] MIME type:", mimeType, "Extension:", extension)
+
     if (!extension || (!allowedMimeTypes.has(mimeType) && !allowedExtensions.has(extension))) {
       return NextResponse.json({ error: "Formato de arquivo não suportado" }, { status: 400 })
     }
 
     // Read file as buffer
     const buffer = Buffer.from(await file.arrayBuffer())
+    console.log("[UPLOAD] Buffer size:", buffer.length)
 
     // Save file to public/uploads/layouts
     const uploadDir = path.join(process.cwd(), "public", "uploads", "layouts")
     await fs.mkdir(uploadDir, { recursive: true })
+    console.log("[UPLOAD] Upload dir:", uploadDir)
 
     const randomKey = crypto.randomBytes(6).toString("hex")
     const filename = `${Date.now()}-${randomKey}.${extension}`
     const filePath = path.join(uploadDir, filename)
     await fs.writeFile(filePath, buffer)
+    console.log("[UPLOAD] File saved to:", filePath)
 
     // URL path for the uploaded file
     const imageUrl = `/uploads/layouts/${filename}`
 
     const baseName = originalName.replace(/\.[^/.]+$/, "")
     const name = layoutName || `${format === "feed" ? "Feed" : "Story"} - ${baseName}`
+
+    console.log("[UPLOAD] Creating layout in database...")
 
     // Create new layout in database
     const elements = format === "story" ? defaultStoryElements : defaultFeedElements
@@ -134,6 +148,8 @@ export async function POST(request: Request) {
         createdById: session.user.id,
       },
     })
+
+    console.log("[UPLOAD] Layout created:", newLayout.id)
 
     // Return layout in expected format
     return NextResponse.json(
@@ -154,7 +170,8 @@ export async function POST(request: Request) {
       { status: 201 }
     )
   } catch (error) {
-    console.error("Erro ao processar upload do layout:", error)
-    return NextResponse.json({ error: "Erro ao processar upload" }, { status: 500 })
+    console.error("[UPLOAD] Error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido"
+    return NextResponse.json({ error: `Erro ao processar upload: ${errorMessage}` }, { status: 500 })
   }
 }
