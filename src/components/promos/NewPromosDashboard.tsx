@@ -36,6 +36,7 @@ import {
   RefreshCw,
   ImagePlus,
   Users,
+  Layers,
 } from "lucide-react"
 import Link from "next/link"
 import { PromoForm } from "./PromoForm"
@@ -238,6 +239,13 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
               >
                 <Users className="h-4 w-4 inline mr-1.5" />
                 Leads
+              </Link>
+              <Link
+                href="/promos/templates"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900"
+              >
+                <Layers className="h-4 w-4 inline mr-1.5" />
+                Templates
               </Link>
             </div>
           </div>

@@ -10,10 +10,6 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
-  Lock,
-  Unlock,
-  Trash2,
-  Copy,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -22,15 +18,8 @@ import {
   AlignEndVertical,
   Loader2,
   Save,
-  Upload,
   Grid3X3,
   Magnet,
-  Type,
-  Square,
-  PenTool,
-  Plus,
-  Minus,
-  Image as ImageIcon,
   Star,
 } from "lucide-react"
 import { useLayouts, type ElementConfig, type ImageArea } from "@/hooks/useLayouts"
@@ -134,13 +123,6 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
     setAsDefault,
   } = useLayouts()
 
-  // Image area drawing state
-  const [isDrawingArea, setIsDrawingArea] = useState(false)
-  const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null)
-  const [drawingCurrent, setDrawingCurrent] = useState<{ x: number; y: number } | null>(null)
-  const [selectedArea, setSelectedArea] = useState<string | null>(null)
-  const [isDraggingArea, setIsDraggingArea] = useState(false)
-  const [areaDrawMode, setAreaDrawMode] = useState(false)
   const [selectedFormat, setSelectedFormat] = useState<"story" | "feed">("story")
 
   const [zoom, setZoom] = useState(0.45)
@@ -153,11 +135,9 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
   const [snapEnabled, setSnapEnabled] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
 
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const canvasHeight = currentLayout?.format === "feed" ? CANVAS_HEIGHT_FEED : CANVAS_HEIGHT_STORY
 
@@ -350,71 +330,6 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
     setSnapGuides([])
   }, [])
 
-  // Image area drawing handlers
-  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!areaDrawMode || !canvasRef.current) return
-
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / zoom
-    const y = (e.clientY - rect.top) / zoom
-
-    setIsDrawingArea(true)
-    setDrawingStart({ x, y })
-    setDrawingCurrent({ x, y })
-    setSelectedElement(null)
-    setSelectedArea(null)
-  }, [areaDrawMode, zoom])
-
-  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDrawingArea || !drawingStart || !canvasRef.current) return
-
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = Math.max(0, Math.min(CANVAS_WIDTH, (e.clientX - rect.left) / zoom))
-    const y = Math.max(0, Math.min(canvasHeight, (e.clientY - rect.top) / zoom))
-
-    setDrawingCurrent({ x, y })
-  }, [isDrawingArea, drawingStart, zoom, canvasHeight])
-
-  const handleCanvasMouseUp = useCallback(() => {
-    if (!isDrawingArea || !drawingStart || !drawingCurrent) {
-      setIsDrawingArea(false)
-      return
-    }
-
-    const minX = Math.min(drawingStart.x, drawingCurrent.x)
-    const minY = Math.min(drawingStart.y, drawingCurrent.y)
-    const maxX = Math.max(drawingStart.x, drawingCurrent.x)
-    const maxY = Math.max(drawingStart.y, drawingCurrent.y)
-
-    const width = maxX - minX
-    const height = maxY - minY
-
-    // Only create area if it has minimum size
-    if (width > 20 && height > 20) {
-      const newArea: ImageArea = {
-        id: `area-${Date.now()}`,
-        name: `Area ${(currentLayout?.imageAreas?.length || 0) + 1}`,
-        type: "rectangle",
-        points: [
-          { x: minX, y: minY },
-          { x: maxX, y: minY },
-          { x: maxX, y: maxY },
-          { x: minX, y: maxY },
-        ],
-        zIndex: -1, // Behind template by default
-        fit: "cover",
-        visible: true,
-      }
-      addImageArea(newArea)
-      setSelectedArea(newArea.id)
-    }
-
-    setIsDrawingArea(false)
-    setDrawingStart(null)
-    setDrawingCurrent(null)
-    setAreaDrawMode(false)
-  }, [isDrawingArea, drawingStart, drawingCurrent, currentLayout, addImageArea])
-
   // Get area bounds from points
   const getAreaBounds = useCallback((area: ImageArea) => {
     const xs = area.points.map(p => p.x)
@@ -598,36 +513,6 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
     }
   }
 
-  // Upload layout
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const format = selectedFormat || "story"
-
-    // Use file name as layout name (without extension)
-    const baseName = file.name.replace(/\.[^/.]+$/, "")
-    const name = `${format === "feed" ? "Feed" : "Story"} - ${baseName}`
-
-    setIsUploading(true)
-    try {
-      const newLayout = await uploadLayout(file, format, name)
-      if (newLayout) {
-        await fetchLayouts(format)
-        // Auto-select the new layout
-        setCurrentLayout(newLayout)
-      } else {
-        alert("Erro ao fazer upload do template. Tente novamente.")
-      }
-    } catch (error) {
-      console.error("Upload error:", error)
-      alert("Erro ao fazer upload do template.")
-    } finally {
-      setIsUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
-    }
-  }
-
   if (!currentLayout) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -774,16 +659,6 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm disabled:opacity-50"
-          >
-            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {isUploading ? "Enviando..." : "Upload"}
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-
-          <button
             onClick={handleSave}
             disabled={isSaving}
             className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm disabled:opacity-50"
@@ -806,76 +681,8 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
       <div className="flex flex-1 overflow-hidden">
         {/* Layers Panel */}
         <div className="w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto">
-          {/* Image Areas Section */}
-          <div className="p-3 border-b border-gray-700">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-200">Areas de Foto</h3>
-              <button
-                onClick={() => {
-                  setAreaDrawMode(!areaDrawMode)
-                  setSelectedElement(null)
-                }}
-                className={`p-1.5 rounded transition-colors ${
-                  areaDrawMode ? "bg-green-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                }`}
-                title={areaDrawMode ? "Cancelar desenho" : "Desenhar nova area"}
-              >
-                <Square className="h-4 w-4" />
-              </button>
-            </div>
-            {areaDrawMode && (
-              <p className="text-[10px] text-green-400 mt-1">Clique e arraste no canvas para desenhar</p>
-            )}
-          </div>
-          <div className="p-2 space-y-1">
-            {currentLayout?.imageAreas?.map((area) => (
-              <div
-                key={area.id}
-                onClick={() => {
-                  setSelectedArea(area.id)
-                  setSelectedElement(null)
-                }}
-                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                  selectedArea === area.id ? "bg-green-600" : "hover:bg-gray-700"
-                }`}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    updateImageArea(area.id, { visible: !area.visible })
-                  }}
-                  className="p-1 hover:bg-gray-600 rounded"
-                >
-                  {area.visible ? (
-                    <Eye className="h-3.5 w-3.5 text-gray-300" />
-                  ) : (
-                    <EyeOff className="h-3.5 w-3.5 text-gray-500" />
-                  )}
-                </button>
-                <ImageIcon className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-xs text-gray-300 flex-1 truncate">{area.name}</span>
-                <span className={`text-[10px] px-1 rounded ${area.zIndex < 0 ? "bg-orange-600" : "bg-blue-600"} text-white`}>
-                  z:{area.zIndex}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    removeImageArea(area.id)
-                    if (selectedArea === area.id) setSelectedArea(null)
-                  }}
-                  className="p-1 hover:bg-red-600 rounded text-gray-400 hover:text-white"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            {(!currentLayout?.imageAreas || currentLayout.imageAreas.length === 0) && (
-              <p className="text-xs text-gray-500 p-2">Nenhuma area criada</p>
-            )}
-          </div>
-
           {/* Text Elements Section */}
-          <div className="p-3 border-b border-gray-700 border-t">
+          <div className="p-3 border-b border-gray-700">
             <h3 className="text-sm font-semibold text-gray-200">Elementos de Texto</h3>
           </div>
           <div className="p-2 space-y-1">
@@ -886,10 +693,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
               return (
                 <div
                   key={id}
-                  onClick={() => {
-                    setSelectedElement(id)
-                    setSelectedArea(null)
-                  }}
+                  onClick={() => setSelectedElement(id)}
                   className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                     isSelected ? "bg-blue-600" : "hover:bg-gray-700"
                   } ${!promoVisible ? "opacity-40" : ""}`}
@@ -924,25 +728,15 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
         <div
           ref={containerRef}
           className="flex-1 overflow-auto bg-gray-900 p-8"
-          onMouseMove={(e) => {
-            handleMouseMove(e)
-            handleCanvasMouseMove(e)
-          }}
-          onMouseUp={() => {
-            handleMouseUp()
-            handleCanvasMouseUp()
-          }}
-          onMouseLeave={() => {
-            handleMouseUp()
-            handleCanvasMouseUp()
-          }}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         >
           <div
             className="relative mx-auto bg-white shadow-2xl"
             style={{
               width: CANVAS_WIDTH * zoom,
               height: canvasHeight * zoom,
-              cursor: areaDrawMode ? "crosshair" : "default",
             }}
           >
             <div
@@ -953,13 +747,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
                 height: canvasHeight,
                 transform: `scale(${zoom})`,
               }}
-              onClick={() => {
-                if (!areaDrawMode) {
-                  setSelectedElement(null)
-                  setSelectedArea(null)
-                }
-              }}
-              onMouseDown={handleCanvasMouseDown}
+              onClick={() => setSelectedElement(null)}
             >
               {/* Background Image */}
               {backgroundImage && (
@@ -978,23 +766,16 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
                 return (
                   <div
                     key={area.id}
-                    className={`absolute overflow-hidden ${selectedArea === area.id ? "ring-2 ring-green-500" : ""}`}
+                    className="absolute overflow-hidden"
                     style={{
                       left: bounds.x,
                       top: bounds.y,
                       width: bounds.width,
                       height: bounds.height,
                       zIndex: area.zIndex + 10,
-                      backgroundColor: hasImage ? "transparent" : "rgba(34, 197, 94, 0.3)",
-                      border: hasImage ? "none" : "2px dashed rgba(34, 197, 94, 0.8)",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedArea(area.id)
-                      setSelectedElement(null)
                     }}
                   >
-                    {(backgroundImage || area.imageUrl) ? (
+                    {(backgroundImage || area.imageUrl) && (
                       <img
                         src={area.imageUrl || backgroundImage || ""}
                         alt={area.name}
@@ -1002,10 +783,6 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
                         style={{ objectFit: area.fit }}
                         crossOrigin="anonymous"
                       />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-green-600 text-xs font-bold">
-                        {area.name} (z:{area.zIndex})
-                      </div>
                     )}
                   </div>
                 )
@@ -1029,23 +806,16 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
                 return (
                   <div
                     key={area.id}
-                    className={`absolute overflow-hidden ${selectedArea === area.id ? "ring-2 ring-blue-500" : ""}`}
+                    className="absolute overflow-hidden"
                     style={{
                       left: bounds.x,
                       top: bounds.y,
                       width: bounds.width,
                       height: bounds.height,
                       zIndex: area.zIndex + 30,
-                      backgroundColor: hasImage ? "transparent" : "rgba(59, 130, 246, 0.3)",
-                      border: hasImage ? "none" : "2px dashed rgba(59, 130, 246, 0.8)",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedArea(area.id)
-                      setSelectedElement(null)
                     }}
                   >
-                    {(backgroundImage || area.imageUrl) ? (
+                    {(backgroundImage || area.imageUrl) && (
                       <img
                         src={area.imageUrl || backgroundImage || ""}
                         alt={area.name}
@@ -1053,28 +823,10 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
                         style={{ objectFit: area.fit }}
                         crossOrigin="anonymous"
                       />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-blue-600 text-xs font-bold">
-                        {area.name} (z:{area.zIndex})
-                      </div>
                     )}
                   </div>
                 )
               })}
-
-              {/* Drawing preview */}
-              {isDrawingArea && drawingStart && drawingCurrent && (
-                <div
-                  className="absolute border-2 border-dashed border-green-500 bg-green-500/20 pointer-events-none"
-                  style={{
-                    left: Math.min(drawingStart.x, drawingCurrent.x),
-                    top: Math.min(drawingStart.y, drawingCurrent.y),
-                    width: Math.abs(drawingCurrent.x - drawingStart.x),
-                    height: Math.abs(drawingCurrent.y - drawingStart.y),
-                    zIndex: 100,
-                  }}
-                />
-              )}
 
               {/* Grid */}
               {showGrid && (
@@ -1251,189 +1003,9 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
             </div>
           )}
 
-          {/* Image Area Properties */}
-          {selectedArea && currentLayout?.imageAreas && (() => {
-            const area = currentLayout.imageAreas.find(a => a.id === selectedArea)
-            if (!area) return null
-            const bounds = getAreaBounds(area)
-
-            return (
-              <div className="p-3 space-y-4">
-                <div className="p-3 border-b border-gray-700 -mx-3 -mt-3 mb-3">
-                  <h3 className="text-sm font-semibold text-green-400">{area.name}</h3>
-                </div>
-
-                {/* Area Name */}
-                <div>
-                  <label className="text-xs text-gray-400 block mb-2">Nome da Area</label>
-                  <input
-                    type="text"
-                    value={area.name}
-                    onChange={(e) => updateImageArea(area.id, { name: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                  />
-                </div>
-
-                {/* Z-Index */}
-                <div>
-                  <label className="text-xs text-gray-400 block mb-2">
-                    Camada (Z-Index)
-                    <span className="text-[10px] text-gray-500 block">
-                      Negativo = atras do template, Positivo = na frente
-                    </span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateImageArea(area.id, { zIndex: area.zIndex - 1 })}
-                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-300"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <input
-                      type="number"
-                      value={area.zIndex}
-                      onChange={(e) => updateImageArea(area.id, { zIndex: parseInt(e.target.value) || 0 })}
-                      className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 text-center"
-                    />
-                    <button
-                      onClick={() => updateImageArea(area.id, { zIndex: area.zIndex + 1 })}
-                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-300"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => updateImageArea(area.id, { zIndex: -1 })}
-                      className={`flex-1 px-2 py-1 text-xs rounded ${area.zIndex < 0 ? "bg-orange-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
-                    >
-                      Atras
-                    </button>
-                    <button
-                      onClick={() => updateImageArea(area.id, { zIndex: 1 })}
-                      className={`flex-1 px-2 py-1 text-xs rounded ${area.zIndex >= 0 ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
-                    >
-                      Na Frente
-                    </button>
-                  </div>
-                </div>
-
-                {/* Position */}
-                <div>
-                  <label className="text-xs text-gray-400 block mb-2">Posicao</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-gray-500">X</span>
-                      <input
-                        type="number"
-                        value={Math.round(bounds.x)}
-                        onChange={(e) => {
-                          const newX = parseInt(e.target.value) || 0
-                          const deltaX = newX - bounds.x
-                          updateImageArea(area.id, {
-                            points: area.points.map(p => ({ x: p.x + deltaX, y: p.y }))
-                          })
-                        }}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-gray-500">Y</span>
-                      <input
-                        type="number"
-                        value={Math.round(bounds.y)}
-                        onChange={(e) => {
-                          const newY = parseInt(e.target.value) || 0
-                          const deltaY = newY - bounds.y
-                          updateImageArea(area.id, {
-                            points: area.points.map(p => ({ x: p.x, y: p.y + deltaY }))
-                          })
-                        }}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Size */}
-                <div>
-                  <label className="text-xs text-gray-400 block mb-2">Tamanho</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-gray-500">Largura</span>
-                      <input
-                        type="number"
-                        value={Math.round(bounds.width)}
-                        onChange={(e) => {
-                          const newWidth = parseInt(e.target.value) || 100
-                          updateImageArea(area.id, {
-                            points: [
-                              { x: bounds.x, y: bounds.y },
-                              { x: bounds.x + newWidth, y: bounds.y },
-                              { x: bounds.x + newWidth, y: bounds.y + bounds.height },
-                              { x: bounds.x, y: bounds.y + bounds.height },
-                            ]
-                          })
-                        }}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                        min="20"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-gray-500">Altura</span>
-                      <input
-                        type="number"
-                        value={Math.round(bounds.height)}
-                        onChange={(e) => {
-                          const newHeight = parseInt(e.target.value) || 100
-                          updateImageArea(area.id, {
-                            points: [
-                              { x: bounds.x, y: bounds.y },
-                              { x: bounds.x + bounds.width, y: bounds.y },
-                              { x: bounds.x + bounds.width, y: bounds.y + newHeight },
-                              { x: bounds.x, y: bounds.y + newHeight },
-                            ]
-                          })
-                        }}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                        min="20"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Image Fit */}
-                <div>
-                  <label className="text-xs text-gray-400 block mb-2">Ajuste da Imagem</label>
-                  <select
-                    value={area.fit}
-                    onChange={(e) => updateImageArea(area.id, { fit: e.target.value as "cover" | "contain" | "fill" })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                  >
-                    <option value="cover">Cobrir (Cover)</option>
-                    <option value="contain">Conter (Contain)</option>
-                    <option value="fill">Preencher (Fill)</option>
-                  </select>
-                </div>
-
-                {/* Delete Area */}
-                <button
-                  onClick={() => {
-                    removeImageArea(area.id)
-                    setSelectedArea(null)
-                  }}
-                  className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Remover Area
-                </button>
-              </div>
-            )
-          })()}
-
-          {!selectedElement && !selectedArea && (
+          {!selectedElement && (
             <div className="p-3 text-gray-400 text-sm">
-              Selecione um elemento ou area para editar suas propriedades
+              Selecione um elemento para editar suas propriedades
             </div>
           )}
         </div>
