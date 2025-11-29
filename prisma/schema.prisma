@@ -101,6 +101,24 @@ model Promo {
   @@map("promos")
 }
 
+// Lead model for capturing interested customers
+model Lead {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String
+  email           String?
+  source          String   @default("website") // website, popup, footer, whatsapp
+  destino         String?  // Destination they were interested in
+  hotel           String?  // Hotel they were interested in
+  promoDetails    String?  // JSON with promo details
+  status          String   @default("new") // new, contacted, converted, lost
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("leads")
+}
+
 // Layout/Template model
 model Layout {
   id          String   @id @default(cuid())

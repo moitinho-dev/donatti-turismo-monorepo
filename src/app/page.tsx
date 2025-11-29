@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * DONATTI TURISMO - BLACK FRIDAY 2025
- * Dark Minimalist Landing Page com UX/Conversão otimizados
+ * DONATTI TURISMO - Landing Page
+ * Light Theme Landing Page com UX/Conversão otimizados
  */
 
 import { useState, useEffect } from 'react'
@@ -16,7 +16,6 @@ import {
   ArrowRight,
   Shield,
   Award,
-  Clock,
   Sparkles,
   Users,
   Plane,
@@ -27,14 +26,12 @@ import {
   ChevronRight,
   CreditCard,
   CheckCircle2,
-  AlertCircle,
   Calendar,
   Mail,
   Building2,
   Phone,
   Send,
 } from 'lucide-react'
-import CountdownTimer from '@/components/hero/CountdownTimer'
 import RealTimePromos from '@/components/home/RealTimePromos'
 
 export default function DonattiTurismoMinimalist() {
@@ -42,8 +39,8 @@ export default function DonattiTurismoMinimalist() {
   const [activeSearchQuery, setActiveSearchQuery] = useState('')
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
   const [isVisible, setIsVisible] = useState(false)
-  const [showStickyCountdown, setShowStickyCountdown] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
+  const [searchedDestination, setSearchedDestination] = useState('')
 
   // Form states
   const [formData, setFormData] = useState({
@@ -51,6 +48,12 @@ export default function DonattiTurismoMinimalist() {
     email: '',
     phone: '',
   })
+
+  // Handler para quando não encontrar promoção para o destino
+  const handleNoResults = (query: string) => {
+    setSearchedDestination(query)
+    setShowWhatsAppModal(true)
+  }
 
   // Cursor ring effect
   useEffect(() => {
@@ -65,16 +68,6 @@ export default function DonattiTurismoMinimalist() {
   // Fade in effect
   useEffect(() => {
     setIsVisible(true)
-  }, [])
-
-  // Sticky countdown on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowStickyCountdown(window.scrollY > 800)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Stats data
@@ -143,130 +136,117 @@ export default function DonattiTurismoMinimalist() {
       location: 'São Paulo',
       text: 'A Donatti tornou nossa lua de mel nas Maldivas um sonho real. Cada detalhe foi perfeito!',
       rating: 5,
-      video: 'https://scontent-bos5-1.cdninstagram.com/o1/v/t16/f2/m69/AQO6iwpuhSSGjub1X7JcI3ejjr8qZm9YJaxBPGzMenP6qs8DxyrjEA2n-ebNg4yx0zW0Pv1ufSuTk3nOoqEKA5KJ.mp4?strext=1&_nc_cat=111&_nc_sid=9ca052&_nc_ht=scontent-bos5-1.cdninstagram.com&_nc_ohc=BuEbMICJCQoQ7kNvwF9_BAQ&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmMyLUMzLmRhc2hfbG5faGVhYWNfdmJyM19hdWRpbyIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6OTM2NjE5NzQzMzkyNDU5LCJjbGllbnRfbmFtZSI6ImlnIiwieHB2X2Fzc2V0X2lkIjoxMDc1MzExMjUwNzA3NDUwLCJhc3NldF9hZ2VfZGF5cyI6MTM0LCJ2aV91c2VjYXNlX2lkIjoxMDA5OSwiZHVyYXRpb25fcyI6MTM5LCJiaXRyYXRlIjo1NjQyMywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&_nc_gid=ErMSouscUQ7IStxU_fIqzQ&_nc_zt=28&oh=00_Afi5M2ulNA0_OGqeJSMKf9jAriJ9MQmQ_rBQ3KYUaxDj4w&oe=69209DC1',
+      image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80',
     },
     {
       name: 'Juliana F.',
       location: 'Rio de Janeiro',
       text: 'Minha viagem solo para a Itália foi incrível. Me senti segura e aproveitei cada segundo.',
       rating: 5,
-      video: 'https://scontent-ord5-2.cdninstagram.com/o1/v/t16/f2/m69/AQOB6eX0v8zXqgOk6lJv3I8C2WQux6p9HAm0RNDGFIRMmejkSK1H3pVCVfVuNKIoxAJWRoqKohe6x7CYVFzg9hLO.mp4?strext=1&_nc_cat=102&_nc_sid=9ca052&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_ohc=7zGzQwCJ7zYQ7kNvwFJtyQ4&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmMyLUMzLmRhc2hfbG5faGVhYWNfdmJyM19hdWRpbyIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6OTM2NjE5NzQzMzkyNDU5LCJjbGllbnRfbmFtZSI6ImlnIiwieHB2X2Fzc2V0X2lkIjoxNDE3OTI5ODU5NDYxNzIyLCJhc3NldF9hZ2VfZGF5cyI6OTAsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjozNSwiYml0cmF0ZSI6Nzc1MTksInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&ccb=17-1&_nc_gid=zo7wYyUfQ7lBaBFC3tcTCQ&_nc_zt=28&oh=00_AfhwAsN9n_PHJUgWG6H7vl6idO5NWjepAnhgNMgfV70sUw&oe=6920C03E',
+      image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&q=80',
     },
     {
       name: 'Família Martins',
       location: 'Belo Horizonte',
       text: 'As crianças amaram a Disney! A organização foi impecável.',
       rating: 5,
-      image: '/traveler-at-santorini-greece-blue-domes.jpg',
+      image: 'https://images.unsplash.com/photo-1597466599360-3b9775841aec?w=800&q=80',
     },
   ]
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A0A0A] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-white text-gray-900">
       {/* Cursor ring effect */}
-      <div
-        className="cursor-ring hidden lg:block"
-        style={{
-          left: cursorPosition.x,
-          top: cursorPosition.y,
-        }}
-      />
+      
 
       {/* Gradient blur from top */}
       <div className="gradient-blur-top" />
 
-      {/* Skip link */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground focus:top-4 focus:left-4 focus:rounded-md"
-      >
-        Pular para o conteúdo principal
-      </a>
-
-      {/* Header */}
-      <header role="banner" className="fixed top-0 z-50 w-full border-b border-white/5 glass">
-        <div className="container mx-auto flex h-20 items-center justify-between px-4">
-          <div className="flex items-center">
-            <img
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGOTIPO_PNG_COR-HrrWIVyKTna8rzMaQYpuC0rmVAgCd3.png"
-              alt="Donatti Turismo"
-              className="h-16 w-auto object-contain"
-              width="64"
-              height="64"
-            />
-          </div>
-
-          <nav role="navigation" aria-label="Navegação principal" className="hidden items-center gap-8 md:flex">
-            <a
-              href="#ofertas"
-              className="text-sm font-medium text-gray-400 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1"
-            >
-              Ofertas
-            </a>
-            <a
-              href="#destinos"
-              className="text-sm font-medium text-gray-400 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1"
-            >
-              Destinos
-            </a>
-            <a
-              href="#avaliacoes"
-              className="text-sm font-medium text-gray-400 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1"
-            >
-              Avaliações
-            </a>
-          </nav>
-
-          <Button className="bg-primary text-black hover:bg-primary/90 font-semibold min-h-[44px]">
-            <Phone className="mr-2 h-4 w-4" />
-            Consulte Agora
-          </Button>
-        </div>
-      </header>
-
-      {/* Sticky Countdown */}
-      <div className={`sticky-countdown ${showStickyCountdown ? 'visible' : ''}`}>
-        <div className="flex items-center gap-3">
-          <AlertCircle className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-white">Oferta termina em:</span>
-          <CountdownTimer targetDate="2025-11-29T23:59:59-03:00" />
-        </div>
-      </div>
+      
 
       {/* Main Content */}
       <main id="main-content" role="main" className="relative z-10">
-        {/* Hero Section */}
+        {/* Hero Section with Integrated Header */}
         <section
           aria-labelledby="hero-title"
-          className={`min-h-screen flex items-center justify-center px-4 pt-20 transition-all duration-1000 ${
+          className={`min-h-screen flex flex-col px-4 transition-all duration-1000 relative ${
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
           }`}
         >
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/images/hero-beach.jpg"
+              alt=""
+              className="h-full w-full object-cover blur-[6px] scale-105"
+              aria-hidden="true"
+            />
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-white" />
+          </div>
+
+          {/* Header - Integrated into Hero */}
+          <header role="banner" className="w-full py-4 relative z-10">
+            <div className="container mx-auto flex h-20 items-center justify-between">
+              <div className="flex items-center">
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGOTIPO_PNG_COR-HrrWIVyKTna8rzMaQYpuC0rmVAgCd3.png"
+                  alt="Donatti Turismo"
+                  className="h-16 w-auto object-contain"
+                  width="64"
+                  height="64"
+                />
+              </div>
+
+              <nav role="navigation" aria-label="Navegação principal" className="hidden items-center gap-8 md:flex">
+                <a
+                  href="#ofertas"
+                  className="text-sm font-bold text-white transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1 drop-shadow-md"
+                >
+                  Ofertas
+                </a>
+                <a
+                  href="#destinos"
+                  className="text-sm font-bold text-white transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1 drop-shadow-md"
+                >
+                  Destinos
+                </a>
+                <a
+                  href="#avaliacoes"
+                  className="text-sm font-bold text-white transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1 drop-shadow-md"
+                >
+                  Avaliações
+                </a>
+              </nav>
+
+              <Button className="bg-primary text-white hover:bg-primary/90 font-semibold min-h-[44px]">
+                <Phone className="mr-2 h-4 w-4" />
+                Consulte Agora
+              </Button>
+            </div>
+          </header>
+
+          {/* Hero Content */}
+          <div className="flex-1 flex items-center justify-center relative z-10">
           <div className="container mx-auto max-w-7xl">
             <div className="text-center">
-              {/* Badge */}
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full glass px-6 py-2">
-                <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span className="text-sm text-gray-300">Black Friday 2025</span>
-              </div>
+              
 
               {/* Main Heading */}
               <h1
                 id="hero-title"
-                className="mb-6 text-6xl leading-[1.1] tracking-tight md:text-7xl lg:text-8xl xl:text-9xl"
+                className="mb-6 text-6xl leading-[1.1] tracking-tight md:text-7xl lg:text-8xl xl:text-9xl drop-shadow-lg"
               >
-                <span className="font-bold">Black Friday Donatti:</span>
+                <span className="font-bold text-white">Realize sua</span>
                 <br />
-                <span className="font-black">sua próxima <span className="gradient-text">aventura</span></span>
+                <span className="font-italic text-white">próxima <span className="gradient-text font-semibold">aventura</span></span>
                 <br />
-                <span className="font-bold">com até</span> <span className="font-black gradient-text">60% OFF</span>
+                <span className="font-bold text-white">com a</span> <span className="font-bold gradient-text">Donatti</span>
               </h1>
 
               {/* Subtitle with urgency + social proof */}
-              <p className="mx-auto mb-8 max-w-3xl text-lg text-gray-300 md:text-xl leading-relaxed">
-                Até <span className="font-bold text-white">60% de desconto</span> em pacotes selecionados +{' '}
-                <span className="font-bold text-white">12x sem juros</span> + Suporte{' '}
-                <span className="font-bold text-white">24/7 no WhatsApp</span>
+              <p className="mx-auto mb-8 max-w-3xl text-lg md:text-xl leading-relaxed font-bold text-white drop-shadow-md">
+                Os melhores pacotes de viagem com até 12x sem juros + Suporte 24/7 no WhatsApp
               </p>
 
 
@@ -296,13 +276,13 @@ export default function DonattiTurismoMinimalist() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Para onde você quer ir?"
-                        className="h-12 w-full border-0 bg-gray-900/80 pl-10 pr-3 text-sm text-white placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 rounded-lg"
+                        className="h-12 w-full border border-gray-200 bg-gray-50 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 rounded-lg"
                       />
                     </div>
                     <Button
                       type="submit"
                       size="lg"
-                      className="h-12 bg-primary px-6 text-sm font-semibold text-black hover:bg-primary/90 whitespace-nowrap"
+                      className="h-12 bg-primary px-6 text-sm font-semibold text-white hover:bg-primary/90 whitespace-nowrap"
                     >
                       <Search className="mr-2 h-4 w-4" aria-hidden="true" />
                       Buscar
@@ -315,7 +295,7 @@ export default function DonattiTurismoMinimalist() {
                       <button
                         key={index}
                         type="button"
-                        className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+                        className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
                         <chip.icon className="h-3 w-3" />
                         {chip.label}
@@ -332,71 +312,59 @@ export default function DonattiTurismoMinimalist() {
                   onClick={() => {
                     document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
                   }}
-                  className="group h-14 rounded-full bg-primary px-10 text-base font-bold text-black shadow-xl hover:shadow-primary/50 hover:bg-primary/90 transition-all hover:scale-105 min-h-[52px]"
+                  className="group inline-flex items-center justify-center h-14 rounded-full bg-primary p-4  text-base font-bold text-white shadow-xl hover:shadow-primary/50 hover:bg-primary/90 transition-all hover:scale-105"
                 >
-                  Ver ofertas Black Friday
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  <span>Ver ofertas</span>
+                  <ArrowRight className="ml-2 h-5 w-5 flex-shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </Button>
                 <Button
                   size="lg"
-                  asChild
                   variant="outline"
-                  className="h-14 rounded-full border-2 border-white/20 bg-transparent px-10 text-base font-semibold text-white hover:bg-white/10 hover:text-white min-h-[52px]"
+                  onClick={() => setShowWhatsAppModal(true)}
+                  className="inline-flex items-center justify-center h-14 rounded-full border-2 border-gray-300 bg-transparent p-4 text-base font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 >
-                  <a
-                    href="https://wa.me/5511999999999?text=Olá!%20Quero%20conhecer%20as%20ofertas%20da%20Black%20Friday"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Phone className="mr-2 h-4 w-4" />
-                    Falar no WhatsApp
-                  </a>
+                  <Phone className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span>Falar no WhatsApp</span>
                 </Button>
               </div>
 
-              {/* Countdown */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
-                  <span>Oferta termina em:</span>
-                </div>
-                <div className="glass rounded-xl px-6 py-3">
-                  <CountdownTimer targetDate="2025-11-29T23:59:59-03:00" />
-                </div>
-              </div>
-
               {/* Social Proof */}
-              <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
+              <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
+                  {[
+                    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
+                    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face',
+                  ].map((src, i) => (
+                    <img
                       key={i}
-                      className="h-8 w-8 rounded-full border-2 border-[#0A0A0A] bg-gradient-to-br from-primary to-orange-500"
+                      src={src}
+                      alt=""
+                      className="h-8 w-8 rounded-full border-2 border-white object-cover"
                       aria-hidden="true"
                     />
                   ))}
                 </div>
                 <span className="text-xs md:text-sm">
-                  <strong className="text-white">2.847 pessoas</strong> visualizando agora
+                  <strong className="text-gray-900">2.847 pessoas</strong> visualizando agora
                 </span>
               </div>
             </div>
           </div>
-
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce" aria-hidden="true">
-            <ChevronRight className="h-6 w-6 rotate-90 text-gray-600" />
           </div>
+
+         
         </section>
 
         {/* Stats Section */}
-        <section aria-label="Estatísticas da empresa" className="relative py-20 border-y border-white/5">
+        <section aria-label="Estatísticas da empresa" className="relative py-20 border-y border-gray-200">
           <div className="container mx-auto px-4">
             <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold md:text-4xl">
+              <h2 className="text-3xl font-bold md:text-4xl text-gray-900">
                 Mais de <span className="gradient-text">5.000 viajantes felizes</span>
               </h2>
-              <p className="mt-3 text-lg text-gray-400">Nota média 4,9/5 — Baseado em avaliações verificadas</p>
+              <p className="mt-3 text-lg text-gray-600">Nota média 4,9/5 — Baseado em avaliações verificadas</p>
             </div>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
               {stats.map((stat, index) => (
@@ -408,7 +376,7 @@ export default function DonattiTurismoMinimalist() {
                     <stat.icon className="h-8 w-8 text-primary" aria-hidden="true" />
                   </div>
                   <div className="mb-2 text-4xl font-bold gradient-text">{stat.value}</div>
-                  <div className="text-sm text-gray-400">{stat.label}</div>
+                  <div className="text-sm text-gray-600">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -416,19 +384,19 @@ export default function DonattiTurismoMinimalist() {
         </section>
 
         {/* Offers Section */}
-        <section id="ofertas" aria-labelledby="offers-title" className="relative py-20">
+        <section id="ofertas" aria-labelledby="offers-title" className="relative py-20 bg-gray-50">
           <div className="container mx-auto px-4">
             <div className="mb-16 text-center">
               <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-                Ofertas Exclusivas Black Friday
+                Ofertas Imperdíveis
               </Badge>
-              <h2 id="offers-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
-                Promoções <span className="gradient-text">do dia</span>
+              <h2 id="offers-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
+                Pacotes em <span className="gradient-text">destaque</span>
               </h2>
-              <p className="mx-auto max-w-2xl text-lg text-gray-400">
+              <p className="mx-auto max-w-2xl text-lg text-gray-600">
                 {activeSearchQuery
                   ? `Resultados para "${activeSearchQuery}"`
-                  : 'Promoções atualizadas diariamente com os melhores preços. Aproveite antes que acabem!'}
+                  : 'Confira nossos pacotes com os melhores preços e condições especiais de pagamento.'}
               </p>
               {activeSearchQuery && (
                 <Button
@@ -437,7 +405,7 @@ export default function DonattiTurismoMinimalist() {
                     setSearchQuery('')
                   }}
                   variant="outline"
-                  className="mt-4 border-white/20 hover:bg-white/10 hover:text-white"
+                  className="mt-4 border-gray-300 hover:bg-gray-100 hover:text-gray-900"
                 >
                   Limpar filtro
                 </Button>
@@ -445,18 +413,18 @@ export default function DonattiTurismoMinimalist() {
             </div>
 
             {/* Real-time promos component */}
-            <RealTimePromos searchQuery={activeSearchQuery} />
+            <RealTimePromos searchQuery={activeSearchQuery} onNoResults={handleNoResults} />
           </div>
         </section>
 
         {/* Benefits */}
-        <section id="destinos" aria-labelledby="benefits-title" className="relative py-20 border-y border-white/5">
+        <section id="destinos" aria-labelledby="benefits-title" className="relative py-20 border-y border-gray-200">
           <div className="container mx-auto px-4">
             <div className="mb-16 text-center">
               <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
                 Por que Donatti?
               </Badge>
-              <h2 id="benefits-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
+              <h2 id="benefits-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
                 Mais que uma agência,
                 <br />
                 <span className="gradient-text">seu parceiro de viagens</span>
@@ -469,8 +437,8 @@ export default function DonattiTurismoMinimalist() {
                   <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
                     <item.icon className="h-7 w-7 text-primary" aria-hidden="true" />
                   </div>
-                  <h3 className="mb-3 text-xl font-bold">{item.title}</h3>
-                  <p className="text-gray-400 leading-relaxed">{item.description}</p>
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">{item.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{item.description}</p>
                 </div>
               ))}
             </div>
@@ -478,16 +446,16 @@ export default function DonattiTurismoMinimalist() {
         </section>
 
         {/* Testimonials */}
-        <section id="avaliacoes" aria-labelledby="testimonials-title" className="relative py-20">
+        <section id="avaliacoes" aria-labelledby="testimonials-title" className="relative py-20 bg-gray-50">
           <div className="container mx-auto px-4">
             <div className="mb-16 text-center">
               <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
                 Depoimentos Verificados
               </Badge>
-              <h2 id="testimonials-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
+              <h2 id="testimonials-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
                 O que nossos clientes <span className="gradient-text">dizem</span>
               </h2>
-              <p className="mx-auto max-w-2xl text-lg text-gray-400">
+              <p className="mx-auto max-w-2xl text-lg text-gray-600">
                 Mais de 5.000 viajantes já realizaram seus sonhos com a Donatti Turismo
               </p>
               <div className="mt-6">
@@ -509,24 +477,13 @@ export default function DonattiTurismoMinimalist() {
                   className="glass card-glow rounded-2xl overflow-hidden transition-all hover:scale-105"
                 >
                   <div className="relative h-48 overflow-hidden">
-                    {'video' in testimonial ? (
-                      <video
-                        src={testimonial.video}
-                        className="h-full w-full object-cover"
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                      />
-                    ) : (
-                      <img
-                        src={testimonial.image}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+                    <img
+                      src={testimonial.image}
+                      alt={`Viagem de ${testimonial.name}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent" />
                   </div>
                   <div className="p-8">
                     <div className="mb-4 flex gap-1" aria-label={`Avaliação ${testimonial.rating} de 5 estrelas`}>
@@ -534,10 +491,10 @@ export default function DonattiTurismoMinimalist() {
                         <Star key={i} className="h-5 w-5 fill-primary text-primary" aria-hidden="true" />
                       ))}
                     </div>
-                    <p className="mb-6 italic leading-relaxed text-gray-300">"{testimonial.text}"</p>
-                    <div className="border-t border-white/10 pt-4">
-                      <p className="font-semibold text-white">{testimonial.name}</p>
-                      <p className="text-sm text-gray-400">{testimonial.location}</p>
+                    <p className="mb-6 italic leading-relaxed text-gray-600">"{testimonial.text}"</p>
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                      <p className="text-sm text-gray-500">{testimonial.location}</p>
                     </div>
                   </div>
                 </div>
@@ -547,30 +504,50 @@ export default function DonattiTurismoMinimalist() {
         </section>
 
         {/* Contact Form */}
-        <section aria-labelledby="contact-title" className="relative py-20 border-y border-white/5">
+        <section aria-labelledby="contact-title" className="relative py-20 border-y border-gray-200">
           <div className="container mx-auto px-4">
             <div className="glass card-glow mx-auto max-w-3xl rounded-3xl p-8 md:p-12">
               <div className="mb-8 text-center">
                 <Mail className="mx-auto mb-4 h-12 w-12 text-primary" />
-                <h2 id="contact-title" className="mb-3 text-3xl font-bold md:text-4xl">
-                  Fale com nossos <span className="gradient-text">especialistas</span>
-                </h2>
-                <p className="text-lg text-gray-400">
-                  Preencha o formulário e receba um orçamento personalizado em até 2 horas
-                </p>
+                <h2 id="cta-title" className="mb-6 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
+                Sua próxima viagem
+                <br />
+                <span className="gradient-text">começa aqui</span>
+              </h2>
+              <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-600">
+                Parcele em até 12x sem juros e conte com suporte 24/7 durante toda a viagem.
+              </p>
               </div>
 
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault()
-                  console.log('Form submitted:', formData)
-                  // Aqui você pode adicionar a lógica para enviar o formulário
+                  // Salvar lead no banco
+                  try {
+                    await fetch('/api/leads', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        name: formData.name,
+                        phone: formData.phone,
+                        email: formData.email,
+                        source: 'contact_form',
+                      }),
+                    })
+                    alert('Obrigado! Entraremos em contato em breve.')
+                    setFormData({ name: '', email: '', phone: '' })
+                  } catch (error) {
+                    console.error('Erro ao enviar:', error)
+                    alert('Erro ao enviar. Tente novamente.')
+                  }
                 }}
                 className="space-y-6"
               >
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-gray-700">
                       Nome completo *
                     </label>
                     <Input
@@ -579,13 +556,13 @@ export default function DonattiTurismoMinimalist() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Seu nome"
-                      className="h-12 border-white/20 bg-white/5 text-white placeholder:text-gray-500"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                       required
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-gray-700">
                       Telefone *
                     </label>
                     <Input
@@ -594,14 +571,14 @@ export default function DonattiTurismoMinimalist() {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="(00) 00000-0000"
-                      className="h-12 border-white/20 bg-white/5 text-white placeholder:text-gray-500"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-gray-300">
+                  <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-gray-700">
                     E-mail *
                   </label>
                   <Input
@@ -610,7 +587,7 @@ export default function DonattiTurismoMinimalist() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="seu@email.com"
-                    className="h-12 border-white/20 bg-white/5 text-white placeholder:text-gray-500"
+                    className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                     required
                   />
                 </div>
@@ -618,7 +595,7 @@ export default function DonattiTurismoMinimalist() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-14 w-full bg-primary text-base font-semibold text-black hover:bg-primary/90"
+                  className="h-14 w-full bg-primary text-base font-semibold text-white hover:bg-primary/90"
                 >
                   <Send className="mr-2 h-5 w-5" />
                   Solicitar Orçamento
@@ -633,7 +610,7 @@ export default function DonattiTurismoMinimalist() {
         </section>
 
         {/* Marquee Partners */}
-        <section aria-label="Nossos diferenciais" className="relative overflow-hidden border-y border-white/5 py-12">
+        <section aria-label="Nossos diferenciais" className="relative overflow-hidden border-y border-gray-200 py-12 bg-gray-50">
           <div className="flex items-center gap-12 animate-marquee whitespace-nowrap">
             {[...Array(2)].map((_, groupIndex) => (
               <div key={groupIndex} className="flex items-center gap-12">
@@ -647,62 +624,17 @@ export default function DonattiTurismoMinimalist() {
                 ].map((item, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <CheckCircle2 className="h-6 w-6 text-primary" aria-hidden="true" />
-                    <span className="text-lg font-semibold text-gray-400">{item}</span>
+                    <span className="text-lg font-semibold text-gray-600">{item}</span>
                   </div>
                 ))}
               </div>
             ))}
           </div>
         </section>
-
-        {/* Final CTA */}
-        <section aria-labelledby="cta-title" className="relative border-y border-white/5 py-24">
-          <div className="container mx-auto px-4">
-            <div className="mx-auto max-w-4xl text-center">
-              <Badge className="mb-6 bg-primary/10 text-primary hover:bg-primary/20 border-0">
-                Última Chance
-              </Badge>
-              <h2 id="cta-title" className="mb-6 text-4xl font-bold md:text-5xl lg:text-6xl">
-                Não perca as ofertas da
-                <br />
-                <span className="gradient-text">Black Friday</span>
-              </h2>
-              <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-400">
-                Garanta até 60% de desconto e parcele em até 12x sem juros. Vagas limitadas!
-              </p>
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button
-                  size="lg"
-                  onClick={() => {
-                    document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
-                  }}
-                  className="group h-14 rounded-full bg-primary px-10 text-base font-bold text-black hover:bg-primary/90 transition-all hover:scale-105"
-                >
-                  Ver todas as ofertas
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  asChild
-                  className="h-14 rounded-full border-2 border-white/20 bg-transparent px-10 text-base font-semibold text-white hover:bg-white/10 hover:text-white"
-                >
-                  <a
-                    href="https://wa.me/5511999999999?text=Olá!%20Quero%20conhecer%20as%20ofertas%20da%20Black%20Friday"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Falar no WhatsApp
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Footer */}
-      <footer role="contentinfo" className="relative border-t border-white/5 py-16">
+      <footer role="contentinfo" className="relative border-t border-gray-200 py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
             <div>
@@ -715,22 +647,19 @@ export default function DonattiTurismoMinimalist() {
                   height="64"
                 />
               </div>
-              <p className="text-sm text-gray-400 mb-3">Realizando sonhos de viagem há mais de 15 anos.</p>
+              <p className="text-sm text-gray-600 mb-3">Realizando sonhos de viagem há mais de 15 anos.</p>
               <div className="space-y-1 text-xs text-gray-500">
                 <p className="flex items-center gap-2">
                   <Building2 className="h-3 w-3" />
-                  CNPJ: 00.000.000/0001-00
+                  CNPJ: 41.887.394/0001-29
                 </p>
-                <p className="flex items-center gap-2">
-                  <Award className="h-3 w-3" />
-                  Cadastur: 00.000.000/0001-00
-                </p>
+               
               </div>
             </div>
 
             <div>
-              <h3 className="mb-4 font-semibold text-white">Links Rápidos</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h3 className="mb-4 font-semibold text-gray-900">Links Rápidos</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
                 <li>
                   <a href="/destinos" className="hover:text-primary transition-colors">
                     Destinos
@@ -755,8 +684,8 @@ export default function DonattiTurismoMinimalist() {
             </div>
 
             <div>
-              <h3 className="mb-4 font-semibold text-white">Políticas</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h3 className="mb-4 font-semibold text-gray-900">Políticas</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
                 <li>
                   <a href="/faq" className="hover:text-primary transition-colors">
                     Perguntas Frequentes
@@ -781,12 +710,12 @@ export default function DonattiTurismoMinimalist() {
             </div>
 
             <div>
-              <h3 className="mb-4 font-semibold text-white">Contato</h3>
-              <address className="not-italic space-y-3 text-sm text-gray-400">
+              <h3 className="mb-4 font-semibold text-gray-900">Contato</h3>
+              <address className="not-italic space-y-3 text-sm text-gray-600">
                 <p className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-primary" />
-                  <a href="tel:+5511999999999" className="hover:text-primary transition-colors">
-                    (11) 99999-9999
+                  <a href="tel:+5567992167694" className="hover:text-primary transition-colors">
+                    (67) 99216-7694
                   </a>
                 </p>
                 <p className="flex items-center gap-2">
@@ -799,14 +728,14 @@ export default function DonattiTurismoMinimalist() {
                   <p className="text-xs text-gray-500 mb-2">Formas de pagamento:</p>
                   <div className="flex flex-wrap gap-2">
                     <CreditCard className="h-5 w-5 text-gray-500" />
-                    <span className="text-xs text-gray-500">Pix, Cartões, PayPal</span>
+                    <span className="text-xs text-gray-500">Pix, Cartões, Boleto</span>
                   </div>
                 </div>
               </address>
             </div>
           </div>
 
-          <div className="mt-12 border-t border-white/5 pt-8">
+          <div className="mt-12 border-t border-gray-200 pt-8">
             <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-gray-500 md:flex-row">
               <p>© 2025 Donatti Turismo. Todos os direitos reservados.</p>
               <div className="flex items-center gap-2">
@@ -834,11 +763,11 @@ export default function DonattiTurismoMinimalist() {
       {/* WhatsApp Lead Modal */}
       {showWhatsAppModal && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={() => setShowWhatsAppModal(false)}
         >
           <div
-            className="glass card-glow w-full max-w-md rounded-2xl p-8"
+            className="bg-white shadow-2xl w-full max-w-md rounded-2xl p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between">
@@ -847,13 +776,18 @@ export default function DonattiTurismoMinimalist() {
                   <Phone className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Falar no WhatsApp</h3>
-                  <p className="text-sm text-gray-400">Resposta em minutos</p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {searchedDestination ? `Orçamento para ${searchedDestination}` : 'Falar no WhatsApp'}
+                  </h3>
+                  <p className="text-sm text-gray-500">Resposta em minutos</p>
                 </div>
               </div>
               <button
-                onClick={() => setShowWhatsAppModal(false)}
-                className="rounded-lg p-2 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                onClick={() => {
+                  setShowWhatsAppModal(false)
+                  setSearchedDestination('')
+                }}
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                 aria-label="Fechar"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -862,18 +796,51 @@ export default function DonattiTurismoMinimalist() {
               </button>
             </div>
 
+            {searchedDestination && (
+              <div className="mb-6 p-4 bg-primary/10 rounded-xl border border-primary/20">
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">Destino desejado:</span> {searchedDestination}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Vamos preparar um orçamento personalizado para você!
+                </p>
+              </div>
+            )}
+
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault()
-                const message = `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
-                const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`
+                // Salvar lead no banco
+                try {
+                  await fetch('/api/leads', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      name: formData.name,
+                      phone: formData.phone,
+                      email: formData.email,
+                      source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+                      destino: searchedDestination || null,
+                    }),
+                  })
+                } catch (error) {
+                  console.error('Erro ao salvar lead:', error)
+                }
+                const message = searchedDestination
+                  ? `Olá! Meu nome é ${formData.name}. Gostaria de um orçamento para ${searchedDestination}. Podem me ajudar?`
+                  : `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
+                const whatsappUrl = `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
                 window.open(whatsappUrl, '_blank')
                 setShowWhatsAppModal(false)
+                setSearchedDestination('')
+                setFormData({ name: '', email: '', phone: '' })
               }}
               className="space-y-4"
             >
               <div>
-                <label htmlFor="whatsapp-name" className="mb-2 block text-sm font-medium text-gray-300">
+                <label htmlFor="whatsapp-name" className="mb-2 block text-sm font-medium text-gray-700">
                   Seu nome *
                 </label>
                 <Input
@@ -882,13 +849,13 @@ export default function DonattiTurismoMinimalist() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Como podemos te chamar?"
-                  className="h-12 border-white/20 bg-white/5 text-white placeholder:text-gray-500"
+                  className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="whatsapp-phone" className="mb-2 block text-sm font-medium text-gray-300">
+                <label htmlFor="whatsapp-phone" className="mb-2 block text-sm font-medium text-gray-700">
                   Seu telefone *
                 </label>
                 <Input
@@ -897,7 +864,22 @@ export default function DonattiTurismoMinimalist() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="(00) 00000-0000"
-                  className="h-12 border-white/20 bg-white/5 text-white placeholder:text-gray-500"
+                  className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="whatsapp-email" className="mb-2 block text-sm font-medium text-gray-700">
+                  Seu e-mail *
+                </label>
+                <Input
+                  id="whatsapp-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="seu@email.com"
+                  className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                   required
                 />
               </div>

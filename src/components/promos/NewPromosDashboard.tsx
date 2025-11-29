@@ -35,7 +35,9 @@ import {
   Eye,
   RefreshCw,
   ImagePlus,
+  Users,
 } from "lucide-react"
+import Link from "next/link"
 import { PromoForm } from "./PromoForm"
 import { LayoutEditor } from "./editor/LayoutEditor"
 import { ImageGallery } from "./ImageGallery"
@@ -230,6 +232,13 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
                 <BarChart3 className="h-4 w-4 inline mr-1.5" />
                 Stats
               </button>
+              <Link
+                href="/promos/leads"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900"
+              >
+                <Users className="h-4 w-4 inline mr-1.5" />
+                Leads
+              </Link>
             </div>
           </div>
 
@@ -356,7 +365,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
                     className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group"
                   >
                     {/* Image Header */}
-                    <div className="relative h-40 bg-gradient-to-br from-blue-500 to-purple-600 overflow-hidden">
+                    <div className="relative h-40 bg-gradient-to-br from-[#F59E0B] to-[#efaa34] overflow-hidden">
                       {promoImages[promo.id] ? (
                         <img
                           src={promoImages[promo.id]}
