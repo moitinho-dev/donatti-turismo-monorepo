@@ -25,7 +25,7 @@ export default function RootLayout({
         {/* SEO Meta Tags */}
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Black Friday Donatti Turismo: Até 50% OFF em Pacotes de Viagem | 12x Sem Juros</title>
+        <title>Donatti Turismo </title>
         <meta name="description" content="Aproveite a Black Friday Donatti Turismo! Até 50% de desconto em pacotes de viagem selecionados, parcelamento em até 12x sem juros e suporte 24/7. Garanta sua próxima aventura!" />
         <meta name="keywords" content="black friday viagens, pacotes de viagem com desconto, parcelamento 12x sem juros, agência de viagens, turismo" />
 
