@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
   Upload,
   Trash2,
@@ -95,11 +96,8 @@ const samplePromo = {
   AEREO: true,
 }
 
-interface TemplateManagerProps {
-  onBack?: () => void
-}
-
-export default function TemplateManager({ onBack }: TemplateManagerProps) {
+export default function TemplateManager() {
+  const router = useRouter()
   const {
     layouts,
     currentLayout,
@@ -372,14 +370,12 @@ export default function TemplateManager({ onBack }: TemplateManagerProps) {
       <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-            )}
+            <button
+              onClick={() => router.push("/promos")}
+              className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
             <div>
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
                 <Layers className="h-5 w-5" />

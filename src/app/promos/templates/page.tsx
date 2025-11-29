@@ -1,32 +1,20 @@
-"use client"
-
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { Loader2 } from "lucide-react"
+import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { authOptions } from "../../api/auth/[...nextauth]/options"
 import TemplateManager from "@/components/promos/TemplateManager"
 
-export default function TemplatesPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+export const metadata: Metadata = {
+  title: "Templates | Donatti Turismo",
+  description: "Gerencie os templates de promoções da Donatti Turismo.",
+}
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/promos/login")
-    }
-  }, [status, router])
+export default async function TemplatesPage() {
+  const session = await getServerSession(authOptions)
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    )
+  if (!session) {
+    redirect("/promos/login")
   }
 
-  if (status === "unauthenticated") {
-    return null
-  }
-
-  return <TemplateManager onBack={() => router.push("/promos")} />
+  return <TemplateManager />
 }
