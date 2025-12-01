@@ -11,6 +11,8 @@ export interface ElementConfig {
   color: string
   fontFamily: string
   visible: boolean
+  template?: string // Custom text template with variables like {DESTINO}, {NOITES}, etc.
+  isCustom?: boolean // Flag to identify custom elements
 }
 
 export interface ImageArea {
@@ -113,6 +115,14 @@ function toLayoutConfig(layout: {
   updatedAt: Date
   createdById: string
 }): LayoutConfig {
+  const elements = layout.elements as Record<string, ElementConfig>
+
+  // Debug: log custom elements
+  const customElements = Object.entries(elements).filter(([_, el]) => el.template || el.isCustom)
+  if (customElements.length > 0) {
+    console.log("[API layouts] Custom elements found in layout", layout.id, ":", customElements.map(([id]) => id))
+  }
+
   return {
     id: layout.id,
     name: layout.name,
@@ -124,42 +134,55 @@ function toLayoutConfig(layout: {
     createdAt: layout.createdAt.toISOString(),
     updatedAt: layout.updatedAt.toISOString(),
     createdBy: layout.createdById,
-    elements: layout.elements as Record<string, ElementConfig>,
+    elements,
     imageAreas: (layout.imageAreas as ImageArea[]) || [],
     colors: layout.colors as { primary: string; secondary: string; accent: string; background: string },
   }
 }
 
+// Track if we've already checked for default layouts in this process
+let defaultLayoutsChecked = false
+
 // Seed default layouts if none exist
 async function seedDefaultLayouts(systemUserId: string) {
-  const count = await prisma.layout.count()
-  if (count === 0) {
-    await prisma.layout.createMany({
-      data: [
-        {
-          id: "default-story",
-          name: "Layout Stories Padrão",
-          type: "png",
-          format: "story",
-          imageUrl: "/assets/LAYOUTFINAL.png",
-          isDefault: true,
-          elements: JSON.parse(JSON.stringify(defaultStoryElements)),
-          colors: JSON.parse(JSON.stringify(defaultColors)),
-          createdById: systemUserId,
-        },
-        {
-          id: "default-feed",
-          name: "Layout Feed Padrão",
-          type: "png",
-          format: "feed",
-          imageUrl: "/assets/LAYOUTFEED.png",
-          isDefault: true,
-          elements: JSON.parse(JSON.stringify(defaultFeedElements)),
-          colors: JSON.parse(JSON.stringify(defaultColors)),
-          createdById: systemUserId,
-        },
-      ],
-    })
+  // Skip if already checked in this process
+  if (defaultLayoutsChecked) return
+
+  try {
+    const count = await prisma.layout.count()
+    if (count === 0) {
+      await prisma.layout.createMany({
+        data: [
+          {
+            id: "default-story",
+            name: "Layout Stories Padrão",
+            type: "png",
+            format: "story",
+            imageUrl: "/assets/LAYOUTFINAL.png",
+            isDefault: true,
+            elements: JSON.parse(JSON.stringify(defaultStoryElements)),
+            colors: JSON.parse(JSON.stringify(defaultColors)),
+            createdById: systemUserId,
+          },
+          {
+            id: "default-feed",
+            name: "Layout Feed Padrão",
+            type: "png",
+            format: "feed",
+            imageUrl: "/assets/LAYOUTFEED.png",
+            isDefault: true,
+            elements: JSON.parse(JSON.stringify(defaultFeedElements)),
+            colors: JSON.parse(JSON.stringify(defaultColors)),
+            createdById: systemUserId,
+          },
+        ],
+      })
+    }
+    defaultLayoutsChecked = true
+  } catch (error) {
+    console.error("Error seeding default layouts:", error)
+    // Mark as checked even on error to avoid repeated failures
+    defaultLayoutsChecked = true
   }
 }
 

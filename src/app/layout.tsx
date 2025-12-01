@@ -3,6 +3,7 @@ import type React from "react"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { SessionProvider } from "next-auth/react"
+import { LayoutsProvider } from "@/hooks/useLayouts"
 import IntercomChat from "@/components/IntercomChat"
 
 // Inter é mais performático e tem melhor legibilidade
@@ -64,9 +65,12 @@ export default function RootLayout({
         </noscript>
         {/* End Google Tag Manager (noscript) */}
         <SessionProvider>
-          {/* Renderizando o conteúdo das páginas filhas */}
-          {children}
-          <IntercomChat />
+          {/* Providers for app-wide state */}
+          <LayoutsProvider>
+            {/* Renderizando o conteúdo das páginas filhas */}
+            {children}
+            <IntercomChat />
+          </LayoutsProvider>
         </SessionProvider>
 
       </body>

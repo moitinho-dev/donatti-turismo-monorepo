@@ -14,7 +14,7 @@ export type HeroContent = {
 const Hero: HeroContent[] = [
   {
     herotexto1: "realize seu",
-    herotexto2: "SONHO DE VIAJAR",
+    herotexto2: "SONHO DE\nVIAJAR",
     herotexto3: "Pacotes especiais para sua próxima viagem",
     herotexto4:
       "Descubra os melhores destinos nacionais e internacionais com condições especiais. Atendimento personalizado e suporte completo para criar a viagem perfeita para você.",

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
-import type React from "react"
+import React from "react"
 import { toPng } from "html-to-image"
 import {
   Loader2,
@@ -28,7 +28,7 @@ import {
   PenTool,
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
-import { useLayouts, type ImageArea } from "@/hooks/useLayouts"
+import { useLayouts, type ImageArea, type ElementConfig } from "@/hooks/useLayouts"
 
 interface PromoImageGeneratorProps {
   promo: {
@@ -71,12 +71,15 @@ const elementLabels: Record<string, string> = {
 }
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
+import React from 'react'
+
   const {
     layouts,
     currentLayout,
     isLoading: isLoadingLayouts,
     error: layoutError,
     fetchLayouts,
+    fetchLayout,
     updateLayout,
     deleteLayout,
     uploadLayout,
@@ -142,17 +145,62 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
 
   // Load layouts on mount
   useEffect(() => {
-    fetchLayouts(currentLayout?.format || "story")
-  }, [])
+    console.log("[PromoImageGenerator] Component mounted, fetching layouts...")
+    fetchLayouts("story")
+  }, [fetchLayouts])
+
+  // Listen for layout updates broadcasted from other parts of the app
+  useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const detail = e?.detail || {}
+        // If we receive a specific layout ID, fetch that layout; otherwise re-fetch all layouts for the format
+        if (detail.id) {
+          (async () => {
+            const updated = await fetchLayout(detail.id)
+            if (updated) setCurrentLayout(updated)
+          })()
+        } else {
+          fetchLayouts(detail.format || currentLayout?.format || "story")
+        }
+        console.log("[PromoImageGenerator] Received layouts:update event", detail)
+      } catch (err) {
+        console.warn("[PromoImageGenerator] Failed to handle layouts:update event", err)
+      }
+    }
+    window.addEventListener("layouts:update", handler as EventListener)
+    return () => { window.removeEventListener("layouts:update", handler as EventListener) }
+  }, [fetchLayouts, currentLayout?.format])
+
+  // Log when currentLayout changes
+  useEffect(() => {
+    if (currentLayout) {
+      const customEls = Object.entries(currentLayout.elements).filter(([id, el]) =>
+        id.startsWith("custom_") || el.template || el.isCustom
+      )
+      console.log("[PromoImageGenerator] currentLayout updated:", currentLayout.id, currentLayout.name)
+      console.log("[PromoImageGenerator] Custom elements:", customEls.length, customEls.map(([id]) => id))
+      console.log("[PromoImageGenerator] All elements:", Object.keys(currentLayout.elements))
+    }
+  }, [currentLayout])
 
   // Initialize
   useEffect(() => {
     const loadFonts = async () => {
+      // Load a curated list of Google Fonts used by the UI so template fonts render properly
+      const family = [
+        "Montserrat:wght@400;500;600;700;800;900",
+        "Inter:wght@400;500;600;700;800;900",
+        "Poppins:wght@400;500;600;700;800;900",
+        "Roboto:wght@400;500;700;900",
+        "Open+Sans:wght@400;500;600;700;800",
+      ].join("&family=")
       const link = document.createElement("link")
-      link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      link.href = `https://fonts.googleapis.com/css2?family=${family}&display=swap`
       link.rel = "stylesheet"
       document.head.appendChild(link)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Allow some time for fonts to load in the demo, not a guarantee but helps
+      await new Promise((resolve) => setTimeout(resolve, 700))
     }
     loadFonts()
     setSelectedRegion(getRegion(promo.DESTINO))
@@ -168,6 +216,9 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   // Get visibility based on promo data
   const getElementVisibilityFromPromo = useCallback(
     (elementId: string): boolean => {
+      // Elementos customizados sempre são visíveis por padrão
+      if (elementId.startsWith("custom_")) return true
+
       switch (elementId) {
         case "flight":
           return promo.AEREO === true
@@ -382,6 +433,67 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     return ""
   }
 
+  // Process custom template string replacing variables with actual promo values
+  const processTemplate = useCallback((template: string) => {
+    const parcelasNum = typeof promo.PARCELAS === "string" ? parseInt(promo.PARCELAS) : (promo.PARCELAS || 12)
+    const totalValue = parseFloat(promo.VALOR) || 0
+    const installmentVal = totalValue / parcelasNum
+
+    let regime = ""
+    if (promo.ALL_INCLUSIVE) regime = "All Inclusive"
+    else if (promo.PENSAO_COMPLETA) regime = "Pensão Completa"
+    else if (promo.MEIA_PENSAO) regime = "Meia Pensão"
+    else if (promo.COM_CAFE) regime = "Com Café"
+
+    let saida = ""
+    if (promo.SP) saida = "São Paulo (GRU)"
+    else if (promo.CG) saida = "Campo Grande (CGR)"
+
+    // Extract DATA_IDA and DATA_VOLTA from DATA_FORMATADA
+    const dataParts = promo.DATA_FORMATADA.split(" - ")
+    const dataIda = dataParts[0]?.trim() || promo.DATA_FORMATADA
+    const dataVolta = dataParts[1]?.trim() || ""
+
+    // Process boolean conditionals: {VAR?texto_true} or {VAR?texto_true|texto_false}
+    // Using | as separator instead of : to avoid conflicts with text containing colons
+    let result = template
+
+    const booleanValues: Record<string, boolean> = {
+      AEREO: !!promo.AEREO,
+      ALL_INCLUSIVE: !!promo.ALL_INCLUSIVE,
+      PENSAO_COMPLETA: !!promo.PENSAO_COMPLETA,
+      MEIA_PENSAO: !!promo.MEIA_PENSAO,
+      COM_CAFE: !!promo.COM_CAFE,
+      SEM_CAFE: !!promo.SEM_CAFE,
+      SP: !!promo.SP,
+      CG: !!promo.CG,
+    }
+
+    // Match pattern: {VARNAME?true_text} or {VARNAME?true_text|false_text}
+    // Accept both | and : as separators for true/false parts for better UX
+    const conditionalRegex = /\{(\w+)\?([^}|:]+)(?:[|:]([^}]*))?\}/g
+    result = result.replace(conditionalRegex, (match, varName, trueText, falseText) => {
+      if (varName in booleanValues) {
+        return booleanValues[varName] ? trueText : (falseText || "")
+      }
+      return match
+    })
+
+    // Process text variables
+    return result
+      .replace(/\{DESTINO\}/g, promo.DESTINO)
+      .replace(/\{HOTEL\}/g, promo.HOTEL)
+      .replace(/\{DATA\}/g, promo.DATA_FORMATADA)
+      .replace(/\{DATA_IDA\}/g, dataIda)
+      .replace(/\{DATA_VOLTA\}/g, dataVolta)
+      .replace(/\{NOITES\}/g, promo.NUMERO_DE_NOITES)
+      .replace(/\{VALOR\}/g, totalValue.toFixed(2).replace(".", ","))
+      .replace(/\{PARCELAS\}/g, parcelasNum.toString())
+      .replace(/\{VALOR_PARCELA\}/g, installmentVal.toFixed(2).replace(".", ","))
+      .replace(/\{REGIME\}/g, regime)
+      .replace(/\{SAIDA\}/g, saida)
+  }, [promo])
+
   // Format date range
   const formatDateRange = () => {
     try {
@@ -527,7 +639,41 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   }
 
   // Get element content
-  const getElementContent = (elementId: string) => {
+  const getElementContent = (elementId: string, element?: { template?: string; isCustom?: boolean }) => {
+    // If element has a custom template, process it
+    if (element?.template) {
+      const processed = processTemplate(element.template)
+      if (processed && processed.trim() !== "") return processed
+
+      // Fallback: fill missing variables with placeholders so the element is visible while editing
+      try {
+        const fallback = (element.template || "").replace(/\{(\w+)\}/g, (_, varName) => {
+          const value = (promo as any)[varName] // promo values from props
+          if (value === undefined || value === null || value === "") {
+            // Use a readable placeholder depending on common var names
+            switch (varName) {
+              case "DESTINO": return "Destino"
+              case "HOTEL": return "Hotel"
+              case "DATA": case "DATA_IDA": case "DATA_VOLTA": return "01/01/2025"
+              case "NOITES": return "1"
+              case "VALOR": return "0,00"
+              case "PARCELAS": return "1"
+              case "REGIME": return "Regime"
+              case "SAIDA": return "Saida"
+              default: return "—"
+            }
+          }
+          if (typeof value === "boolean") return value ? "Sim" : ""
+          return String(value)
+        })
+        console.debug('[PromoImageGenerator] Using fallback for template', element.template, '->', fallback)
+        return fallback
+      } catch (err) {
+        console.warn('[PromoImageGenerator] fallback template processing failed', err)
+        return processed
+      }
+    }
+
     switch (elementId) {
       case "region":
         return selectedRegion
@@ -595,7 +741,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   // Check if element should be visible (from promo data + layout settings)
   const isElementVisible = (elementId: string): boolean => {
     if (!currentLayout?.elements[elementId]) return false
-    const layoutVisible = currentLayout.elements[elementId].visible
+    const element = currentLayout.elements[elementId]
+
+    // Elementos customizados usam apenas o flag visible do próprio elemento
+    if (elementId.startsWith("custom_") || element.isCustom || element.template) {
+      return element.visible
+    }
+
+    const layoutVisible = element.visible
     const promoVisible = getElementVisibilityFromPromo(elementId)
     return layoutVisible && promoVisible
   }
@@ -665,7 +818,11 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                     <button
                       key={layout.id}
                       type="button"
-                      onClick={() => setCurrentLayout(layout)}
+                      onClick={() => {
+                        const customEls = Object.entries(layout.elements).filter(([id, el]) => id.startsWith("custom_") || el.template || el.isCustom)
+                        console.log("[PromoImageGenerator] Selecting layout:", layout.id, layout.name, "Custom elements:", customEls.length, customEls.map(([id]) => id))
+                        setCurrentLayout(layout)
+                      }}
                       className={`relative rounded-xl border p-2 text-left transition-all ${
                         isActive
                           ? "border-primary-blue ring-2 ring-primary-blue/40 bg-primary-blue/5"
@@ -768,6 +925,13 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 }`}
               >
                 <Layers className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => fetchLayouts(currentLayout?.format || "story")}
+                title="Forçar sincronização de layouts"
+                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 border border-gray-300"
+              >
+                Sincronizar
               </button>
             </div>
 
@@ -1213,7 +1377,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                   height: currentLayout.format === "feed" ? "1350px" : "1920px",
                 }}
               >
-                {templateImage && (
+                  {templateImage && (
                   <img
                     src={templateImage}
                     alt="Promo Template"
@@ -1223,17 +1387,98 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                 )}
 
                 {/* Text Overlays */}
-                <div className="absolute inset-0">
+                <div className="absolute inset-0" style={{ zIndex: 100 }}>
                   {Object.entries(currentLayout.elements).map(([elementId, element]) => {
+                    // Detectar se é elemento customizado - checar ambos campos explicitamente
+                    const hasTemplate = element.template !== undefined && element.template !== null && element.template !== ""
+                    const hasCustomFlag = element.isCustom === true
+                      const isCustomElement = hasTemplate || hasCustomFlag || elementId.startsWith("custom_")
+                      console.debug('[PromoImageGenerator] Element FULL OBJ', elementId, JSON.stringify(element))
+                      console.debug('[PromoImageGenerator] Element', elementId, 'isCustom=', isCustomElement, 'visible=', element.visible, 'template=', element.template)
+
+                    // Para elementos customizados, renderizar diretamente
+                      if (isCustomElement) {
+                      if (!element.visible) {
+                        console.debug('[PromoImageGenerator] Element', elementId, 'hidden because visible=false')
+                        return null
+                      }
+                      const content = getElementContent(elementId, element)
+                      console.debug('[PromoImageGenerator] custom element', elementId, 'template=', element.template, 'content=', content)
+                      if (!content) {
+                        console.debug('[PromoImageGenerator] Element', elementId, 'render skipped because content empty')
+                        return null
+                      }
+
+                      // Additional bounds check for debugging (canvas 1080x1920 or 1080x1350)
+                      try {
+                        const canvasH = currentLayout.format === 'feed' ? 1350 : 1920
+                        const canvasW = 1080
+                        const left = Number(element.x || 0)
+                        const top = Number(element.y || 0)
+                        const fontSize = Number(element.fontSize || 12)
+                        if (left < 0 || left > canvasW || top < 0 || top > canvasH) {
+                          console.warn('[PromoImageGenerator] Element', elementId, 'is positioned off-canvas:', { left, top, canvasW, canvasH })
+                        }
+                        if (fontSize <= 0) console.warn('[PromoImageGenerator] Element', elementId, 'has fontSize <= 0')
+                      } catch (err) {
+                        console.warn('[PromoImageGenerator] bounds check failed', err)
+                      }
+
+                      return (
+                        <React.Fragment key={elementId}>
+                        <div
+                          key={elementId}
+                          className={`absolute cursor-pointer whitespace-pre-wrap ${isEditMode ? "hover:ring-2 hover:ring-blue-400" : ""} ${
+                            selectedElement === elementId ? "ring-2 ring-blue-500 bg-blue-100 bg-opacity-20" : ""
+                          }`}
+                          style={{
+                            left: `${element.x}px`,
+                            top: `${element.y}px`,
+                            fontSize: `${element.fontSize}px`,
+                            fontWeight: element.fontWeight,
+                            color: element.color,
+                            fontFamily: element.fontFamily,
+                            userSelect: isEditMode ? "none" : "auto",
+                            zIndex: 200,
+                          }}
+                          onClick={(e) => {
+                            if (!isEditMode) return
+                            e.stopPropagation()
+                            setSelectedElement(elementId)
+                          }}
+                            onMouseDown={(e) => handleMouseDown(elementId, e)}
+                          >
+                          {content}
+                          {isEditMode && selectedElement === elementId && (
+                            <div className="absolute -top-6 -left-1 bg-purple-500 text-white text-xs px-2 py-1 rounded">
+                              <Move className="h-3 w-3 inline mr-1" />
+                              {elementId}
+                            </div>
+                          )}
+                        </div>
+                        {isEditMode && (
+                          <div
+                            key={`${elementId}-marker`}
+                            style={{ position: 'absolute', left: `${element.x}px`, top: `${element.y}px`, zIndex: 1000 }}
+                          >
+                            <div style={{ width: 10, height: 10, borderRadius: 5, background: 'red', border: '2px solid white' }} />
+                          </div>
+                        )}
+                        </React.Fragment>
+                      )
+                      // DEV ONLY: red position marker is inserted beside the element when in edit mode (above)
+                    }
+
+                    // Para elementos padrão, verificar visibilidade
                     if (!isElementVisible(elementId)) return null
 
-                    const content = getElementContent(elementId)
+                    const content = getElementContent(elementId, element)
                     if (!content) return null
 
                     return (
                       <div
                         key={elementId}
-                        className={`absolute cursor-pointer ${isEditMode ? "hover:ring-2 hover:ring-blue-400" : ""} ${
+                        className={`absolute cursor-pointer whitespace-nowrap ${isEditMode ? "hover:ring-2 hover:ring-blue-400" : ""} ${
                           selectedElement === elementId ? "ring-2 ring-blue-500 bg-blue-100 bg-opacity-20" : ""
                         }`}
                         style={{
@@ -1244,6 +1489,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                           color: element.color,
                           fontFamily: element.fontFamily,
                           userSelect: isEditMode ? "none" : "auto",
+                          zIndex: 100,
                         }}
                         onClick={(e) => {
                           if (!isEditMode) return

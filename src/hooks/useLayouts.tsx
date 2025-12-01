@@ -10,6 +10,8 @@ export interface ElementConfig {
   color: string
   fontFamily: string
   visible: boolean
+  template?: string // Custom text template with variables like {DESTINO}, {NOITES}, etc.
+  isCustom?: boolean // Flag to identify custom elements
 }
 
 export interface ImageArea {
@@ -65,9 +67,30 @@ interface UseLayoutsReturn {
   addImageArea: (area: ImageArea) => void
   removeImageArea: (areaId: string) => void
   updateImageArea: (areaId: string, updates: Partial<ImageArea>) => void
+  addElement: (elementId: string, config: ElementConfig) => void
+  removeElement: (elementId: string) => void
+}
+
+import React, { createContext, useContext } from "react"
+
+// Create a context for the layouts state so components can share a single instance
+const LayoutsContext = createContext<UseLayoutsReturn | undefined>(undefined)
+
+export function LayoutsProvider({ children }: { children: React.ReactNode }) {
+  const value = useLayoutsInstance()
+  return <LayoutsContext.Provider value={value}>{children}</LayoutsContext.Provider>
 }
 
 export function useLayouts(): UseLayoutsReturn {
+  // If a LayoutsProvider is present, use that instance
+  const ctx = useContext(LayoutsContext)
+  if (ctx) return ctx
+  // Otherwise, create a local instance (backwards compatibility)
+  return useLayoutsInstance()
+}
+
+// Internal hook implementation used by both the provider and fallback
+function useLayoutsInstance(): UseLayoutsReturn {
   const [layouts, setLayouts] = useState<LayoutConfig[]>([])
   const [currentLayout, setCurrentLayout] = useState<LayoutConfig | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -85,17 +108,36 @@ export function useLayouts(): UseLayoutsReturn {
       const data = await response.json()
       setLayouts(data)
 
-      // Set current layout to default if not set
-      if (!currentLayout && data.length > 0) {
-        const defaultLayout = data.find((l: LayoutConfig) => l.isDefault) || data[0]
-        setCurrentLayout(defaultLayout)
+      // Update current layout with fresh data from server, or set default if not set
+      if (data.length > 0) {
+        // Use functional update to get the latest currentLayout value
+        setCurrentLayout((prevLayout) => {
+          // If we have a current layout, find its updated version in the new data
+          if (prevLayout) {
+            const updatedCurrentLayout = data.find((l: LayoutConfig) => l.id === prevLayout.id)
+            if (updatedCurrentLayout) {
+              console.log("[useLayouts] Updating current layout with server data:", updatedCurrentLayout.id, "Custom elements:", Object.keys(updatedCurrentLayout.elements).filter(k => updatedCurrentLayout.elements[k].isCustom || updatedCurrentLayout.elements[k].template))
+              return updatedCurrentLayout
+            } else {
+              // Current layout was deleted, set to default
+              const defaultLayout = data.find((l: LayoutConfig) => l.isDefault) || data[0]
+              console.log("[useLayouts] Current layout not found, setting default:", defaultLayout.id)
+              return defaultLayout
+            }
+          } else {
+            // No current layout, set default
+            const defaultLayout = data.find((l: LayoutConfig) => l.isDefault) || data[0]
+            console.log("[useLayouts] Setting current layout:", defaultLayout.id, defaultLayout.name, "Custom elements:", Object.keys(defaultLayout.elements).filter(k => defaultLayout.elements[k].isCustom || defaultLayout.elements[k].template))
+            return defaultLayout
+          }
+        })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido")
     } finally {
       setIsLoading(false)
     }
-  }, [currentLayout])
+  }, [])
 
   const fetchLayout = useCallback(async (id: string): Promise<LayoutConfig | null> => {
     setIsLoading(true)
@@ -130,6 +172,8 @@ export function useLayouts(): UseLayoutsReturn {
       }
       const newLayout = await response.json()
       setLayouts((prev) => [...prev, newLayout])
+      // Broadcast that layouts have been created so other components can refresh
+      try { window.dispatchEvent(new CustomEvent('layouts:update', { detail: { action: 'create', id: newLayout.id, format: newLayout.format } })) } catch (e) { /* ssr safe */ }
       return newLayout
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido")
@@ -157,6 +201,8 @@ export function useLayouts(): UseLayoutsReturn {
       if (currentLayout?.id === id) {
         setCurrentLayout(updatedLayout)
       }
+      // Broadcast that a layout has been updated
+      try { window.dispatchEvent(new CustomEvent('layouts:update', { detail: { action: 'update', id: updatedLayout.id, format: updatedLayout.format } })) } catch (e) { /* ssr safe */ }
       return updatedLayout
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido")
@@ -181,6 +227,7 @@ export function useLayouts(): UseLayoutsReturn {
       if (currentLayout?.id === id) {
         setCurrentLayout(null)
       }
+      try { window.dispatchEvent(new CustomEvent('layouts:update', { detail: { action: 'delete', id } })) } catch (e) { /* ssr safe */ }
       return true
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido")
@@ -195,6 +242,7 @@ export function useLayouts(): UseLayoutsReturn {
     format: "story" | "feed",
     name?: string
   ): Promise<LayoutConfig | null> => {
+    console.log("[useLayouts] uploadLayout called:", file.name, format, name)
     setIsLoading(true)
     setError(null)
     try {
@@ -205,19 +253,27 @@ export function useLayouts(): UseLayoutsReturn {
         formData.append("name", name)
       }
 
+      console.log("[useLayouts] Sending request to /api/layouts/upload")
       const response = await fetch("/api/layouts/upload", {
         method: "POST",
         body: formData,
       })
+      console.log("[useLayouts] Response status:", response.status)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Erro ao fazer upload do layout")
+        const errorData = await response.json()
+        console.error("[useLayouts] Upload error response:", errorData)
+        throw new Error(errorData.error || "Erro ao fazer upload do layout")
       }
+
       const newLayout = await response.json()
+      console.log("[useLayouts] New layout created:", newLayout.id, newLayout.name)
       setLayouts((prev) => [...prev, newLayout])
       setCurrentLayout(newLayout)
+      try { window.dispatchEvent(new CustomEvent('layouts:update', { detail: { action: 'create', id: newLayout.id, format: newLayout.format } })) } catch (e) { /* ssr safe */ }
       return newLayout
     } catch (err) {
+      console.error("[useLayouts] Upload exception:", err)
       setError(err instanceof Error ? err.message : "Erro desconhecido")
       return null
     } finally {
@@ -236,6 +292,7 @@ export function useLayouts(): UseLayoutsReturn {
         }))
       )
     }
+    try { window.dispatchEvent(new CustomEvent('layouts:update', { detail: { action: 'set-default', id, format: result?.format } })) } catch (e) { /* ssr safe */ }
     return !!result
   }, [updateLayout])
 
@@ -333,6 +390,32 @@ export function useLayouts(): UseLayoutsReturn {
     })
   }, [currentLayout])
 
+  const addElement = useCallback((elementId: string, config: ElementConfig) => {
+    if (!currentLayout) return
+    setCurrentLayout((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        elements: {
+          ...prev.elements,
+          [elementId]: config,
+        },
+      }
+    })
+  }, [currentLayout])
+
+  const removeElement = useCallback((elementId: string) => {
+    if (!currentLayout) return
+    setCurrentLayout((prev) => {
+      if (!prev) return prev
+      const { [elementId]: _, ...remainingElements } = prev.elements
+      return {
+        ...prev,
+        elements: remainingElements,
+      }
+    })
+  }, [currentLayout])
+
   return {
     layouts,
     currentLayout,
@@ -353,5 +436,7 @@ export function useLayouts(): UseLayoutsReturn {
     addImageArea,
     removeImageArea,
     updateImageArea,
+    addElement,
+    removeElement,
   }
 }

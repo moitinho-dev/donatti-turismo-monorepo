@@ -24,7 +24,7 @@ export function HeroSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <h2 className="font-bsf text-2xl md:text-3xl text-primary-blue mb-2">{content.herotexto1}</h2>
-            <h1 className="font-blo text-5xl md:text-7xl text-primary-blue mb-6">{content.herotexto2}</h1>
+            <h1 className="font-blo text-5xl md:text-7xl text-primary-blue mb-6 whitespace-pre-line">{content.herotexto2}</h1>
             <p className="font-mon text-lg md:text-xl font-bold text-gray-800 mb-3">{content.herotexto3}</p>
             <p className="font-mon text-base md:text-lg text-gray-700 mb-8">{content.herotexto4}</p>
             <CallOutButton text="Fale com uma agente" />
