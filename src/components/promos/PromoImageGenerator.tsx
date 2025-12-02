@@ -71,8 +71,6 @@ const elementLabels: Record<string, string> = {
 }
 
 export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
-import React from 'react'
-
   const {
     layouts,
     currentLayout,
