@@ -73,6 +73,7 @@ interface LayoutEditorProps {
   }
   backgroundImage?: string | null
   onSave?: () => void
+  onExport?: () => void
 }
 
 interface SnapGuide {
@@ -106,7 +107,7 @@ const elementLabels: Record<string, string> = {
   contact: "Contato",
 }
 
-export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorProps) {
+export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: LayoutEditorProps) {
   const {
     layouts,
     currentLayout,
@@ -473,6 +474,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      onExport?.()
     } catch (error) {
       console.error("Export error:", error)
       // Try alternative export method using canvas
@@ -503,6 +505,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave }: LayoutEditorPro
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
+          onExport?.()
         }
       } catch (fallbackError) {
         console.error("Fallback export also failed:", fallbackError)

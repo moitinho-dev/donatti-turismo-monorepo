@@ -37,6 +37,7 @@ import {
   ImagePlus,
   Users,
   Layers,
+  Save,
 } from "lucide-react"
 import Link from "next/link"
 import { PromoForm } from "./PromoForm"
@@ -58,7 +59,7 @@ type ViewMode = "grid" | "list"
 type ActivePanel = "list" | "form" | "editor" | "stats"
 
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
-  const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats } = usePromo()
+  const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [activePanel, setActivePanel] = useState<ActivePanel>("list")
@@ -79,7 +80,187 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [loadingImages, setLoadingImages] = useState(false)
   const [promoImages, setPromoImages] = useState<Record<string, string>>({})
   const [loadingPromoImages, setLoadingPromoImages] = useState<Record<string, boolean>>({})
-  const [downloadingPromo, setDownloadingPromo] = useState<string | null>(null)
+  const [sitePublished, setSitePublished] = useState(false)
+  const [siteSection, setSiteSection] = useState("")
+  const [siteSlug, setSiteSlug] = useState("")
+  const [siteDescription, setSiteDescription] = useState("")
+  const [savingSiteCard, setSavingSiteCard] = useState(false)
+  const [siteCardMessage, setSiteCardMessage] = useState<string | null>(null)
+  const [siteCardError, setSiteCardError] = useState<string | null>(null)
+
+  const [gbpConnected, setGbpConnected] = useState(false)
+  const [gbpAccountName, setGbpAccountName] = useState("")
+  const [gbpLocationName, setGbpLocationName] = useState("")
+  const [gbpAccounts, setGbpAccounts] = useState<Array<{ name: string; accountName?: string }>>([])
+  const [gbpLocations, setGbpLocations] = useState<Array<{ name: string; title?: string }>>([])
+  const [gbpMessage, setGbpMessage] = useState<string | null>(null)
+  const [gbpError, setGbpError] = useState<string | null>(null)
+  const [gbpBusy, setGbpBusy] = useState(false)
+
+  const siteSectionSuggestions = ["nacionais", "internacionais", "cruzeiros", "lua-de-mel", "religioso", "nordeste"]
+
+  const slugify = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "")
+
+  const saveSiteCard = useCallback(async () => {
+    if (!selectedPromo?.id) return
+
+    const imageToSave = backgroundImage || selectedPromo.SITE_IMAGE || ""
+    if (!imageToSave) {
+      setSiteCardError("Selecione uma imagem de fundo para salvar no card.")
+      return
+    }
+
+    const nextSection = (siteSection || "").trim()
+    if (sitePublished && !nextSection) {
+      setSiteCardError("Defina a seção antes de publicar (ex.: nacionais, internacionais, cruzeiros).")
+      return
+    }
+
+    const nextSlug = (siteSlug || slugify(selectedPromo.DESTINO || "")).trim()
+    if (sitePublished && !nextSlug) {
+      setSiteCardError("Defina o slug antes de publicar.")
+      return
+    }
+    const payload = {
+      ...selectedPromo,
+      SITE_PUBLISHED: sitePublished,
+      SITE_SECTION: nextSection,
+      SITE_SLUG: nextSlug,
+      SITE_IMAGE: imageToSave,
+      SITE_DESCRIPTION: (siteDescription || selectedPromo.HOTEL || "").trim(),
+    }
+
+    setSavingSiteCard(true)
+    setSiteCardError(null)
+    setSiteCardMessage(null)
+    try {
+      const updated = await savePromo(payload)
+      setSelectedPromo(updated)
+      setPromoImages((prev) => ({ ...prev, [updated.id]: updated.SITE_IMAGE || imageToSave }))
+      setSiteCardMessage(sitePublished ? "Publicado no site com a imagem selecionada." : "Imagem do card salva (não publicado).")
+      await fetchPromos()
+    } catch (err) {
+      setSiteCardError(err instanceof Error ? err.message : "Erro ao salvar card do site")
+    } finally {
+      setSavingSiteCard(false)
+    }
+  }, [backgroundImage, fetchPromos, savePromo, selectedPromo, siteDescription, sitePublished, siteSection, siteSlug])
+
+  const refreshGbp = useCallback(async () => {
+    if (user.role !== "admin") return
+    try {
+      const res = await fetch("/api/google-business/settings")
+      if (!res.ok) return
+      const data = await res.json()
+      setGbpConnected(Boolean(data?.connected))
+      setGbpAccountName(data?.accountName || "")
+      setGbpLocationName(data?.locationName || "")
+    } catch {
+      // ignore
+    }
+  }, [user.role])
+
+  useEffect(() => {
+    void refreshGbp()
+  }, [refreshGbp])
+
+  const loadGbpAccounts = useCallback(async () => {
+    setGbpBusy(true)
+    setGbpError(null)
+    try {
+      const res = await fetch("/api/google-business/accounts")
+      if (!res.ok) throw new Error("Não foi possível carregar contas do Google")
+      const data = await res.json()
+      setGbpAccounts(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setGbpError(err instanceof Error ? err.message : "Erro ao carregar contas do Google")
+    } finally {
+      setGbpBusy(false)
+    }
+  }, [])
+
+  const loadGbpLocations = useCallback(async (accountName: string) => {
+    if (!accountName) return
+    setGbpBusy(true)
+    setGbpError(null)
+    try {
+      const res = await fetch(`/api/google-business/locations?accountName=${encodeURIComponent(accountName)}`)
+      if (!res.ok) throw new Error("Não foi possível carregar locais do Google")
+      const data = await res.json()
+      setGbpLocations(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setGbpError(err instanceof Error ? err.message : "Erro ao carregar locais do Google")
+    } finally {
+      setGbpBusy(false)
+    }
+  }, [])
+
+  const saveGbpTarget = useCallback(async () => {
+    setGbpBusy(true)
+    setGbpError(null)
+    setGbpMessage(null)
+    try {
+      const res = await fetch("/api/google-business/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountName: gbpAccountName, locationName: gbpLocationName }),
+      })
+      if (!res.ok) throw new Error("Não foi possível salvar conta/local do Google")
+      setGbpMessage("Conta e local salvos.")
+      await refreshGbp()
+    } catch (err) {
+      setGbpError(err instanceof Error ? err.message : "Erro ao salvar configuração do Google")
+    } finally {
+      setGbpBusy(false)
+    }
+  }, [gbpAccountName, gbpLocationName, refreshGbp])
+
+  const syncGbpPosts = useCallback(async () => {
+    setGbpBusy(true)
+    setGbpError(null)
+    setGbpMessage(null)
+    try {
+      const res = await fetch("/api/google-business/sync", { method: "POST" })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || "Erro ao sincronizar posts no Google")
+      const okCount = Array.isArray(data?.results) ? data.results.filter((r: any) => r.ok && !r.skipped).length : 0
+      const skippedCount = Array.isArray(data?.results) ? data.results.filter((r: any) => r.ok && r.skipped).length : 0
+      setGbpMessage(`Sincronizado: ${okCount} post(s). Ignorados: ${skippedCount}.`)
+      await fetchPromos()
+    } catch (err) {
+      setGbpError(err instanceof Error ? err.message : "Erro ao sincronizar posts no Google")
+    } finally {
+      setGbpBusy(false)
+    }
+  }, [fetchPromos])
+
+  const postSelectedToGbp = useCallback(async () => {
+    if (!selectedPromo?.id) return
+    setGbpBusy(true)
+    setGbpError(null)
+    setGbpMessage(null)
+    try {
+      const res = await fetch("/api/google-business/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promoId: selectedPromo.id }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || "Erro ao postar no Google")
+      setGbpMessage("Post enviado ao Google Business.")
+      await fetchPromos()
+    } catch (err) {
+      setGbpError(err instanceof Error ? err.message : "Erro ao postar no Google")
+    } finally {
+      setGbpBusy(false)
+    }
+  }, [fetchPromos, selectedPromo?.id])
 
   useEffect(() => {
     fetchPromos()
@@ -101,6 +282,10 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
       for (const promo of promos) {
         if (!promoImages[promo.id]) {
+          if (promo.SITE_IMAGE) {
+            newImages[promo.id] = promo.SITE_IMAGE
+            continue
+          }
           try {
             const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&limit=1`)
             const data = await response.json()
@@ -130,6 +315,19 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     return matchesSearch
   })
 
+  useEffect(() => {
+    if (!selectedPromo) return
+    setSitePublished(!!selectedPromo.SITE_PUBLISHED)
+    setSiteSection(selectedPromo.SITE_SECTION || "nacionais")
+    setSiteSlug(selectedPromo.SITE_SLUG || slugify(selectedPromo.DESTINO || ""))
+    setSiteDescription(selectedPromo.SITE_DESCRIPTION || selectedPromo.HOTEL || "")
+    setSiteCardMessage(null)
+    setSiteCardError(null)
+    if (selectedPromo.SITE_IMAGE && !backgroundImage) {
+      setBackgroundImage(selectedPromo.SITE_IMAGE)
+    }
+  }, [selectedPromo?.id, backgroundImage])
+
   // Handle edit
   const handleEdit = (promo: any) => {
     setSelectedPromo(promo)
@@ -146,14 +344,23 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   // Handle generate image
   const handleGenerateImage = async (promo: any) => {
     setSelectedPromo(promo)
+    setSitePublished(!!promo.SITE_PUBLISHED)
+    setSiteSection(promo.SITE_SECTION || "nacionais")
+    setSiteSlug(promo.SITE_SLUG || slugify(promo.DESTINO || ""))
+    setSiteDescription(promo.SITE_DESCRIPTION || promo.HOTEL || "")
+    setSiteCardMessage(null)
+    setSiteCardError(null)
     setLoadingImages(true)
+    setBackgroundImage(promo.SITE_IMAGE || null)
 
     try {
       const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&limit=20`)
       const data = await response.json()
       if (data.results?.length > 0) {
         setGalleryImages(data.results)
-        setBackgroundImage(data.results[0].urls.regular)
+        if (!promo.SITE_IMAGE) {
+          setBackgroundImage(data.results[0].urls.regular)
+        }
       }
     } catch (err) {
       console.error("Error fetching images:", err)
@@ -684,26 +891,201 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
               </div>
 
               {/* Current Selection Info */}
-              {backgroundImage && (
-                <div className="p-3 border-t border-gray-700 bg-gray-750">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={backgroundImage}
-                      alt=""
-                      className="w-12 h-12 rounded object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400">Imagem selecionada</p>
+              <div className="border-t border-gray-700 bg-gray-750 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={backgroundImage || "/images/hero-beach.jpg"}
+                    alt=""
+                    className="w-12 h-12 rounded object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-400">{backgroundImage ? "Imagem selecionada" : "Selecione uma imagem"}</p>
+                    {backgroundImage && (
                       <button
                         onClick={() => setBackgroundImage(null)}
                         className="text-xs text-red-400 hover:text-red-300"
                       >
                         Remover fundo
                       </button>
-                    </div>
+                    )}
                   </div>
                 </div>
-              )}
+
+                <div className="rounded-lg border border-gray-700 bg-gray-800 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-white">Card do site</p>
+                      <p className="text-[11px] text-gray-400">A foto selecionada aqui é a do card</p>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-gray-200">
+                      <input
+                        type="checkbox"
+                        checked={sitePublished}
+                        onChange={(e) => setSitePublished(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500"
+                      />
+                      Publicar
+                    </label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] text-gray-400">Seção</label>
+                    <input
+                      type="text"
+                      list="site-section-suggestions"
+                      value={siteSection}
+                      onChange={(e) => setSiteSection(e.target.value)}
+                      placeholder="nacionais, internacionais, cruzeiros..."
+                      className="w-full rounded-md bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
+                    />
+                    <datalist id="site-section-suggestions">
+                      {siteSectionSuggestions.map((opt) => (
+                        <option key={opt} value={opt} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] text-gray-400">Slug</label>
+                      <button
+                        type="button"
+                        onClick={() => setSiteSlug(slugify(selectedPromo?.DESTINO || ""))}
+                        className="text-[11px] text-blue-300 hover:text-blue-200"
+                      >
+                        Gerar
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={siteSlug}
+                      onChange={(e) => setSiteSlug(e.target.value)}
+                      placeholder="ex: cancun-all-inclusive"
+                      className="w-full rounded-md bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] text-gray-400">Descrição curta</label>
+                    <input
+                      type="text"
+                      value={siteDescription}
+                      onChange={(e) => setSiteDescription(e.target.value)}
+                      placeholder="Resumo para o card"
+                      className="w-full rounded-md bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  {siteCardError && <p className="text-[11px] text-red-400">{siteCardError}</p>}
+                  {siteCardMessage && <p className="text-[11px] text-green-400">{siteCardMessage}</p>}
+
+                  <button
+                    type="button"
+                    onClick={() => void saveSiteCard()}
+                    disabled={savingSiteCard}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 disabled:opacity-50"
+                  >
+                    {savingSiteCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Salvar card
+                  </button>
+                </div>
+
+                {user.role === "admin" && (
+                  <div className="rounded-lg border border-gray-700 bg-gray-800 p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-white">Google Business</p>
+                        <p className="text-[11px] text-gray-400">Posta automaticamente quando publicar no site</p>
+                      </div>
+                      <a
+                        href="/api/google-business/connect"
+                        className="text-[11px] rounded-md bg-gray-900 border border-gray-700 px-3 py-1.5 text-gray-200 hover:bg-gray-850"
+                      >
+                        {gbpConnected ? "Reconectar" : "Conectar"}
+                      </a>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => void loadGbpAccounts()}
+                      disabled={!gbpConnected || gbpBusy}
+                      className="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 hover:bg-gray-850 disabled:opacity-50"
+                    >
+                      {gbpBusy ? "Carregando..." : "Carregar contas"}
+                    </button>
+
+                    <div className="space-y-2">
+                      <label className="text-[11px] text-gray-400">Conta</label>
+                      <select
+                        value={gbpAccountName}
+                        onChange={(e) => {
+                          setGbpAccountName(e.target.value)
+                          setGbpLocationName("")
+                          setGbpLocations([])
+                          void loadGbpLocations(e.target.value)
+                        }}
+                        disabled={!gbpConnected}
+                        className="w-full rounded-md bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 disabled:opacity-50"
+                      >
+                        <option value="">{gbpConnected ? "Selecione" : "Conecte o Google"}</option>
+                        {gbpAccounts.map((acc) => (
+                          <option key={acc.name} value={acc.name}>
+                            {acc.accountName || acc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[11px] text-gray-400">Local (unidade)</label>
+                      <select
+                        value={gbpLocationName}
+                        onChange={(e) => setGbpLocationName(e.target.value)}
+                        disabled={!gbpConnected || !gbpAccountName}
+                        className="w-full rounded-md bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 disabled:opacity-50"
+                      >
+                        <option value="">Selecione</option>
+                        {gbpLocations.map((loc) => (
+                          <option key={loc.name} value={loc.name}>
+                            {loc.title || loc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void saveGbpTarget()}
+                        disabled={!gbpConnected || !gbpAccountName || !gbpLocationName || gbpBusy}
+                        className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 disabled:opacity-50"
+                      >
+                        Salvar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void syncGbpPosts()}
+                        disabled={!gbpConnected || !gbpAccountName || !gbpLocationName || gbpBusy}
+                        className="rounded-lg bg-gray-900 border border-gray-700 text-gray-100 text-xs font-semibold py-2 hover:bg-gray-850 disabled:opacity-50"
+                      >
+                        Sincronizar
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => void postSelectedToGbp()}
+                      disabled={!gbpConnected || !gbpAccountName || !gbpLocationName || gbpBusy || !selectedPromo?.id}
+                      className="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 hover:bg-gray-850 disabled:opacity-50"
+                    >
+                      Postar promo selecionada
+                    </button>
+
+                    {gbpError && <p className="text-[11px] text-red-400">{gbpError}</p>}
+                    {gbpMessage && <p className="text-[11px] text-green-400">{gbpMessage}</p>}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Main Editor Area */}
@@ -731,7 +1113,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
                 <LayoutEditor
                   promo={selectedPromo}
                   backgroundImage={backgroundImage}
-                  onSave={() => {}}
+                  onSave={() => void saveSiteCard()}
+                  onExport={() => void saveSiteCard()}
                 />
               </div>
             </div>

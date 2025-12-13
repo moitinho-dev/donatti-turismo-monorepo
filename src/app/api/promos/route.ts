@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { z } from "zod"
 import prisma from "@/lib/db"
+import { publishPromoPost } from "@/lib/googleBusiness"
 
 // Schema for promo validation
 const promoSchema = z.object({
@@ -21,6 +22,13 @@ const promoSchema = z.object({
   SP: z.boolean().optional(),
   CG: z.boolean().optional(),
   AEREO: z.boolean().optional(),
+  SITE_PUBLISHED: z.boolean().optional(),
+  SITE_SECTION: z.string().optional(),
+  SITE_SLUG: z.string().optional(),
+  SITE_IMAGE: z.string().optional(),
+  SITE_DESCRIPTION: z.string().optional(),
+  SITE_INCLUSIONS: z.array(z.string()).optional(),
+  SITE_DEPARTURES: z.array(z.string()).optional(),
 })
 
 // Convert database promo to API format
@@ -40,6 +48,13 @@ function toApiFormat(promo: {
   sp: boolean
   cg: boolean
   aereo: boolean
+  sitePublished: boolean
+  siteSection: string | null
+  siteSlug: string | null
+  siteImage: string | null
+  siteDescription: string | null
+  siteInclusions: string[]
+  siteDepartures: string[]
   createdAt: Date
   updatedAt: Date
   createdById: string
@@ -61,6 +76,13 @@ function toApiFormat(promo: {
     SP: promo.sp,
     CG: promo.cg,
     AEREO: promo.aereo,
+    SITE_PUBLISHED: promo.sitePublished,
+    SITE_SECTION: promo.siteSection,
+    SITE_SLUG: promo.siteSlug,
+    SITE_IMAGE: promo.siteImage,
+    SITE_DESCRIPTION: promo.siteDescription,
+    SITE_INCLUSIONS: promo.siteInclusions,
+    SITE_DEPARTURES: promo.siteDepartures,
     createdAt: promo.createdAt.toISOString(),
     updatedAt: promo.updatedAt.toISOString(),
     createdBy: promo.createdById,
@@ -187,9 +209,23 @@ export async function POST(req: NextRequest) {
           sp: data.SP || false,
           cg: data.CG || false,
           aereo: data.AEREO || false,
+          sitePublished: data.SITE_PUBLISHED || false,
+          siteSection: data.SITE_SECTION || null,
+          siteSlug: data.SITE_SLUG || null,
+          siteImage: data.SITE_IMAGE || null,
+          siteDescription: data.SITE_DESCRIPTION || null,
+          siteInclusions: data.SITE_INCLUSIONS || [],
+          siteDepartures: data.SITE_DEPARTURES || [],
         },
         include: { createdBy: { select: { name: true } } },
       })
+
+      // Auto-post to Google Business when publishing to the site (best-effort)
+      if (updatedPromo.sitePublished) {
+        publishPromoPost(updatedPromo.id).catch((err) => {
+          console.error("Google Business post error:", err)
+        })
+      }
 
       return NextResponse.json(toApiFormat(updatedPromo))
     } else {
@@ -210,10 +246,23 @@ export async function POST(req: NextRequest) {
           sp: data.SP || false,
           cg: data.CG || false,
           aereo: data.AEREO || false,
+          sitePublished: data.SITE_PUBLISHED || false,
+          siteSection: data.SITE_SECTION || null,
+          siteSlug: data.SITE_SLUG || null,
+          siteImage: data.SITE_IMAGE || null,
+          siteDescription: data.SITE_DESCRIPTION || null,
+          siteInclusions: data.SITE_INCLUSIONS || [],
+          siteDepartures: data.SITE_DEPARTURES || [],
           createdById: session.user.id,
         },
         include: { createdBy: { select: { name: true } } },
       })
+
+      if (newPromo.sitePublished) {
+        publishPromoPost(newPromo.id).catch((err) => {
+          console.error("Google Business post error:", err)
+        })
+      }
 
       return NextResponse.json(toApiFormat(newPromo), { status: 201 })
     }

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { initializeRedis } from "@/lib/redis"
 
+export const dynamic = "force-dynamic"
+
 // Define Edge runtime
 // export const runtime = "edge"
 
@@ -28,4 +30,3 @@ export async function GET() {
     return NextResponse.json({ error: "Error initializing Redis" }, { status: 500 })
   }
 }
-

@@ -4,6 +4,8 @@ import { authOptions } from "../../auth/[...nextauth]/options"
 import { redis, REDIS_KEYS } from "@/lib/redis"
 import type { User, UserStats } from "@/types/user"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(req: NextRequest) {
   try {
     // Check authentication
@@ -57,4 +59,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar estatísticas de usuários" }, { status: 500 })
   }
 }
-

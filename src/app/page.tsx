@@ -5,10 +5,11 @@
  * Light Theme Landing Page com UX/Conversão otimizados
  */
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { trackEvent } from '@/lib/analytics'
 import {
   Search,
   MapPin,
@@ -16,54 +17,44 @@ import {
   ArrowRight,
   Shield,
   Award,
-  Sparkles,
   Users,
   Plane,
   Globe,
   Heart,
   TrendingUp,
-  Zap,
-  ChevronRight,
   CreditCard,
   CheckCircle2,
-  Calendar,
   Mail,
   Building2,
   Phone,
   Send,
+  ShieldCheck,
 } from 'lucide-react'
 import RealTimePromos from '@/components/home/RealTimePromos'
 
 export default function DonattiTurismoMinimalist() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSearchQuery, setActiveSearchQuery] = useState('')
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
   const [isVisible, setIsVisible] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [searchedDestination, setSearchedDestination] = useState('')
+  const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   // Form states
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    destination: '',
+    period: '',
   })
 
   // Handler para quando não encontrar promoção para o destino
   const handleNoResults = (query: string) => {
     setSearchedDestination(query)
+    trackEvent('whatsapp_click', { location: 'no_results', query })
     setShowWhatsAppModal(true)
   }
-
-  // Cursor ring effect
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setCursorPosition({ x: e.clientX, y: e.clientY })
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
 
   // Fade in effect
   useEffect(() => {
@@ -78,16 +69,6 @@ export default function DonattiTurismoMinimalist() {
     { value: '15 Anos', label: 'Experiência', icon: Award },
   ]
 
-  // Payment methods
-  const paymentMethods = [
-    { name: 'Pix' },
-    { name: 'Visa' },
-    { name: 'Mastercard' },
-    { name: 'Amex' },
-    { name: 'Elo' },
-    { name: 'PayPal' },
-  ]
-
   // Quick search chips
   const quickChips = [
     { label: 'All Inclusive', icon: Star },
@@ -98,34 +79,34 @@ export default function DonattiTurismoMinimalist() {
   // Benefits
   const benefits = [
     {
-      icon: Shield,
-      title: 'Atendimento 24/7 no WhatsApp',
-      description: 'Suporte humano a qualquer hora, resposta em minutos',
+      icon: Phone,
+      title: 'Atendimento 24/7 via WhatsApp',
+      description: 'Resposta humana em minutos, inclusive finais de semana e feriados',
     },
     {
       icon: Award,
       title: 'Preço garantido',
-      description: 'Se baixar, devolvemos a diferença',
+      description: 'Se baixar, devolvemos a diferença — combinado e documentado',
     },
     {
-      icon: CheckCircle2,
-      title: 'Cancelamento grátis',
-      description: 'Em ofertas selecionadas, sem burocracia',
+      icon: ShieldCheck,
+      title: 'Cancelamento grátis em ofertas selecionadas',
+      description: 'Opções flexíveis para você reagendar ou cancelar quando indicado',
     },
     {
       icon: MapPin,
       title: 'Roteiros personalizados',
-      description: 'Criados especialmente para você',
+      description: 'Criados sob medida para seu estilo de viagem e orçamento',
     },
     {
       icon: Heart,
       title: 'Suporte completo',
-      description: 'Antes, durante e após sua viagem',
+      description: 'Antes, durante e depois da viagem, com acompanhamento proativo',
     },
     {
       icon: TrendingUp,
-      title: '15 anos de expertise',
-      description: 'Confiança de 5.000+ viajantes',
+      title: '15 anos de experiência e 5.000+ clientes',
+      description: 'Avaliação média 5/5 no Google e histórico sólido de emissões',
     },
   ]
 
@@ -136,29 +117,48 @@ export default function DonattiTurismoMinimalist() {
       location: 'São Paulo',
       text: 'A Donatti tornou nossa lua de mel nas Maldivas um sonho real. Cada detalhe foi perfeito!',
       rating: 5,
-      image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=800&q=80',
     },
     {
       name: 'Juliana F.',
       location: 'Rio de Janeiro',
       text: 'Minha viagem solo para a Itália foi incrível. Me senti segura e aproveitei cada segundo.',
       rating: 5,
-      image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?auto=format&fit=crop&w=800&q=80',
     },
     {
       name: 'Família Martins',
       location: 'Belo Horizonte',
       text: 'As crianças amaram a Disney! A organização foi impecável.',
       rating: 5,
-      image: 'https://images.unsplash.com/photo-1597466599360-3b9775841aec?w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1597466599360-3b9775841aec?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Letícia N.',
+      location: 'Curitiba',
+      text: 'Fechamos cruzeiro no Caribe e o suporte pelo WhatsApp foi 24/7. Recomendo muito!',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Rafael & Mariana',
+      location: 'Campinas',
+      text: 'Gramado com roteiro personalizado e preço garantido. Voltarei a comprar com a Donatti.',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1455763916899-e8b50eca9967?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Bruna L.',
+      location: 'Florianópolis',
+      text: 'Punta Cana all inclusive com cancelamento grátis. Tudo bem explicado e transparente.',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
     },
   ]
+  const googleReviewsUrl = 'https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8'
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-gray-900">
-      {/* Cursor ring effect */}
-      
-
       {/* Gradient blur from top */}
       <div className="gradient-blur-top" />
 
@@ -295,6 +295,12 @@ export default function DonattiTurismoMinimalist() {
                       <button
                         key={index}
                         type="button"
+                        onClick={() => {
+                          setSearchQuery(chip.label)
+                          setActiveSearchQuery(chip.label)
+                          trackEvent('catalog_filter', { chip: chip.label })
+                          document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
+                        }}
                         className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
                         <chip.icon className="h-3 w-3" />
@@ -310,6 +316,7 @@ export default function DonattiTurismoMinimalist() {
                 <Button
                   size="lg"
                   onClick={() => {
+                    trackEvent('cta_click', { label: 'ver_ofertas' })
                     document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
                   }}
                   className="group inline-flex items-center justify-center h-14 rounded-full bg-primary p-4  text-base font-bold text-white shadow-xl hover:shadow-primary/50 hover:bg-primary/90 transition-all hover:scale-105"
@@ -320,7 +327,10 @@ export default function DonattiTurismoMinimalist() {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => setShowWhatsAppModal(true)}
+                  onClick={() => {
+                    trackEvent('whatsapp_click', { location: 'hero' })
+                    setShowWhatsAppModal(true)
+                  }}
                   className="inline-flex items-center justify-center h-14 rounded-full border-2 border-gray-300 bg-transparent p-4 text-base font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 >
                   <Phone className="mr-2 h-4 w-4 flex-shrink-0" />
@@ -355,6 +365,35 @@ export default function DonattiTurismoMinimalist() {
           </div>
 
          
+        </section>
+
+        {/* Benefits right after hero */}
+        <section id="destinos" aria-labelledby="benefits-title" className="relative py-16 bg-gray-50 border-y border-gray-200">
+          <div className="container mx-auto px-4">
+            <div className="mb-10 text-center">
+              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                Benefícios Donatti
+              </Badge>
+              <h2 id="benefits-title" className="mb-3 text-3xl font-bold md:text-4xl text-gray-900">
+                Confiança logo no primeiro scroll
+              </h2>
+              <p className="text-lg text-gray-600">
+                Atendimento 24/7 no WhatsApp, preço garantido e suporte completo antes, durante e depois da viagem.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {benefits.map((item, index) => (
+                <div key={index} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <item.icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">{item.title}</h3>
+                  <p className="text-gray-600 leading-relaxed text-sm">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* Stats Section */}
@@ -398,6 +437,17 @@ export default function DonattiTurismoMinimalist() {
                   ? `Resultados para "${activeSearchQuery}"`
                   : 'Confira nossos pacotes com os melhores preços e condições especiais de pagamento.'}
               </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                  <a href="/pacotes">Ver todos os pacotes</a>
+                </Button>
+                <Button asChild variant="ghost" className="text-gray-700 hover:text-primary" onClick={() => trackEvent('cta_click', { label: 'ver_destinos' })}>
+                  <a href="/destinos" className="flex items-center gap-2">
+                    Ver todos os destinos
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
               {activeSearchQuery && (
                 <Button
                   onClick={() => {
@@ -417,34 +467,6 @@ export default function DonattiTurismoMinimalist() {
           </div>
         </section>
 
-        {/* Benefits */}
-        <section id="destinos" aria-labelledby="benefits-title" className="relative py-20 border-y border-gray-200">
-          <div className="container mx-auto px-4">
-            <div className="mb-16 text-center">
-              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-                Por que Donatti?
-              </Badge>
-              <h2 id="benefits-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
-                Mais que uma agência,
-                <br />
-                <span className="gradient-text">seu parceiro de viagens</span>
-              </h2>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {benefits.map((item, index) => (
-                <div key={index} className="glass card-glow rounded-2xl p-8 transition-all hover:scale-105">
-                  <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-                    <item.icon className="h-7 w-7 text-primary" aria-hidden="true" />
-                  </div>
-                  <h3 className="mb-3 text-xl font-bold text-gray-900">{item.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Testimonials */}
         <section id="avaliacoes" aria-labelledby="testimonials-title" className="relative py-20 bg-gray-50">
           <div className="container mx-auto px-4">
@@ -460,11 +482,13 @@ export default function DonattiTurismoMinimalist() {
               </p>
               <div className="mt-6">
                 <a
-                  href="#avaliacoes"
+                  href={googleReviewsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                 >
                   <Star className="h-4 w-4 fill-primary" />
-                  Ler mais 200+ avaliações no Google Reviews
+                  Ler mais no Google Reviews
                   <ArrowRight className="h-4 w-4" />
                 </a>
               </div>
@@ -486,10 +510,13 @@ export default function DonattiTurismoMinimalist() {
                     <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent" />
                   </div>
                   <div className="p-8">
-                    <div className="mb-4 flex gap-1" aria-label={`Avaliação ${testimonial.rating} de 5 estrelas`}>
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 fill-primary text-primary" aria-hidden="true" />
-                      ))}
+                    <div className="mb-4 flex items-center gap-2" aria-label={`Avaliação ${testimonial.rating} de 5 estrelas`}>
+                      <div className="flex gap-1">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star key={i} className="h-5 w-5 fill-primary text-primary" aria-hidden="true" />
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">{testimonial.rating}/5</span>
                     </div>
                     <p className="mb-6 italic leading-relaxed text-gray-600">"{testimonial.text}"</p>
                     <div className="border-t border-gray-200 pt-4">
@@ -504,7 +531,7 @@ export default function DonattiTurismoMinimalist() {
         </section>
 
         {/* Contact Form */}
-        <section aria-labelledby="contact-title" className="relative py-20 border-y border-gray-200">
+        <section id="contato" aria-labelledby="contact-title" className="relative py-20 border-y border-gray-200">
           <div className="container mx-auto px-4">
             <div className="glass card-glow mx-auto max-w-3xl rounded-3xl p-8 md:p-12">
               <div className="mb-8 text-center">
@@ -522,7 +549,7 @@ export default function DonattiTurismoMinimalist() {
               <form
                 onSubmit={async (e) => {
                   e.preventDefault()
-                  // Salvar lead no banco
+                  setFormStatus('idle')
                   try {
                     await fetch('/api/leads', {
                       method: 'POST',
@@ -533,14 +560,24 @@ export default function DonattiTurismoMinimalist() {
                         name: formData.name,
                         phone: formData.phone,
                         email: formData.email,
+                        destination: formData.destination,
+                        period: formData.period,
                         source: 'contact_form',
                       }),
                     })
-                    alert('Obrigado! Entraremos em contato em breve.')
-                    setFormData({ name: '', email: '', phone: '' })
+                    setFormStatus('success')
+                    trackEvent('lead_form_submit', {
+                      source: 'contact_form',
+                      destination: formData.destination,
+                      period: formData.period,
+                    })
+                    trackEvent('rdstation_lead', {
+                      product: formData.destination || 'formulario',
+                    })
+                    setFormData({ name: '', email: '', phone: '', destination: '', period: '' })
                   } catch (error) {
                     console.error('Erro ao enviar:', error)
-                    alert('Erro ao enviar. Tente novamente.')
+                    setFormStatus('error')
                   }
                 }}
                 className="space-y-6"
@@ -577,18 +614,49 @@ export default function DonattiTurismoMinimalist() {
                   </div>
                 </div>
 
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-gray-700">
+                      E-mail *
+                    </label>
+                    <Input
+                      id="contact-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="seu@email.com"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="contact-destination" className="mb-2 block text-sm font-medium text-gray-700">
+                      Destino de interesse *
+                    </label>
+                    <Input
+                      id="contact-destination"
+                      type="text"
+                      value={formData.destination}
+                      onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                      placeholder="Ex.: Cancún, Noronha, Cruzeiro Caribe"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-gray-700">
-                    E-mail *
+                  <label htmlFor="contact-period" className="mb-2 block text-sm font-medium text-gray-700">
+                    Período desejado
                   </label>
                   <Input
-                    id="contact-email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="seu@email.com"
+                    id="contact-period"
+                    type="text"
+                    value={formData.period}
+                    onChange={(e) => setFormData({ ...formData, period: e.target.value })}
+                    placeholder="Ex.: julho/2025 ou 10 a 17/08"
                     className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
-                    required
                   />
                 </div>
 
@@ -601,8 +669,15 @@ export default function DonattiTurismoMinimalist() {
                   Solicitar Orçamento
                 </Button>
 
+                {formStatus === 'success' && (
+                  <p className="text-center text-sm text-green-600">Obrigado! Recebemos seu pedido e retornaremos em instantes.</p>
+                )}
+                {formStatus === 'error' && (
+                  <p className="text-center text-sm text-red-600">Não foi possível enviar. Tente novamente ou fale no WhatsApp.</p>
+                )}
+
                 <p className="text-center text-xs text-gray-500">
-                  Seus dados estão seguros. Não compartilhamos com terceiros.
+                  Seus dados estão protegidos pela LGPD e usados apenas para retornar seu contato.
                 </p>
               </form>
             </div>
@@ -648,12 +723,16 @@ export default function DonattiTurismoMinimalist() {
                 />
               </div>
               <p className="text-sm text-gray-600 mb-3">Realizando sonhos de viagem há mais de 15 anos.</p>
-              <div className="space-y-1 text-xs text-gray-500">
-                <p className="flex items-center gap-2">
-                  <Building2 className="h-3 w-3" />
+              <div className="space-y-2 text-sm text-gray-700">
+                <p className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  Avenida Tamandaré, 8 - Vila Planalto, Campo Grande/MS - CEP 79009-790
+                </p>
+                <p className="flex items-center gap-2 text-gray-600">
+                  <Shield className="h-4 w-4 text-primary" />
                   CNPJ: 41.887.394/0001-29
                 </p>
-               
+                <p className="text-gray-600 text-sm">Atendimento humano 24/7 • Central MS/SP</p>
               </div>
             </div>
 
@@ -671,12 +750,12 @@ export default function DonattiTurismoMinimalist() {
                   </a>
                 </li>
                 <li>
-                  <a href="/sobre" className="hover:text-primary transition-colors">
+                  <a href="#destinos" className="hover:text-primary transition-colors">
                     Sobre Nós
                   </a>
                 </li>
                 <li>
-                  <a href="/contato" className="hover:text-primary transition-colors">
+                  <a href="#contato" className="hover:text-primary transition-colors">
                     Contato
                   </a>
                 </li>
@@ -724,6 +803,10 @@ export default function DonattiTurismoMinimalist() {
                     contato@donattiturismo.com.br
                   </a>
                 </p>
+                <p className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Site seguro SSL • Proteção de dados certificada
+                </p>
                 <div className="pt-2">
                   <p className="text-xs text-gray-500 mb-2">Formas de pagamento:</p>
                   <div className="flex flex-wrap gap-2">
@@ -737,10 +820,16 @@ export default function DonattiTurismoMinimalist() {
 
           <div className="mt-12 border-t border-gray-200 pt-8">
             <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-gray-500 md:flex-row">
-              <p>© 2025 Donatti Turismo. Todos os direitos reservados.</p>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                <span className="text-xs">Proteção de dados certificada • Site seguro SSL</span>
+              <p>© 2025 Donatti Turismo. Todos os direitos reservados. CNPJ 41.887.394/0001-29.</p>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="text-xs">Site seguro SSL</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-xs">Proteção de dados certificada</span>
+                </div>
               </div>
             </div>
           </div>
@@ -749,7 +838,10 @@ export default function DonattiTurismoMinimalist() {
 
       {/* Floating WhatsApp Button */}
       <button
-        onClick={() => setShowWhatsAppModal(true)}
+        onClick={() => {
+          trackEvent('whatsapp_click', { location: 'floating_button' })
+          setShowWhatsAppModal(true)
+        }}
         aria-label="Falar no WhatsApp"
         className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-2xl transition-all hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-500/50 animate-float"
       >
@@ -817,25 +909,30 @@ export default function DonattiTurismoMinimalist() {
                     headers: {
                       'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                      name: formData.name,
-                      phone: formData.phone,
-                      email: formData.email,
-                      source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
-                      destino: searchedDestination || null,
-                    }),
-                  })
-                } catch (error) {
-                  console.error('Erro ao salvar lead:', error)
-                }
-                const message = searchedDestination
-                  ? `Olá! Meu nome é ${formData.name}. Gostaria de um orçamento para ${searchedDestination}. Podem me ajudar?`
-                  : `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
-                const whatsappUrl = `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
-                window.open(whatsappUrl, '_blank')
+                body: JSON.stringify({
+                  name: formData.name,
+                  phone: formData.phone,
+                  email: formData.email,
+                  source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+                  destino: searchedDestination || null,
+                }),
+              })
+	            } catch (error) {
+	              console.error('Erro ao salvar lead:', error)
+	            }
+	            trackEvent('lead_form_submit', {
+	              source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+	              destination: searchedDestination || null,
+	            })
+	            trackEvent('whatsapp_click', { location: 'modal', destino: searchedDestination || 'geral' })
+	            const message = searchedDestination
+	              ? `Olá! Meu nome é ${formData.name}. Gostaria de um orçamento para ${searchedDestination}. Podem me ajudar?`
+	              : `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
+            const whatsappUrl = `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
+            window.open(whatsappUrl, '_blank')
                 setShowWhatsAppModal(false)
                 setSearchedDestination('')
-                setFormData({ name: '', email: '', phone: '' })
+                setFormData({ name: '', email: '', phone: '', destination: '', period: '' })
               }}
               className="space-y-4"
             >

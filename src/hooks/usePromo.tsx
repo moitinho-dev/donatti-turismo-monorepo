@@ -17,6 +17,13 @@ interface PromoData {
   SP?: boolean
   CG?: boolean
   AEREO?: boolean
+  SITE_PUBLISHED?: boolean
+  SITE_SECTION?: string | null
+  SITE_SLUG?: string | null
+  SITE_IMAGE?: string | null
+  SITE_DESCRIPTION?: string | null
+  SITE_INCLUSIONS?: string[]
+  SITE_DEPARTURES?: string[]
   createdAt: string
   updatedAt: string
   createdBy?: string
@@ -160,4 +167,3 @@ export function usePromo() {
     deletePromo,
   }
 }
-

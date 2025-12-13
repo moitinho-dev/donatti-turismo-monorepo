@@ -32,7 +32,15 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     CG: false,
     AEREO: false,
     DATA_FORMATADA: "",
+    SITE_PUBLISHED: false,
+    SITE_SECTION: "",
+    SITE_SLUG: "",
+    SITE_IMAGE: "",
+    SITE_DESCRIPTION: "",
+    SITE_INCLUSIONS: [] as string[],
+    SITE_DEPARTURES: [] as string[],
   })
+  const siteSectionSuggestions = ["nacionais", "internacionais", "cruzeiros", "lua-de-mel", "religioso", "nordeste"]
 
   const [formattedAmount, setFormattedAmount] = useState("")
   const [regimeAlimentacao, setRegimeAlimentacao] = useState("")
@@ -42,6 +50,14 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   const [ateDate, setAteDate] = useState("")
 
   const { savePromo, isLoading } = usePromo()
+
+  const slugify = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "")
 
   // Initialize form with promo data if editing
   useEffect(() => {
@@ -67,6 +83,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         CG: promo.CG || false,
         AEREO: promo.AEREO || false,
         DATA_FORMATADA: promo.DATA_FORMATADA || "",
+        SITE_PUBLISHED: promo.SITE_PUBLISHED || false,
+        SITE_SECTION: promo.SITE_SECTION || "",
+        SITE_SLUG: promo.SITE_SLUG || "",
+        SITE_IMAGE: promo.SITE_IMAGE || "",
+        SITE_DESCRIPTION: promo.SITE_DESCRIPTION || "",
+        SITE_INCLUSIONS: promo.SITE_INCLUSIONS || [],
+        SITE_DEPARTURES: promo.SITE_DEPARTURES || [],
       }))
 
       // Set formatted amount - VALOR já é o valor total salvo (ex: "5000.00")
@@ -91,12 +114,22 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }
   }, [promo])
 
-  const handleChange = (field: string, value: string | boolean) => {
+  const handleChange = (field: string, value: string | boolean | string[]) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }))
 
+    // Auto-gerar slug quando o destino mudar e o campo não foi personalizado
+    if (field === "DESTINO") {
+      const autoSlug = slugify(String(value || ""))
+      setFormData((prev) => {
+        if (!prev.SITE_SLUG || prev.SITE_SLUG === slugify(prev.DESTINO || "")) {
+          return { ...prev, SITE_SLUG: autoSlug }
+        }
+        return prev
+      })
+    }
   }
 
   const handleChangeRegimeAlimentacao = (valor: string) => {
@@ -235,14 +268,43 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       return
     }
 
-    try {
-      await savePromo(formData)
-      setFormSuccess(formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!")
+    if (formData.SITE_PUBLISHED) {
+      const missingSiteFields = []
+      if (!formData.SITE_SECTION) missingSiteFields.push("Seção")
+      if (!formData.SITE_SLUG) missingSiteFields.push("Slug")
+      if (!formData.SITE_IMAGE) missingSiteFields.push("Imagem")
+      if (!formData.SITE_DESCRIPTION) missingSiteFields.push("Descrição curta")
 
-      // Reset form if it's a new promo
-      if (!formData.id) {
-        resetForm()
+      if (missingSiteFields.length) {
+        setFormError(`Para publicar no site, preencha: ${missingSiteFields.join(", ")}`)
+        return
       }
+    }
+
+    let payload = { ...formData }
+
+    // Se for publicar e não houver imagem, buscar automaticamente
+    if (payload.SITE_PUBLISHED && !payload.SITE_IMAGE) {
+      try {
+        const resp = await fetch(`/api/image-search?query=${encodeURIComponent(payload.DESTINO)}&limit=1`)
+        const data = await resp.json()
+        const first = data?.results?.[0]
+        if (first?.urls?.regular || first?.urls?.small) {
+          payload.SITE_IMAGE = first.urls.regular || first.urls.small
+        }
+      } catch (err) {
+        console.warn("Não foi possível buscar imagem automática", err)
+      }
+    }
+
+    try {
+      await savePromo(payload)
+                setFormSuccess(formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!")
+
+              // Reset form if it's a new promo
+              if (!formData.id) {
+                resetForm()
+              }
 
       // Notify parent component
       setTimeout(() => {
@@ -275,6 +337,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       CG: false,
       AEREO: false,
       DATA_FORMATADA: "",
+      SITE_PUBLISHED: false,
+      SITE_SECTION: "",
+      SITE_SLUG: "",
+      SITE_IMAGE: "",
+      SITE_DESCRIPTION: "",
+      SITE_INCLUSIONS: [],
+      SITE_DEPARTURES: [],
     })
     setFormattedAmount("")
     setRegimeAlimentacao("")
@@ -521,6 +590,122 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
             )}
           </div>
 
+          <div className="mb-6 border-t pt-6">
+            <label className="flex items-center gap-2 text-primary-blue font-mon font-medium mb-2">
+              Publicar no site
+            </label>
+            <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-white mb-4">
+              <input
+                type="checkbox"
+                id="SITE_PUBLISHED"
+                className="h-4 w-4 rounded text-primary-blue focus:ring-primary-blue"
+                checked={formData.SITE_PUBLISHED}
+                onChange={() => handleChange("SITE_PUBLISHED", !formData.SITE_PUBLISHED)}
+              />
+              <label htmlFor="SITE_PUBLISHED" className="text-gray-800 font-mon">
+                Exibir este pacote no site (home)
+              </label>
+            </div>
+
+            {formData.SITE_PUBLISHED && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-700 font-mon">
+                      Seção (pode criar novas, ex.: religioso, nordeste) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                      type="text"
+                      list="site-section-suggestions"
+                      value={formData.SITE_SECTION}
+                      onChange={(e) => handleChange("SITE_SECTION", e.target.value)}
+                      placeholder="nacionais, internacionais, cruzeiros, lua-de-mel, religioso..."
+                      required
+                    />
+                    <datalist id="site-section-suggestions">
+                      {siteSectionSuggestions.map((opt) => (
+                        <option key={opt} value={opt} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-700 font-mon">Slug para URL (pacotes/destinos)</label>
+                    <input
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                      type="text"
+                      value={formData.SITE_SLUG}
+                      onChange={(e) => handleChange("SITE_SLUG", e.target.value)}
+                      placeholder="ex: cancun-all-inclusive"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="text-xs text-primary-blue hover:underline font-mon"
+                      onClick={() => handleChange("SITE_SLUG", slugify(formData.DESTINO || ""))}
+                    >
+                      Gerar automaticamente a partir do destino
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-700 font-mon">Descrição curta</label>
+                    <input
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                      type="text"
+                      value={formData.SITE_DESCRIPTION}
+                      onChange={(e) => handleChange("SITE_DESCRIPTION", e.target.value)}
+                      placeholder="Resumo para o card no site"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 font-mon">A imagem será buscada automaticamente pelo destino.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-700 font-mon">Saídas (separe por vírgula)</label>
+                    <input
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                      type="text"
+                      value={formData.SITE_DEPARTURES.join(", ")}
+                      onChange={(e) =>
+                        handleChange(
+                          "SITE_DEPARTURES",
+                          e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        )
+                      }
+                      placeholder="São Paulo, Campo Grande"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-700 font-mon">Inclusões (separe por vírgula)</label>
+                    <input
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-blue focus:border-transparent bg-white text-gray-800 font-mon"
+                      type="text"
+                      value={formData.SITE_INCLUSIONS.join(", ")}
+                      onChange={(e) =>
+                        handleChange(
+                          "SITE_INCLUSIONS",
+                          e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        )
+                      }
+                      placeholder="Aéreo, Hotel, Traslado, Seguro"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row justify-end gap-3">
             <button
               type="button"
@@ -555,4 +740,3 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     </div>
   )
 }
-

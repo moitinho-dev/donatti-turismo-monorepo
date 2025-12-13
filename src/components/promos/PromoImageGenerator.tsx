@@ -32,6 +32,7 @@ import { useLayouts, type ImageArea, type ElementConfig } from "@/hooks/useLayou
 
 interface PromoImageGeneratorProps {
   promo: {
+    id?: string
     DESTINO: string
     HOTEL: string
     DATA_FORMATADA: string
@@ -46,8 +47,23 @@ interface PromoImageGeneratorProps {
     SP?: boolean
     CG?: boolean
     AEREO?: boolean
+    SITE_PUBLISHED?: boolean
+    SITE_SECTION?: string | null
+    SITE_SLUG?: string | null
+    SITE_IMAGE?: string | null
+    SITE_DESCRIPTION?: string | null
+    SITE_INCLUSIONS?: string[]
+    SITE_DEPARTURES?: string[]
   }
 }
+
+const slugify = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
 
 // Element labels for UI
 const elementLabels: Record<string, string> = {
@@ -114,6 +130,14 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [uploadName, setUploadName] = useState("")
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [sitePublished, setSitePublished] = useState<boolean>(promo.SITE_PUBLISHED ?? false)
+  const [siteSection, setSiteSection] = useState<string>(promo.SITE_SECTION || "")
+  const [siteSlug, setSiteSlug] = useState<string>(promo.SITE_SLUG || slugify(promo.DESTINO))
+  const [siteDescription, setSiteDescription] = useState<string>(promo.SITE_DESCRIPTION || promo.HOTEL || "")
+  const [siteSaving, setSiteSaving] = useState(false)
+  const [siteMessage, setSiteMessage] = useState<string | null>(null)
+  const [siteError, setSiteError] = useState<string | null>(null)
+  const [savingImageOnly, setSavingImageOnly] = useState(false)
 
   const templateRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -146,6 +170,16 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     console.log("[PromoImageGenerator] Component mounted, fetching layouts...")
     fetchLayouts("story")
   }, [fetchLayouts])
+
+  useEffect(() => {
+    setSitePublished(promo.SITE_PUBLISHED ?? false)
+    setSiteSection(promo.SITE_SECTION || "")
+    setSiteSlug(promo.SITE_SLUG || slugify(promo.DESTINO))
+    setSiteDescription(promo.SITE_DESCRIPTION || promo.HOTEL || "")
+    if (promo.SITE_IMAGE) {
+      setDestinationImage(promo.SITE_IMAGE)
+    }
+  }, [promo])
 
   // Listen for layout updates broadcasted from other parts of the app
   useEffect(() => {
@@ -293,6 +327,89 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (!confirm("Tem certeza que deseja deletar este layout?")) return
     await deleteLayout(layoutId)
     await fetchLayouts(currentLayout?.format || "story")
+  }
+
+  const buildSitePayload = (publishFlag: boolean) => {
+    const slug = siteSlug || slugify(promo.DESTINO)
+    return {
+      id: promo.id,
+      DESTINO: promo.DESTINO,
+      HOTEL: promo.HOTEL,
+      DATA_FORMATADA: promo.DATA_FORMATADA,
+      VALOR: promo.VALOR,
+      PARCELAS: promo.PARCELAS || "15",
+      COM_CAFE: !!promo.COM_CAFE,
+      SEM_CAFE: !!promo.SEM_CAFE,
+      MEIA_PENSAO: !!promo.MEIA_PENSAO,
+      PENSAO_COMPLETA: !!promo.PENSAO_COMPLETA,
+      ALL_INCLUSIVE: !!promo.ALL_INCLUSIVE,
+      NUMERO_DE_NOITES: promo.NUMERO_DE_NOITES,
+      SP: !!promo.SP,
+      CG: !!promo.CG,
+      AEREO: !!promo.AEREO,
+      SITE_PUBLISHED: publishFlag,
+      SITE_SECTION: siteSection || "",
+      SITE_SLUG: slug,
+      SITE_IMAGE: destinationImage || promo.SITE_IMAGE || "",
+      SITE_DESCRIPTION: siteDescription || promo.HOTEL || "",
+      SITE_INCLUSIONS: promo.SITE_INCLUSIONS || [],
+      SITE_DEPARTURES: promo.SITE_DEPARTURES || [],
+    }
+  }
+
+  const handleSavePublication = async (publishFlag: boolean) => {
+    if (!promo.id) {
+      setSiteError("Esta promoção precisa ser salva antes de publicar.")
+      return
+    }
+    setSiteSaving(true)
+    setSiteError(null)
+    setSiteMessage(null)
+    try {
+      const payload = buildSitePayload(publishFlag)
+      const res = await fetch("/api/promos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Erro ao salvar publicação")
+      }
+      setSitePublished(publishFlag)
+      setSiteMessage(publishFlag ? "Publicado no site com a imagem escolhida." : "Card do site atualizado.")
+    } catch (err) {
+      setSiteError(err instanceof Error ? err.message : "Erro ao salvar publicação")
+    } finally {
+      setSiteSaving(false)
+    }
+  }
+
+  const handleSaveImageOnly = async () => {
+    if (!promo.id) {
+      setSiteError("Esta promoção precisa ser salva antes de definir a foto.")
+      return
+    }
+    setSavingImageOnly(true)
+    setSiteError(null)
+    setSiteMessage(null)
+    try {
+      const payload = buildSitePayload(sitePublished)
+      const res = await fetch("/api/promos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Erro ao salvar foto do card")
+      }
+      setSiteMessage("Foto do card atualizada.")
+    } catch (err) {
+      setSiteError(err instanceof Error ? err.message : "Erro ao salvar foto do card")
+    } finally {
+      setSavingImageOnly(false)
+    }
   }
 
   // Fetch destination images
@@ -792,6 +909,139 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
             <p className="text-xs text-gray-500">
               {currentLayout?.format === "story" ? "1080x1920 (Stories)" : "1080x1350 (Feed)"}
             </p>
+          </div>
+
+          {/* Publicação no site */}
+          <div className="space-y-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800">Card do site</h3>
+                <p className="text-[11px] text-gray-600">Usa a mesma foto escolhida aqui</p>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={sitePublished}
+                  onChange={(e) => setSitePublished(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-blue focus:ring-primary-blue"
+                />
+                Publicar
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-gray-600">Seção</label>
+              <input
+                type="text"
+                list="site-section-suggestions"
+                value={siteSection}
+                onChange={(e) => setSiteSection(e.target.value)}
+                placeholder="nacionais, internacionais, cruzeiros..."
+                className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              />
+              <datalist id="site-section-suggestions">
+                <option value="nacionais" />
+                <option value="internacionais" />
+                <option value="cruzeiros" />
+                <option value="lua-de-mel" />
+                <option value="religioso" />
+                <option value="nordeste" />
+              </datalist>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <div>
+                <label className="text-xs text-gray-600">Slug</label>
+                <input
+                  type="text"
+                  value={siteSlug}
+                  onChange={(e) => setSiteSlug(e.target.value)}
+                  placeholder="ex: cancun-all-inclusive"
+                  className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSiteSlug(slugify(promo.DESTINO))}
+                  className="text-[11px] text-primary-blue hover:underline mt-1"
+                >
+                  Gerar a partir do destino
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-600">Descrição curta</label>
+              <input
+                type="text"
+                value={siteDescription}
+                onChange={(e) => setSiteDescription(e.target.value)}
+                placeholder="Resumo que aparece no card"
+                className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              />
+            </div>
+
+            {destinationImage && (
+              <div className="relative h-20 rounded-lg overflow-hidden border border-orange-200">
+                <img src={destinationImage} alt={promo.DESTINO} className="w-full h-full object-cover" />
+                <span className="absolute bottom-1 left-1 rounded-full bg-black/60 text-white text-[11px] px-2 py-0.5">
+                  Será usada no site
+                </span>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <p className="text-[11px] text-gray-700 font-medium">Escolha a foto para o card</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(availableImages || []).slice(0, 9).map((img) => {
+                  const url = img.urls?.small || img.urls?.regular
+                  if (!url) return null
+                  const isSelected = destinationImage === url
+                  return (
+                    <button
+                      type="button"
+                      key={url}
+                      onClick={() => {
+                        setDestinationImage(url)
+                        setSiteMessage(null)
+                        setSiteError(null)
+                      }}
+                      className={`relative h-16 rounded-md overflow-hidden border ${
+                        isSelected ? "border-primary-blue ring-2 ring-primary-blue" : "border-orange-100"
+                      }`}
+                    >
+                      <img src={url} alt={promo.DESTINO} className="w-full h-full object-cover" />
+                      {isSelected && (
+                        <span className="absolute bottom-1 right-1 bg-primary-blue text-white text-[10px] px-1.5 py-0.5 rounded">
+                          Selecionada
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveImageOnly}
+                disabled={savingImageOnly}
+                className="w-full mt-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-primary-blue bg-white border border-primary-blue hover:bg-primary-blue/5 disabled:opacity-60"
+              >
+                {savingImageOnly ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar foto do card
+              </button>
+            </div>
+
+            {siteError && <p className="text-[11px] text-red-600">{siteError}</p>}
+            {siteMessage && <p className="text-[11px] text-green-700">{siteMessage}</p>}
+
+            <button
+              type="button"
+              onClick={() => handleSavePublication(sitePublished)}
+              disabled={siteSaving}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-white bg-primary-blue hover:bg-second-blue disabled:opacity-60"
+            >
+              {siteSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar card do site
+            </button>
           </div>
 
           {/* Layout Selection */}

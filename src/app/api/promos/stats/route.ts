@@ -5,6 +5,8 @@ import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from "date-f
 import { ptBR } from "date-fns/locale"
 import prisma from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(req: NextRequest) {
   try {
     // Check authentication

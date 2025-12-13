@@ -91,6 +91,14 @@ model Promo {
   sp              Boolean  @default(false)
   cg              Boolean  @default(false)
   aereo           Boolean  @default(false)
+  sitePublished   Boolean  @default(false)
+  siteSection     String?
+  siteSlug        String?  @unique
+  siteImage       String?
+  siteDescription String?  @db.Text
+  siteInclusions  String[] @default([])
+  siteDepartures  String[] @default([])
+  googleBusinessPostName String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -99,6 +107,17 @@ model Promo {
   createdBy       User     @relation(fields: [createdById], references: [id])
 
   @@map("promos")
+}
+
+model GoogleBusinessConnection {
+  id            String   @id @default(cuid())
+  refreshToken  String   @db.Text
+  accountName   String?  @db.Text
+  locationName  String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("google_business_connections")
 }
 
 // Lead model for capturing interested customers
