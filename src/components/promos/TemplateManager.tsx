@@ -575,15 +575,11 @@ export default function TemplateManager() {
     try {
       const newLayout = await uploadLayout(file, selectedFormat, name)
       console.log("[TemplateManager] Upload result:", newLayout)
+      if (!newLayout) throw new Error("Upload não retornou um layout válido")
 
-      if (newLayout) {
-        await fetchLayouts(selectedFormat)
-        setCurrentLayout(newLayout)
-        console.log("[TemplateManager] Layout set successfully")
-      } else {
-        console.log("[TemplateManager] Upload returned null")
-        alert("Erro ao fazer upload do template. Verifique o console para mais detalhes.")
-      }
+      await fetchLayouts(selectedFormat)
+      setCurrentLayout(newLayout)
+      console.log("[TemplateManager] Layout set successfully")
     } catch (error) {
       console.error("[TemplateManager] Upload error:", error)
       alert("Erro ao fazer upload do template: " + (error instanceof Error ? error.message : "Erro desconhecido"))

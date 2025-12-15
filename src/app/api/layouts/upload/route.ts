@@ -16,6 +16,13 @@ const mimeToExtension: Record<string, string> = {
   "image/webp": "webp",
   "image/svg+xml": "svg",
 }
+const extensionToMime: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+}
 
 // Default font family for all elements
 const DEFAULT_FONT = "'Montserrat', sans-serif"
@@ -115,19 +122,29 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer())
     console.log("[UPLOAD] Buffer size:", buffer.length)
 
-    // Save file to public/uploads/layouts
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "layouts")
-    await fs.mkdir(uploadDir, { recursive: true })
-    console.log("[UPLOAD] Upload dir:", uploadDir)
+    // Persist image:
+    // - Prefer writing to /public for self-hosted Node deployments
+    // - Fallback to storing as data URL (works on read-only FS environments, e.g. Vercel)
+    let imageUrl: string
+    try {
+      // Save file to public/uploads/layouts
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "layouts")
+      await fs.mkdir(uploadDir, { recursive: true })
+      console.log("[UPLOAD] Upload dir:", uploadDir)
 
-    const randomKey = crypto.randomBytes(6).toString("hex")
-    const filename = `${Date.now()}-${randomKey}.${extension}`
-    const filePath = path.join(uploadDir, filename)
-    await fs.writeFile(filePath, buffer)
-    console.log("[UPLOAD] File saved to:", filePath)
+      const randomKey = crypto.randomBytes(6).toString("hex")
+      const filename = `${Date.now()}-${randomKey}.${extension}`
+      const filePath = path.join(uploadDir, filename)
+      await fs.writeFile(filePath, buffer)
+      console.log("[UPLOAD] File saved to:", filePath)
 
-    // URL path for the uploaded file
-    const imageUrl = `/uploads/layouts/${filename}`
+      // URL path for the uploaded file
+      imageUrl = `/uploads/layouts/${filename}`
+    } catch (fsError) {
+      console.warn("[UPLOAD] Filesystem write failed, falling back to data URL:", fsError)
+      const safeMime = (allowedMimeTypes.has(mimeType) && mimeType) || extensionToMime[extension] || "application/octet-stream"
+      imageUrl = `data:${safeMime};base64,${buffer.toString("base64")}`
+    }
 
     const baseName = originalName.replace(/\.[^/.]+$/, "")
     const name = layoutName || `${format === "feed" ? "Feed" : "Story"} - ${baseName}`
@@ -151,6 +168,8 @@ export async function POST(request: Request) {
 
     console.log("[UPLOAD] Layout created:", newLayout.id)
 
+    const publicImageUrl = newLayout.imageUrl?.startsWith("data:") ? `/api/layouts/image?id=${newLayout.id}` : newLayout.imageUrl
+
     // Return layout in expected format
     return NextResponse.json(
       {
@@ -158,8 +177,8 @@ export async function POST(request: Request) {
         name: newLayout.name,
         type: newLayout.type,
         format: newLayout.format,
-        url: newLayout.imageUrl,
-        imageUrl: newLayout.imageUrl,
+        url: publicImageUrl,
+        imageUrl: publicImageUrl,
         isDefault: newLayout.isDefault,
         createdAt: newLayout.createdAt.toISOString(),
         updatedAt: newLayout.updatedAt.toISOString(),

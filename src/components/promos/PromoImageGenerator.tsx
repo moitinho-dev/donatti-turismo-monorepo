@@ -288,7 +288,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         await fetchLayouts(currentLayout.format)
       }
     } catch (err) {
-      setError("Erro ao fazer upload do layout")
+      setError(err instanceof Error ? err.message : "Erro ao fazer upload do layout")
     } finally {
       setIsUploadingLayout(false)
       setShowUploadModal(false)

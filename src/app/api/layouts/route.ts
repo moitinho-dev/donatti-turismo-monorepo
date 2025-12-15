@@ -116,6 +116,8 @@ function toLayoutConfig(layout: {
   createdById: string
 }): LayoutConfig {
   const elements = layout.elements as Record<string, ElementConfig>
+  const storedImageUrl = layout.imageUrl || undefined
+  const publicImageUrl = storedImageUrl?.startsWith("data:") ? `/api/layouts/image?id=${layout.id}` : storedImageUrl
 
   // Debug: log custom elements
   const customElements = Object.entries(elements).filter(([_, el]) => el.template || el.isCustom)
@@ -128,8 +130,8 @@ function toLayoutConfig(layout: {
     name: layout.name,
     type: layout.type as "png" | "svg" | "custom",
     format: layout.format as "story" | "feed",
-    url: layout.imageUrl || undefined,
-    imageUrl: layout.imageUrl || undefined,
+    url: publicImageUrl,
+    imageUrl: publicImageUrl,
     isDefault: layout.isDefault,
     createdAt: layout.createdAt.toISOString(),
     updatedAt: layout.updatedAt.toISOString(),

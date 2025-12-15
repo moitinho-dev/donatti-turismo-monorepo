@@ -261,9 +261,33 @@ function useLayoutsInstance(): UseLayoutsReturn {
       console.log("[useLayouts] Response status:", response.status)
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error("[useLayouts] Upload error response:", errorData)
-        throw new Error(errorData.error || "Erro ao fazer upload do layout")
+        const errorText = (await response.text().catch(() => "")).trim()
+        let message = `Erro ao fazer upload do layout (HTTP ${response.status})`
+
+        if (errorText) {
+          if (response.status === 413) {
+            message = "Arquivo muito grande para upload"
+          } else {
+            const looksLikeHtml =
+              errorText.startsWith("<!DOCTYPE") || errorText.startsWith("<html") || errorText.startsWith("<")
+
+            if (!looksLikeHtml) {
+              try {
+                const parsed = JSON.parse(errorText) as { error?: unknown }
+                if (typeof parsed?.error === "string" && parsed.error.trim()) {
+                  message = parsed.error
+                } else {
+                  message = errorText.slice(0, 300)
+                }
+              } catch {
+                message = errorText.slice(0, 300)
+              }
+            }
+          }
+        }
+
+        console.error("[useLayouts] Upload error response:", { status: response.status, body: errorText.slice(0, 1000) })
+        throw new Error(message)
       }
 
       const newLayout = await response.json()
@@ -275,7 +299,7 @@ function useLayoutsInstance(): UseLayoutsReturn {
     } catch (err) {
       console.error("[useLayouts] Upload exception:", err)
       setError(err instanceof Error ? err.message : "Erro desconhecido")
-      return null
+      throw err instanceof Error ? err : new Error("Erro desconhecido")
     } finally {
       setIsLoading(false)
     }
