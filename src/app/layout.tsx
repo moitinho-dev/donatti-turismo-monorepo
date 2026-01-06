@@ -22,6 +22,7 @@ export default function RootLayout({
 }) {
   // GTM & Analytics Configuration
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P3JPBSRM"
+  const gtmServerUrl = process.env.NEXT_PUBLIC_GTM_SERVER_URL || ""
   const travelAgencySchema = {
     "@context": "https://schema.org",
     "@type": "TravelAgency",
@@ -125,10 +126,24 @@ export default function RootLayout({
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(travelAgencySchema) }}
         />
+
+        {/* Google Tag Manager (Next.js third-party) */}
+        <GoogleTagManager
+          gtmId={gtmId}
+          gtmScriptUrl={gtmServerUrl ? `${gtmServerUrl}/gtm.js` : undefined}
+        />
       </head>
-      {/* Google Tag Manager (Next.js third-party) */}
-      <GoogleTagManager gtmId={gtmId} />
       <body className={`${inter.variable} font-sans antialiased max-w-[2000px] mx-auto`}>
+        {/* Google Tag Manager (noscript) - Fallback para usuários sem JS */}
+        <noscript>
+          <iframe
+            src={`${gtmServerUrl || "https://www.googletagmanager.com"}/ns.html?id=${gtmId}`}
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+
         <Providers>{children}</Providers>
 
       </body>
