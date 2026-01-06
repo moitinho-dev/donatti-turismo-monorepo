@@ -1,11 +1,10 @@
-"use client"
-import type React from "react"
 import Script from "next/script"
+import { GoogleTagManager } from "@next/third-parties/google"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { SessionProvider } from "next-auth/react"
-import { LayoutsProvider } from "@/hooks/useLayouts"
-import IntercomChat from "@/components/IntercomChat"
+import type { ReactNode } from "react"
+
+import Providers from "./providers"
 
 // Inter é mais performático e tem melhor legibilidade
 const inter = Inter({
@@ -19,12 +18,10 @@ const inter = Inter({
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: ReactNode
 }) {
   // GTM & Analytics Configuration
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P3JPBSRM"
-  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXX"
-  const gtmServerUrl = process.env.NEXT_PUBLIC_GTM_SERVER_URL || ""
   const travelAgencySchema = {
     "@context": "https://schema.org",
     "@type": "TravelAgency",
@@ -79,32 +76,6 @@ export default function RootLayout({
         {/* Favicon */}
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-        {/* Google Tag Manager - Client Side */}
-        <Script id="gtm-init" strategy="afterInteractive">
-          {`
-            (function(w,d,s,l,i){
-              w[l]=w[l]||[];
-              w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
-              var f=d.getElementsByTagName(s)[0],
-                  j=d.createElement(s),
-                  dl=l!='dataLayer'?'&l='+l:'';
-              j.async=true;
-              j.src='${gtmServerUrl ? gtmServerUrl + '/gtm.js?id=' : 'https://www.googletagmanager.com/gtm.js?id='}'+i+dl;
-              f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${gtmId}');
-          `}
-        </Script>
-
-        {/* Google Analytics 4 - Configuração */}
-        <Script id="ga4-config" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${gaMeasurementId}'${gtmServerUrl ? `, { transport_url: '${gtmServerUrl}', first_party_collection: true }` : ''});
-          `}
-        </Script>
-
         {/* RD Station Marketing - Script de Integração */}
         <Script id="rdstation-script" strategy="afterInteractive">
           {`
@@ -155,24 +126,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(travelAgencySchema) }}
         />
       </head>
+      {/* Google Tag Manager (Next.js third-party) */}
+      <GoogleTagManager gtmId={gtmId} />
       <body className={`${inter.variable} font-sans antialiased max-w-[2000px] mx-auto`}>
-        {/* Google Tag Manager (noscript) - Fallback para usuários sem JS */}
-        <noscript>
-          <iframe
-            src={`${gtmServerUrl || 'https://www.googletagmanager.com'}/ns.html?id=${gtmId}`}
-            height="0"
-            width="0"
-            style={{ display: "none", visibility: "hidden" }}
-          ></iframe>
-        </noscript>
-        <SessionProvider>
-          {/* Providers for app-wide state */}
-          <LayoutsProvider>
-            {/* Renderizando o conteúdo das páginas filhas */}
-            {children}
-            <IntercomChat />
-          </LayoutsProvider>
-        </SessionProvider>
+        <Providers>{children}</Providers>
 
       </body>
     </html>

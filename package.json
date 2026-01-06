@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@intercom/messenger-js-sdk": "^0.0.18",
+    "@next/third-parties": "^16.1.1",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-popover": "^1.0.7",
     "@radix-ui/react-tabs": "^1.0.4",

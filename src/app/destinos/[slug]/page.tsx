@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, Plane } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 const categoryLabels: Record<string, string> = {
   nacionais: "Pacotes Nacionais",
   internacionais: "Pacotes Internacionais",
@@ -36,8 +38,7 @@ type PageProps = {
 }
 
 export async function generateStaticParams() {
-  const promos = await prisma.promo.findMany({ where: { sitePublished: true } })
-  return promos.map((p) => ({ slug: computeSlug(p) }))
+  return []
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

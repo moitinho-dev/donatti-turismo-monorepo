@@ -855,7 +855,7 @@ export default function DonattiTurismoMinimalist() {
       {/* WhatsApp Lead Modal */}
       {showWhatsAppModal && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={() => setShowWhatsAppModal(false)}
         >
           <div
