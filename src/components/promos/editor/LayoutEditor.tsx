@@ -107,6 +107,211 @@ const elementLabels: Record<string, string> = {
   contact: "Contato",
 }
 
+const REGION_OPTIONS = ["Nordeste", "Sul", "Sudeste", "Norte", "Centro-Oeste", "Exterior", "Brasil"] as const
+type RegionOption = (typeof REGION_OPTIONS)[number]
+
+const normalizeDestination = (value: string) =>
+  (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+
+const inferRegionFromDestination = (destination: string): RegionOption => {
+  const dest = normalizeDestination(destination)
+
+  const northeastCities = [
+    "natal",
+    "recife",
+    "fortaleza",
+    "salvador",
+    "maceio",
+    "joao pessoa",
+    "aracaju",
+    "sao luis",
+    "teresina",
+    "porto de galinhas",
+    "porto seguro",
+    "pipa",
+    "maragogi",
+    "jericoacoara",
+    "fernando de noronha",
+    "canoa quebrada",
+    "praia do forte",
+    "costa do sauipe",
+    "ilheus",
+    "lencois maranhenses",
+    "chapada diamantina",
+    "bahia",
+    "ceara",
+    "maranhao",
+    "pernambuco",
+    "alagoas",
+    "sergipe",
+    "paraiba",
+    "piaui",
+    "rio grande do norte",
+  ]
+
+  const southCities = [
+    "florianopolis",
+    "porto alegre",
+    "gramado",
+    "curitiba",
+    "foz do iguacu",
+    "balneario camboriu",
+    "blumenau",
+    "bombinhas",
+    "canela",
+    "bento goncalves",
+    "santa catarina",
+    "parana",
+    "rio grande do sul",
+    "camboriu",
+    "joinville",
+    "londrina",
+    "maringa",
+  ]
+
+  const southeastCities = [
+    "rio de janeiro",
+    "sao paulo",
+    "belo horizonte",
+    "vitoria",
+    "buzios",
+    "paraty",
+    "campos do jordao",
+    "angra dos reis",
+    "cabo frio",
+    "petropolis",
+    "ouro preto",
+    "tiradentes",
+    "guaruja",
+    "ubatuba",
+    "ilhabela",
+    "minas gerais",
+    "espirito santo",
+    "arraial do cabo",
+    "sao sebastiao",
+    "aparecida",
+    "pocos de caldas",
+  ]
+
+  const centralCities = [
+    "brasilia",
+    "goiania",
+    "cuiaba",
+    "campo grande",
+    "bonito",
+    "caldas novas",
+    "pirenopolis",
+    "chapada dos veadeiros",
+    "pantanal",
+    "goias",
+    "mato grosso",
+    "mato grosso do sul",
+    "distrito federal",
+    "chapada dos guimaraes",
+    "corumba",
+  ]
+
+  const northCities = [
+    "manaus",
+    "belem",
+    "palmas",
+    "rio branco",
+    "porto velho",
+    "boa vista",
+    "macapa",
+    "alter do chao",
+    "sao gabriel da cachoeira",
+    "monte roraima",
+    "amazonas",
+    "para",
+    "tocantins",
+    "acre",
+    "rondonia",
+    "roraima",
+    "amapa",
+    "santarem",
+  ]
+
+  const internationalKeywords = [
+    "cancun",
+    "miami",
+    "orlando",
+    "nova york",
+    "las vegas",
+    "paris",
+    "londres",
+    "roma",
+    "madri",
+    "lisboa",
+    "toquio",
+    "dubai",
+    "buenos aires",
+    "santiago",
+    "toronto",
+    "vancouver",
+    "amsterdam",
+    "berlim",
+    "viena",
+    "atenas",
+    "bangkok",
+    "pequim",
+    "sydney",
+    "auckland",
+    "cidade do cabo",
+    "cairo",
+    "istambul",
+    "jerusalem",
+    "havana",
+    "punta cana",
+    "mexico",
+    "eua",
+    "usa",
+    "estados unidos",
+    "europa",
+    "asia",
+    "africa",
+    "oceania",
+    "caribe",
+  ]
+
+  const brazilKeywords = ["brasil", "brazil"]
+  const isBrazilExplicit = brazilKeywords.some((keyword) => dest.includes(keyword))
+
+  // Prioritize explicit "Brasil" or known Brazilian places
+  if (isBrazilExplicit) {
+    if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
+    if (southCities.some((city) => dest.includes(city))) return "Sul"
+    if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
+    if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
+    if (northCities.some((city) => dest.includes(city))) return "Norte"
+    return "Brasil"
+  }
+
+  if (internationalKeywords.some((keyword) => dest.includes(keyword))) return "Exterior"
+  if (northeastCities.some((city) => dest.includes(city))) return "Nordeste"
+  if (southCities.some((city) => dest.includes(city))) return "Sul"
+  if (southeastCities.some((city) => dest.includes(city))) return "Sudeste"
+  if (centralCities.some((city) => dest.includes(city))) return "Centro-Oeste"
+  if (northCities.some((city) => dest.includes(city))) return "Norte"
+
+  const brazilRegions = ["nordeste", "norte", "sul", "sudeste", "centro oeste", "centro-oeste"]
+  if (brazilRegions.some((region) => dest.includes(region))) {
+    if (dest.includes("nordeste")) return "Nordeste"
+    if (dest.includes("norte")) return "Norte"
+    if (dest.includes("sul")) return "Sul"
+    if (dest.includes("sudeste")) return "Sudeste"
+    return "Centro-Oeste"
+  }
+
+  // If we couldn't detect anything and it's not clearly international, default to "Brasil"
+  return "Brasil"
+}
+
 export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: LayoutEditorProps) {
   const {
     layouts,
@@ -136,6 +341,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: Layou
   const [snapEnabled, setSnapEnabled] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedRegion, setSelectedRegion] = useState<RegionOption>(() => inferRegionFromDestination(promo.DESTINO))
 
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -172,6 +378,10 @@ export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: Layou
     }
   }, [])
 
+  useEffect(() => {
+    setSelectedRegion(inferRegionFromDestination(promo.DESTINO))
+  }, [promo.DESTINO])
+
   // Calculate promo values
   const promoValues = useMemo(() => {
     // VALOR é o valor total salvo no formato "5000.00"
@@ -205,24 +415,9 @@ export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: Layou
       return ""
     }
 
-    const getRegion = () => {
-      const dest = promo.DESTINO.toLowerCase()
-      const regions: Record<string, string[]> = {
-        Nordeste: ["natal", "recife", "fortaleza", "salvador", "maceio", "porto seguro"],
-        Sul: ["florianopolis", "gramado", "curitiba", "foz do iguacu"],
-        Sudeste: ["rio de janeiro", "sao paulo", "buzios", "paraty"],
-        "Centro-Oeste": ["brasilia", "bonito", "pantanal"],
-        Norte: ["manaus", "belem", "alter do chao"],
-        Exterior: ["cancun", "miami", "orlando", "paris", "dubai"],
-      }
-      for (const [region, cities] of Object.entries(regions)) {
-        if (cities.some(city => dest.includes(city))) return region
-      }
-      return "Exterior"
-    }
-
     switch (elementId) {
-      case "region": return getRegion()
+      case "region":
+        return selectedRegion
       case "destination": return promo.DESTINO
       case "hotel": return promo.HOTEL
       case "dates": return promo.DATA_FORMATADA
@@ -241,7 +436,7 @@ export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: Layou
       case "contact": return "(67) 9 9637-2769"
       default: return ""
     }
-  }, [promo, promoValues])
+  }, [promo, promoValues, selectedRegion])
 
   // Check element visibility based on promo data
   const isElementVisibleByPromo = useCallback((elementId: string): boolean => {
@@ -572,6 +767,22 @@ export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: Layou
               </option>
             ))}
           </select>
+
+          {/* Region Selector */}
+          <div className="flex items-center gap-2 bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5">
+            <span className="text-xs text-gray-300">Região</span>
+            <select
+              value={selectedRegion}
+              onChange={(e) => setSelectedRegion(e.target.value as RegionOption)}
+              className="bg-transparent text-sm text-gray-200 focus:outline-none"
+            >
+              {REGION_OPTIONS.map((region) => (
+                <option key={region} value={region} className="bg-gray-800">
+                  {region}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Set as Default Button */}
           <button

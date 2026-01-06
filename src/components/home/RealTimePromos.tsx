@@ -1,10 +1,13 @@
 'use client'
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { trackEvent } from "@/lib/analytics"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { trackEvent, trackLead } from "@/lib/analytics"
 import { ArrowRight, Calendar, Clock3, MapPin, Plane, SlidersHorizontal, Star, UtensilsCrossed } from "lucide-react"
 
 type SiteSection = string
@@ -143,6 +146,15 @@ export default function RealTimePromos({ searchQuery = "", onNoResults, limit = 
   const [priceFilter, setPriceFilter] = useState("all")
   const [durationFilter, setDurationFilter] = useState("all")
   const [departureFilter, setDepartureFilter] = useState("Todas as saídas")
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
+  const [selectedPackage, setSelectedPackage] = useState<PromoData | null>(null)
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false)
+  const [leadError, setLeadError] = useState<string | null>(null)
+  const [leadForm, setLeadForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  })
 
   useEffect(() => {
     const load = async () => {
@@ -211,6 +223,88 @@ export default function RealTimePromos({ searchQuery = "", onNoResults, limit = 
     const sections = Array.from(new Set(promos.map((p) => p.SITE_SECTION).filter(Boolean))) as string[]
     return categoryFilter === "todas" ? sections : sections.filter((c) => c === categoryFilter)
   }, [categoryFilter, promos])
+
+  const buildWhatsAppUrl = (pkg: PromoData) => {
+    const departures = getDepartureCities(pkg).join(", ")
+    return `https://wa.me/5567992167694?text=${encodeURIComponent(
+      `Olá! Quero um orçamento para o pacote ${pkg.DESTINO} (${pkg.DATA_FORMATADA}), saindo de ${departures}.`
+    )}`
+  }
+
+  const openLeadModal = (pkg: PromoData) => {
+    setSelectedPackage(pkg)
+    setLeadError(null)
+    setLeadForm({ name: "", phone: "", email: "" })
+    setIsLeadModalOpen(true)
+    trackEvent("cta_click", {
+      location: "package_card",
+      package_slug: pkg.SITE_SLUG || "sem-slug",
+      package_category: pkg.SITE_SECTION,
+      destination: pkg.DESTINO,
+    })
+  }
+
+  const handleSubmitLead = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!selectedPackage) return
+
+    if (!leadForm.name.trim() || !leadForm.phone.trim()) {
+      setLeadError("Nome e telefone são obrigatórios.")
+      return
+    }
+
+    setIsSubmittingLead(true)
+    setLeadError(null)
+
+    const payload = {
+      name: leadForm.name.trim(),
+      phone: leadForm.phone.trim(),
+      email: leadForm.email.trim(),
+      source: "realtime_promos_whatsapp",
+      destino: selectedPackage.DESTINO,
+      hotel: selectedPackage.HOTEL,
+      promoDetails: `${selectedPackage.DATA_FORMATADA} | ${selectedPackage.VALOR} | ${selectedPackage.SITE_SECTION}`,
+    }
+
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        throw new Error("Erro ao salvar lead")
+      }
+
+      trackLead({
+        name: payload.name,
+        phone: payload.phone,
+        email: payload.email || "nao-informado@lead.local",
+        destination: payload.destino,
+        period: payload.promoDetails,
+        source: payload.source,
+      })
+
+      trackEvent("whatsapp_click", {
+        location: "package_card_after_lead",
+        package_slug: selectedPackage.SITE_SLUG || "sem-slug",
+        package_category: selectedPackage.SITE_SECTION,
+        destination: selectedPackage.DESTINO,
+      })
+
+      const whatsappUrl = buildWhatsAppUrl(selectedPackage)
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer")
+      setIsLeadModalOpen(false)
+      setLeadForm({ name: "", phone: "", email: "" })
+      setSelectedPackage(null)
+    } catch (err) {
+      console.error(err)
+      setLeadError("Não foi possível enviar o lead. Tente novamente.")
+    } finally {
+      setIsSubmittingLead(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -456,25 +550,10 @@ export default function RealTimePromos({ searchQuery = "", onNoResults, limit = 
                     </div>
 
                     <Button
-                      asChild
                       className="w-full rounded-full bg-[#FFA000] text-white hover:bg-[#e58f00] h-12 text-sm font-semibold"
-                      onClick={() =>
-                        trackEvent("whatsapp_click", {
-                          location: "package_card",
-                          package_slug: pkg.SITE_SLUG || "sem-slug",
-                          package_category: pkg.SITE_SECTION,
-                        })
-                      }
+                      onClick={() => openLeadModal(pkg)}
                     >
-                      <a
-                        href={`https://wa.me/5567992167694?text=${encodeURIComponent(
-                          `Olá! Quero um orçamento para o pacote ${pkg.DESTINO} (${pkg.DATA_FORMATADA}), saindo de ${departures}.`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Quero saber mais
-                      </a>
+                      Quero saber mais
                     </Button>
                   </div>
                 </article>
@@ -484,6 +563,71 @@ export default function RealTimePromos({ searchQuery = "", onNoResults, limit = 
         </div>
       )
       })}
+
+      <Dialog open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Preencha seus dados para continuar</DialogTitle>
+            <DialogDescription>
+              Precisamos de seus dados para enviar a proposta e contabilizar sua conversão. Depois abriremos o WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPackage && (
+            <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+              <p className="font-semibold text-gray-900">{selectedPackage.DESTINO}</p>
+              <p>Saída: {selectedPackage.DATA_FORMATADA}</p>
+              <p>Hotel: {selectedPackage.HOTEL}</p>
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSubmitLead}>
+            <div className="space-y-2">
+              <Label htmlFor="lead-name">Nome completo *</Label>
+              <Input
+                id="lead-name"
+                value={leadForm.name}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Seu nome"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lead-phone">Telefone / WhatsApp *</Label>
+              <Input
+                id="lead-phone"
+                value={leadForm.phone}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder="(DD) 99999-9999"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lead-email">E-mail (opcional)</Label>
+              <Input
+                id="lead-email"
+                type="email"
+                value={leadForm.email}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="voce@exemplo.com"
+              />
+            </div>
+
+            {leadError && <p className="text-sm text-red-600">{leadError}</p>}
+
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsLeadModalOpen(false)} disabled={isSubmittingLead}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-primary text-white" disabled={isSubmittingLead}>
+                {isSubmittingLead ? "Enviando..." : "Enviar e abrir WhatsApp"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
