@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +37,7 @@ export default function DonattiTurismoMinimalist() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSearchQuery, setActiveSearchQuery] = useState('')
   const [isVisible, setIsVisible] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [searchedDestination, setSearchedDestination] = useState('')
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -59,6 +61,7 @@ export default function DonattiTurismoMinimalist() {
   // Fade in effect
   useEffect(() => {
     setIsVisible(true)
+    setIsMounted(true)
   }, [])
 
   // Stats data
@@ -853,89 +856,90 @@ export default function DonattiTurismoMinimalist() {
       </button>
 
       {/* WhatsApp Lead Modal */}
-      {showWhatsAppModal && (
-        <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={() => setShowWhatsAppModal(false)}
-        >
+      {showWhatsAppModal && isMounted &&
+        createPortal(
           <div
-            className="bg-white shadow-2xl w-full max-w-md rounded-2xl p-8"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setShowWhatsAppModal(false)}
           >
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366]">
-                  <Phone className="h-6 w-6 text-white" />
+            <div
+              className="bg-white shadow-2xl w-full max-w-md rounded-2xl p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366]">
+                    <Phone className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {searchedDestination ? `Orçamento para ${searchedDestination}` : 'Falar no WhatsApp'}
+                    </h3>
+                    <p className="text-sm text-gray-500">Resposta em minutos</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {searchedDestination ? `Orçamento para ${searchedDestination}` : 'Falar no WhatsApp'}
-                  </h3>
-                  <p className="text-sm text-gray-500">Resposta em minutos</p>
-                </div>
+                <button
+                  onClick={() => {
+                    setShowWhatsAppModal(false)
+                    setSearchedDestination('')
+                  }}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  aria-label="Fechar"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => {
+
+              {searchedDestination && (
+                <div className="mb-6 p-4 bg-primary/10 rounded-xl border border-primary/20">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Destino desejado:</span> {searchedDestination}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Vamos preparar um orçamento personalizado para você!
+                  </p>
+                </div>
+              )}
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  // Salvar lead no banco
+                  try {
+                    await fetch('/api/leads', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        name: formData.name,
+                        phone: formData.phone,
+                        email: formData.email,
+                        source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+                        destino: searchedDestination || null,
+                      }),
+                    })
+                  } catch (error) {
+                    console.error('Erro ao salvar lead:', error)
+                  }
+                  trackEvent('lead_form_submit', {
+                    source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+                    destination: searchedDestination || null,
+                  })
+                  trackEvent('whatsapp_click', { location: 'modal', destino: searchedDestination || 'geral' })
+                  const message = searchedDestination
+                    ? `Olá! Meu nome é ${formData.name}. Gostaria de um orçamento para ${searchedDestination}. Podem me ajudar?`
+                    : `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
+                  const whatsappUrl = `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
+                  window.open(whatsappUrl, '_blank')
                   setShowWhatsAppModal(false)
                   setSearchedDestination('')
+                  setFormData({ name: '', email: '', phone: '', destination: '', period: '' })
                 }}
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-                aria-label="Fechar"
+                className="space-y-4"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {searchedDestination && (
-              <div className="mb-6 p-4 bg-primary/10 rounded-xl border border-primary/20">
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Destino desejado:</span> {searchedDestination}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Vamos preparar um orçamento personalizado para você!
-                </p>
-              </div>
-            )}
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault()
-                // Salvar lead no banco
-                try {
-                  await fetch('/api/leads', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                body: JSON.stringify({
-                  name: formData.name,
-                  phone: formData.phone,
-                  email: formData.email,
-                  source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
-                  destino: searchedDestination || null,
-                }),
-              })
-	            } catch (error) {
-	              console.error('Erro ao salvar lead:', error)
-	            }
-	            trackEvent('lead_form_submit', {
-	              source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
-	              destination: searchedDestination || null,
-	            })
-	            trackEvent('whatsapp_click', { location: 'modal', destino: searchedDestination || 'geral' })
-	            const message = searchedDestination
-	              ? `Olá! Meu nome é ${formData.name}. Gostaria de um orçamento para ${searchedDestination}. Podem me ajudar?`
-	              : `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
-            const whatsappUrl = `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-                setShowWhatsAppModal(false)
-                setSearchedDestination('')
-                setFormData({ name: '', email: '', phone: '', destination: '', period: '' })
-              }}
-              className="space-y-4"
-            >
               <div>
                 <label htmlFor="whatsapp-name" className="mb-2 block text-sm font-medium text-gray-700">
                   Seu nome *
@@ -992,10 +996,11 @@ export default function DonattiTurismoMinimalist() {
               <p className="text-center text-xs text-gray-500">
                 Ao continuar, você será redirecionado para o WhatsApp
               </p>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

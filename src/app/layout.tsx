@@ -21,7 +21,7 @@ export default function RootLayout({
   children: ReactNode
 }) {
   // GTM & Analytics Configuration
-  const gtmId = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P3JPBSRM"
+  const gtmId = "GTM-P3JPBSRM";
   const gtmServerUrl = process.env.NEXT_PUBLIC_GTM_SERVER_URL || ""
   const travelAgencySchema = {
     "@context": "https://schema.org",
