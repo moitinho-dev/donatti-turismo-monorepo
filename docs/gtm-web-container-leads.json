@@ -216,7 +216,7 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{Event}}" },
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
               { "type": "TEMPLATE", "key": "arg1", "value": "generate_lead" }
             ]
           }
@@ -232,7 +232,7 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{Event}}" },
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
               { "type": "TEMPLATE", "key": "arg1", "value": "lead_form_submit" }
             ]
           }
