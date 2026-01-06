@@ -6,6 +6,8 @@
     "accountId": "6323538127",
     "containerId": "234976768",
     "containerVersionId": "0",
+    "name": "Donatti Turismo - WEB (Leads)",
+    "notes": "Container WEB focado em leads obrigatórios. Dispara eventos GA4 (generate_lead, lead_form_submit) e conversão Google Ads (lead_form_submit). GA4 configurado com server_container_url=https://api.donattiturismo.com.",
     "container": {
       "path": "accounts/6323538127/containers/234976768",
       "accountId": "6323538127",
