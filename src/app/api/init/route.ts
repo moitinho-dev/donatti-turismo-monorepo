@@ -1,32 +1,45 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { initializeRedis } from "@/lib/redis"
+import prisma from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
-// Define Edge runtime
-// export const runtime = "edge"
-
 export async function GET() {
   try {
-    // Initialize Redis without requiring authentication first
-    const initialized = await initializeRedis()
+    // Check if any users exist, create defaults if not
+    const userCount = await prisma.user.count()
 
-    if (!initialized) {
-      return NextResponse.json({ error: "Failed to initialize Redis" }, { status: 500 })
+    if (userCount === 0) {
+      await prisma.user.createMany({
+        data: [
+          {
+            email: "admin@donatti.com",
+            name: "Administrador",
+            password: "admin@123",
+            role: "admin",
+          },
+          {
+            email: "agente@donatti.com",
+            name: "Agente de Turismo",
+            password: "agente@123",
+            role: "agent",
+          },
+        ],
+      })
+      console.log("Database initialized with default users")
     }
 
-    // Now check authentication (optional for this route)
+    // Check authentication (optional for this route)
     const session = await getServerSession(authOptions)
 
     return NextResponse.json({
       success: true,
-      message: "Redis initialized successfully",
+      message: "Database initialized successfully",
       authenticated: !!session,
     })
   } catch (error) {
-    console.error("Error initializing Redis:", error)
-    return NextResponse.json({ error: "Error initializing Redis" }, { status: 500 })
+    console.error("Error initializing database:", error)
+    return NextResponse.json({ error: "Error initializing database" }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { redis, REDIS_KEYS } from "@/lib/redis"
+import prisma from "@/lib/db"
 
 export async function POST(req: Request) {
   try {
@@ -18,16 +18,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Dados inválidos. Esperado um array." }, { status: 400 })
     }
 
-    // Save data to Redis
-    await redis.set(REDIS_KEYS.PROMOS, data)
+    let migrated = 0
+
+    for (const promo of data) {
+      const destino = promo.DESTINO || promo.destino || ""
+      const hotel = promo.HOTEL || promo.hotel || ""
+      const dataFormatada = promo.DATA_FORMATADA || promo.dataFormatada || ""
+      const valor = promo.VALOR || promo.valor || ""
+      const numeroDeNoites = promo.NUMERO_DE_NOITES || promo.numeroDeNoites || ""
+      const createdById = promo.createdBy || promo.createdById || session.user.id
+
+      if (!destino || !hotel || !valor) continue
+
+      await prisma.promo.create({
+        data: {
+          destino,
+          hotel,
+          dataFormatada,
+          valor,
+          parcelas: typeof promo.PARCELAS === "number" ? promo.PARCELAS : parseInt(promo.PARCELAS || "15", 10),
+          comCafe: promo.COM_CAFE || promo.comCafe || false,
+          semCafe: promo.SEM_CAFE || promo.semCafe || false,
+          meiaPensao: promo.MEIA_PENSAO || promo.meiaPensao || false,
+          pensaoCompleta: promo.PENSAO_COMPLETA || promo.pensaoCompleta || false,
+          allInclusive: promo.ALL_INCLUSIVE || promo.allInclusive || false,
+          numeroDeNoites,
+          sp: promo.SP || promo.sp || false,
+          cg: promo.CG || promo.cg || false,
+          aereo: promo.AEREO || promo.aereo || false,
+          createdById,
+        },
+      })
+      migrated++
+    }
 
     return NextResponse.json({
       success: true,
-      message: `${data.length} promoções migradas com sucesso`,
+      message: `${migrated} promoções migradas com sucesso`,
     })
   } catch (error) {
     console.error("Error migrating data:", error)
     return NextResponse.json({ error: "Erro ao migrar dados" }, { status: 500 })
   }
 }
-

@@ -1,10 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { nanoid } from "nanoid"
 import { z } from "zod"
-import { redis, REDIS_KEYS } from "@/lib/redis"
-import type { User } from "@/types/user"
+import prisma from "@/lib/db"
 
 // Schema for user validation
 const userSchema = z.object({
@@ -16,8 +14,6 @@ const userSchema = z.object({
     errorMap: () => ({ message: "Função deve ser admin ou agent" }),
   }),
   active: z.boolean().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -37,24 +33,26 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url)
     const id = url.searchParams.get("id")
 
-    // Get users from Redis
-    const usersData = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
-
     // If ID is provided, return specific user
     if (id) {
-      const user = usersData.find((u) => u.id === id)
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+      })
+
       if (!user) {
         return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
       }
 
-      // Don't return password
-      const { password, ...userWithoutPassword } = user
-      return NextResponse.json(userWithoutPassword)
+      return NextResponse.json(user)
     }
 
     // Return all users without passwords
-    const usersWithoutPasswords = usersData.map(({ password, ...user }) => user)
-    return NextResponse.json(usersWithoutPasswords)
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    })
+
+    return NextResponse.json(users)
   } catch (error) {
     console.error("Error fetching users:", error)
     return NextResponse.json({ error: "Erro ao buscar usuários" }, { status: 500 })
@@ -84,51 +82,48 @@ export async function POST(req: NextRequest) {
     }
 
     const userData = validationResult.data
-
-    // Get current users from Redis
-    const usersData = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
-
-    // Check if email already exists
-    const emailExists = usersData.some((u) => u.email === userData.email && (!userData.id || u.id !== userData.id))
-    if (emailExists) {
-      return NextResponse.json({ error: "Email já está em uso" }, { status: 400 })
-    }
-
-    // Generate ID if not provided (new user)
     const isNewUser = !userData.id
-    const userId = userData.id || nanoid()
-    const now = new Date().toISOString()
 
-    // Set timestamps
-    const completeUserData: User = {
-      id: userId,
-      email: userData.email,
-      name: userData.name,
-      password: userData.password,
-      role: userData.role,
-      createdAt: isNewUser ? now : userData.createdAt || now,
-      updatedAt: now,
-      active: isNewUser ? true : userData.active ?? true,
-    }
-
-    // Save to Redis
     if (isNewUser) {
-      usersData.push(completeUserData)
-    } else {
-      const index = usersData.findIndex((u) => u.id === userId)
-      if (index !== -1) {
-        usersData[index] = completeUserData
-      } else {
-        usersData.push(completeUserData)
+      // Check if email already exists
+      const existing = await prisma.user.findUnique({ where: { email: userData.email } })
+      if (existing) {
+        return NextResponse.json({ error: "Email já está em uso" }, { status: 400 })
       }
+
+      const user = await prisma.user.create({
+        data: {
+          email: userData.email,
+          name: userData.name,
+          password: userData.password,
+          role: userData.role,
+        },
+        select: { id: true, email: true, name: true, role: true, createdAt: true },
+      })
+
+      return NextResponse.json(user, { status: 201 })
+    } else {
+      // Check if email already exists for other user
+      const existing = await prisma.user.findFirst({
+        where: { email: userData.email, NOT: { id: userData.id } },
+      })
+      if (existing) {
+        return NextResponse.json({ error: "Email já está em uso" }, { status: 400 })
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userData.id },
+        data: {
+          email: userData.email,
+          name: userData.name,
+          password: userData.password,
+          role: userData.role,
+        },
+        select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+      })
+
+      return NextResponse.json(user)
     }
-
-    // Update Redis
-    await redis.set(REDIS_KEYS.USERS, usersData)
-
-    // Don't return password
-    const { password, ...userWithoutPassword } = userData
-    return NextResponse.json(userWithoutPassword, { status: isNewUser ? 201 : 200 })
   } catch (error) {
     console.error("Error saving user:", error)
     return NextResponse.json({ error: "Erro ao salvar usuário" }, { status: 500 })
@@ -156,34 +151,26 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "ID do usuário não fornecido" }, { status: 400 })
     }
 
-    // Get current users from Redis
-    const usersData = (await redis.get<User[]>(REDIS_KEYS.USERS)) || []
-
     // Check if user exists
-    const index = usersData.findIndex((u) => u.id === id)
-    if (index === -1) {
+    const user = await prisma.user.findUnique({ where: { id } })
+    if (!user) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     // Don't allow deleting the last admin
-    if (usersData[index].role === "admin") {
-      const adminCount = usersData.filter((u) => u.role === "admin").length
+    if (user.role === "admin") {
+      const adminCount = await prisma.user.count({ where: { role: "admin" } })
       if (adminCount <= 1) {
         return NextResponse.json({ error: "Não é possível excluir o último administrador" }, { status: 400 })
       }
     }
 
-    // Instead of deleting, mark as inactive
-    usersData[index].active = false
-    usersData[index].updatedAt = new Date().toISOString()
+    // Delete user
+    await prisma.user.delete({ where: { id } })
 
-    // Update Redis
-    await redis.set(REDIS_KEYS.USERS, usersData)
-
-    return NextResponse.json({ success: true, message: "Usuário desativado com sucesso" })
+    return NextResponse.json({ success: true, message: "Usuário excluído com sucesso" })
   } catch (error) {
     console.error("Error deleting user:", error)
     return NextResponse.json({ error: "Erro ao excluir usuário" }, { status: 500 })
   }
 }
-
