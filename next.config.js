@@ -1,12 +1,15 @@
 /** @type {import('next').NextConfig} */
-
-module.exports = {
+const nextConfig = {
   env: {
     GOOGLE_SERVICE_PRIVATE_KEY: process.env.GOOGLE_SERVICE_PRIVATE_KEY,
   },
-}
-
-module.exports = {
+  images: {
+    domains: [
+      "lh3.googleusercontent.com",
+      "images.unsplash.com",
+      "owqcxfslomrlefrdeomt.supabase.co",
+    ],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback.fs = false
@@ -14,16 +17,8 @@ module.exports = {
       config.resolve.fallback.net = false
       config.resolve.fallback.child_process = false
     }
-
     return config
   },
 }
 
-const nextConfig = {
-  images: {
-    domains: ["lh3.googleusercontent.com", "images.unsplash.com"],
-  },
-}
-
 module.exports = nextConfig
-

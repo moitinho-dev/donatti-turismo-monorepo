@@ -12,6 +12,7 @@ import {
 import { LayoutEditor } from "../editor/LayoutEditor"
 import { SiteCardForm } from "./SiteCardForm"
 import { GoogleBusinessPanel } from "./GoogleBusinessPanel"
+import { InstagramPanel } from "./InstagramPanel"
 import type { PromoData, UserData } from "./types"
 import { slugify } from "./types"
 
@@ -61,6 +62,15 @@ interface EditorPanelProps {
     syncGbpPosts: () => void
     postPromoToGbp: (promoId: string) => void
   }
+  // Instagram
+  ig: {
+    igConnected: boolean
+    igPageName: string
+    igBusy: boolean
+    igError: string | null
+    igMessage: string | null
+    postToInstagram: (dataUrl: string, caption: string, mediaType: "FEED" | "STORIES", promoId?: string) => Promise<unknown>
+  }
   onClose: () => void
 }
 
@@ -86,8 +96,10 @@ export function EditorPanel({
   siteCardMessage,
   onSaveSiteCard,
   gbp,
+  ig,
   onClose,
 }: EditorPanelProps) {
+  const [lastDataUrl, setLastDataUrl] = useState<string | null>(null)
   const searchImages = (query: string) => {
     if (!query.trim()) return
     setLoadingImages(true)
@@ -217,6 +229,7 @@ export function EditorPanel({
           />
 
           {user.role === "admin" && (
+            <>
             <GoogleBusinessPanel
               gbpConnected={gbp.gbpConnected}
               gbpAccountName={gbp.gbpAccountName}
@@ -236,6 +249,33 @@ export function EditorPanel({
               onPostSelected={() => promo.id && gbp.postPromoToGbp(promo.id)}
               hasSelectedPromo={!!promo.id}
             />
+
+            <InstagramPanel
+              igConnected={ig.igConnected}
+              igPageName={ig.igPageName}
+              igBusy={ig.igBusy}
+              igError={ig.igError}
+              igMessage={ig.igMessage}
+              promoDestino={promo.DESTINO || ""}
+              promoHotel={promo.HOTEL || ""}
+              promoValor={promo.VALOR || ""}
+              promoParcelas={promo.PARCELAS || "10"}
+              onPostFeed={(caption) => {
+                if (!lastDataUrl) {
+                  alert("Exporte a imagem primeiro (clique em Baixar) antes de postar no Instagram.")
+                  return
+                }
+                ig.postToInstagram(lastDataUrl, caption, "FEED", promo.id)
+              }}
+              onPostStories={(caption) => {
+                if (!lastDataUrl) {
+                  alert("Exporte a imagem primeiro (clique em Baixar) antes de postar no Instagram.")
+                  return
+                }
+                ig.postToInstagram(lastDataUrl, caption, "STORIES", promo.id)
+              }}
+            />
+            </>
           )}
         </div>
       </div>
@@ -265,6 +305,7 @@ export function EditorPanel({
             backgroundImage={backgroundImage}
             onSave={onSaveSiteCard}
             onExport={onSaveSiteCard}
+            onDataUrlReady={(dataUrl) => setLastDataUrl(dataUrl)}
           />
         </div>
       </div>

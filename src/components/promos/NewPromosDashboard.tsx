@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { usePromo } from "@/hooks/usePromo"
 import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
+import { useInstagram } from "@/hooks/useInstagram"
 import { usePromoImages } from "@/hooks/usePromoImages"
 import { X } from "lucide-react"
 import { PromoForm } from "./PromoForm"
@@ -21,6 +22,7 @@ interface NewPromosDashboardProps {
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
   const gbp = useGoogleBusiness({ userRole: user.role, fetchPromos })
+  const ig = useInstagram()
   const { promoImages, loadingPromoImages, updatePromoImage } = usePromoImages(promos)
 
   const [activePanel, setActivePanel] = useState<ActivePanel>("list")
@@ -48,7 +50,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
   useEffect(() => {
     void gbp.refreshGbp()
-  }, [gbp.refreshGbp])
+    void ig.refreshIg()
+  }, [gbp.refreshGbp, ig.refreshIg])
 
   // Sync site card state when promo changes
   useEffect(() => {
@@ -232,6 +235,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
             siteCardMessage={siteCardMessage}
             onSaveSiteCard={() => void saveSiteCard()}
             gbp={gbp}
+            ig={ig}
             onClose={handleCloseEditor}
           />
         )}

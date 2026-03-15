@@ -74,6 +74,7 @@ interface LayoutEditorProps {
   backgroundImage?: string | null
   onSave?: () => void
   onExport?: () => void
+  onDataUrlReady?: (dataUrl: string) => void
 }
 
 interface SnapGuide {
@@ -312,7 +313,7 @@ const inferRegionFromDestination = (destination: string): RegionOption => {
   return "Brasil"
 }
 
-export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: LayoutEditorProps) {
+export function LayoutEditor({ promo, backgroundImage, onSave, onExport, onDataUrlReady }: LayoutEditorProps) {
   const {
     layouts,
     currentLayout,
@@ -662,6 +663,9 @@ export function LayoutEditor({ promo, backgroundImage, onSave, onExport }: Layou
       if (!dataUrl) {
         throw new Error("Failed to generate image")
       }
+
+      // Expose data URL to parent if callback provided
+      onDataUrlReady?.(dataUrl)
 
       const link = document.createElement("a")
       link.download = `promo-${promo.DESTINO.toLowerCase().replace(/\s+/g, "-")}.png`
