@@ -7,7 +7,7 @@ export const runtime = "nodejs"
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
 const EXTRACTION_PROMPT = `Voce e um assistente de extracao de dados para uma agencia de turismo brasileira.
-Extraia os seguintes campos deste texto/flyer de promocao de viagem.
+Extraia os seguintes campos deste PDF de promocao de viagem.
 Retorne APENAS um JSON valido com estes campos (sem markdown, sem backticks, apenas o JSON):
 
 {
@@ -36,79 +36,7 @@ Regras de parsing:
 - Se nao conseguir determinar um campo, use null
 - Cafe da manha = COM_CAFE, sem cafe = SEM_CAFE, meia pensao = MEIA_PENSAO, pensao completa = PENSAO_COMPLETA, all inclusive = ALL_INCLUSIVE`
 
-async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import("pdf-parse")
-  const parser = new PDFParse({ data: new Uint8Array(buffer) })
-  const result = await parser.getText()
-  return result.text || ""
-}
-
-async function callGeminiText(text: string, apiKey: string): Promise<Record<string, unknown>> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `${EXTRACTION_PROMPT}\n\nTexto extraido do PDF:\n\n${text}` }],
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024,
-        },
-      }),
-    },
-  )
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`Gemini API error: ${response.status} - ${err}`)
-  }
-
-  const data = await response.json()
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || ""
-  return parseGeminiJson(rawText)
-}
-
-async function callGeminiVision(base64Pdf: string, apiKey: string): Promise<Record<string, unknown>> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: EXTRACTION_PROMPT },
-            {
-              inlineData: {
-                mimeType: "application/pdf",
-                data: base64Pdf,
-              },
-            },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024,
-        },
-      }),
-    },
-  )
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`Gemini Vision API error: ${response.status} - ${err}`)
-  }
-
-  const data = await response.json()
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || ""
-  return parseGeminiJson(rawText)
-}
-
 function parseGeminiJson(rawText: string): Record<string, unknown> {
-  // Strip markdown code fences if present
   let cleaned = rawText.trim()
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "")
@@ -117,7 +45,6 @@ function parseGeminiJson(rawText: string): Record<string, unknown> {
   try {
     return JSON.parse(cleaned)
   } catch {
-    // Try to find JSON object in the text
     const match = cleaned.match(/\{[\s\S]*\}/)
     if (match) {
       return JSON.parse(match[0])
@@ -157,44 +84,54 @@ export async function POST(request: NextRequest) {
     }
 
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const base64 = Buffer.from(arrayBuffer).toString("base64")
 
-    const warnings: string[] = []
-    let fields: Record<string, unknown>
+    // Send PDF directly to Gemini Vision — handles both text-based and scanned PDFs
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: EXTRACTION_PROMPT },
+              {
+                inlineData: {
+                  mimeType: "application/pdf",
+                  data: base64,
+                },
+              },
+            ],
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1024,
+          },
+        }),
+      },
+    )
 
-    // Try text extraction first
-    let extractedText = ""
-    try {
-      extractedText = await extractTextFromPdf(buffer)
-    } catch {
-      warnings.push("Nao foi possivel extrair texto do PDF, usando analise visual")
+    if (!response.ok) {
+      const err = await response.text()
+      throw new Error(`Gemini API error: ${response.status} - ${err}`)
     }
 
-    if (extractedText.length > 50) {
-      // Text-based PDF — use text model (cheaper, faster)
-      fields = await callGeminiText(extractedText, apiKey)
-    } else {
-      // Scanned/image PDF — use vision model with base64
-      warnings.push("PDF sem texto detectado, usando analise visual (pode ser mais lento)")
-      const base64 = buffer.toString("base64")
-      fields = await callGeminiVision(base64, apiKey)
-    }
+    const data = await response.json()
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || ""
+    const fields = parseGeminiJson(rawText)
 
-    // Count how many fields were extracted
+    // Count extracted fields
     const fieldKeys = ["DESTINO", "HOTEL", "DE", "ATE", "MES_DE", "MES_ATE", "ANO", "VALOR", "PARCELAS", "NUMERO_DE_NOITES", "regime", "AEREO", "SP", "CG"]
     const filledCount = fieldKeys.filter(k => fields[k] != null).length
     const confidence = filledCount / fieldKeys.length
 
+    const warnings: string[] = []
     if (filledCount === 0) {
       warnings.push("Nenhum campo foi identificado no PDF")
     }
 
-    return NextResponse.json({
-      fields,
-      confidence,
-      warnings,
-      extractedText: extractedText.length > 50 ? extractedText.substring(0, 500) : undefined,
-    })
+    return NextResponse.json({ fields, confidence, warnings })
   } catch (error) {
     console.error("PDF extraction error:", error)
     const message = error instanceof Error ? error.message : "Erro ao processar PDF"
