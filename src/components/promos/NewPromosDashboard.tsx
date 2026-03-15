@@ -9,7 +9,7 @@ import { X } from "lucide-react"
 import { PromoForm } from "./PromoForm"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
 import { PromoListPanel } from "./dashboard/PromoListPanel"
-import { EditorPanel } from "./dashboard/EditorPanel"
+import { DonatiStudio } from "./DonatiStudio"
 import { StatsPanel } from "./dashboard/StatsPanel"
 import { DeleteConfirmModal } from "./dashboard/DeleteConfirmModal"
 import type { PromoData, ActivePanel, UserData } from "./dashboard/types"
@@ -213,7 +213,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         )}
 
         {activePanel === "editor" && selectedPromo && (
-          <EditorPanel
+          <DonatiStudio
             promo={selectedPromo}
             user={user}
             backgroundImage={backgroundImage}
