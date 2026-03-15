@@ -1,568 +1,1006 @@
 'use client'
 
+/**
+ * DONATTI TURISMO - Landing Page
+ * Light Theme Landing Page com UX/Conversão otimizados
+ */
+
 import { useEffect, useState } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
-import {
-  Search, MapPin, Star, ChevronDown, Calendar, DollarSign,
-  Phone, Shield, Award, Clock, Users, Plane, Heart,
-  Instagram, Facebook, ArrowRight, MessageCircle, X,
-} from 'lucide-react'
-import Link from 'next/link'
-import RealTimePromos from '@/components/home/RealTimePromos'
+import { createPortal } from 'react-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { trackEvent } from '@/lib/analytics'
+import {
+  Search,
+  MapPin,
+  Star,
+  ArrowRight,
+  Shield,
+  Award,
+  Users,
+  Plane,
+  Globe,
+  Heart,
+  TrendingUp,
+  CreditCard,
+  CheckCircle2,
+  Mail,
+  Building2,
+  Phone,
+  Send,
+  ShieldCheck,
+} from 'lucide-react'
+import RealTimePromos from '@/components/home/RealTimePromos'
 
-const WHATSAPP_URL = 'https://wa.me/5567992167694'
-
-const stats = [
-  { value: '10+', label: 'Anos de Experiencia' },
-  { value: '5K+', label: 'Viajantes Felizes' },
-  { value: '24/7', label: 'Suporte WhatsApp' },
-  { value: '4.9', label: 'Nota no Google' },
-]
-
-const benefits = [
-  {
-    icon: Phone,
-    title: 'Atendimento 24/7',
-    description: 'Suporte completo pelo WhatsApp antes, durante e depois da sua viagem.',
-  },
-  {
-    icon: Shield,
-    title: 'Preço Garantido',
-    description: 'Encontrou mais barato? Cobrimos a diferença. Sem letras miúdas.',
-  },
-  {
-    icon: Award,
-    title: 'Nota 4.9 no Google',
-    description: 'Mais de 200 avaliações verificadas de clientes satisfeitos.',
-  },
-]
-
-const testimonials = [
-  {
-    name: 'Mariana S.',
-    destination: 'Cancún',
-    text: 'Melhor agência que já contratei! Tudo organizado, desde o aeroporto até o hotel. Viagem perfeita!',
-    rating: 5,
-  },
-  {
-    name: 'Carlos R.',
-    destination: 'Gramado',
-    text: 'Atendimento incrível pelo WhatsApp. Tiraram todas as dúvidas em tempo real. Super recomendo!',
-    rating: 5,
-  },
-  {
-    name: 'Ana Paula M.',
-    destination: 'Maceió',
-    text: 'Preço justo, hotel maravilhoso e suporte impecável. Já estamos planejando a próxima viagem!',
-    rating: 5,
-  },
-]
-
-function FloatingNav() {
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  return (
-    <nav
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between px-5 py-3 rounded-full w-[92%] max-w-6xl transition-all duration-500 ${
-        scrolled
-          ? 'bg-white/90 backdrop-blur-xl border border-gray-200 shadow-2xl'
-          : 'bg-white/70 backdrop-blur-lg border border-gray-200/50 shadow-lg'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden">
-          <img
-            src="/assets/logo-preto.png"
-            alt="Donatti Turismo"
-            className="h-7 object-contain"
-          />
-        </div>
-        <span className="font-bold text-[15px] tracking-tight text-gray-900 hidden sm:block">Donatti Turismo</span>
-      </div>
-
-      <div className="hidden md:flex items-center gap-7 text-[13px] font-semibold text-gray-500">
-        <a href="#ofertas" className="hover:text-gray-900 transition-colors">Ofertas</a>
-        <a href="#destinos" className="hover:text-gray-900 transition-colors">Destinos</a>
-        <a href="#avaliacoes" className="hover:text-gray-900 transition-colors">Avaliações</a>
-        <a href="#contato" className="hover:text-gray-900 transition-colors">Contato</a>
-      </div>
-
-      <a
-        href={`${WHATSAPP_URL}?text=${encodeURIComponent('Olá! Quero saber mais sobre os pacotes de viagem.')}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-[#1a1a1a] hover:bg-[#333] text-[#ffa200] font-bold px-5 py-2 rounded-full transition-all text-[12px] shadow-md hover:shadow-lg"
-      >
-        Fale Conosco
-      </a>
-    </nav>
-  )
-}
-
-function HeroIsland() {
-  return (
-    <div className="p-3 md:p-6 pt-24 max-w-7xl mx-auto">
-      <motion.section
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="relative min-h-[65vh] flex flex-col justify-center bg-[#1a1a1a] rounded-[28px] overflow-hidden border border-gray-800 shadow-2xl"
-      >
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=1600&q=80"
-            alt=""
-            className="w-full h-full object-cover opacity-40 mix-blend-luminosity"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a1a] via-[#1a1a1a]/85 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
-        </div>
-
-        <div className="relative z-10 px-8 md:px-16 max-w-[700px] flex flex-col gap-6 py-14">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            <span className="text-[#ffa200] text-[13px] font-semibold tracking-widest uppercase bg-[#ffa200]/10 px-4 py-1.5 rounded-full border border-[#ffa200]/20 inline-block mb-6">
-              Agência de Viagens Campo Grande/MS
-            </span>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.7 }}
-            className="text-[42px] md:text-[64px] font-black leading-[1.05] text-white tracking-tight"
-          >
-            Sua próxima{' '}
-            <span className="relative inline-block text-[#ffa200]">
-              aventura
-              <svg className="absolute -bottom-1 left-0 w-full h-2 text-[#ffa200]/50" viewBox="0 0 100 8" preserveAspectRatio="none">
-                <path d="M0,5 Q25,0 50,5 T100,5" stroke="currentColor" strokeWidth="3" fill="transparent" />
-              </svg>
-            </span>{' '}
-            começa aqui
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="text-gray-400 text-[17px] max-w-[450px] leading-relaxed"
-          >
-            Pacotes nacionais e internacionais com parcelas que cabem no bolso. Atendimento 24/7 no WhatsApp.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="flex flex-wrap gap-3 mt-2"
-          >
-            <a
-              href="#ofertas"
-              className="bg-[#ffa200] hover:bg-[#e89200] text-[#1a1a1a] font-black px-8 py-3.5 rounded-full text-[14px] transition-all hover:scale-105 shadow-[0_4px_20px_rgba(255,162,0,0.3)]"
-            >
-              Ver Ofertas
-            </a>
-            <a
-              href={`${WHATSAPP_URL}?text=${encodeURIComponent('Olá! Gostaria de montar um pacote de viagem personalizado.')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white/10 hover:bg-white/15 text-white font-bold px-8 py-3.5 rounded-full text-[14px] transition-all border border-white/20 flex items-center gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </a>
-          </motion.div>
-        </div>
-      </motion.section>
-    </div>
-  )
-}
-
-function StatsSection() {
-  return (
-    <section className="px-3 md:px-6 pb-12 max-w-7xl mx-auto -mt-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white border border-gray-200 rounded-[20px] p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-[#ffa200]/30 transition-all"
-          >
-            <span className="text-[36px] md:text-[42px] font-black text-gray-900 leading-none mb-1">
-              {stat.value.includes('+') ? (
-                <>{stat.value.replace('+', '')}<span className="text-[#ffa200]">+</span></>
-              ) : stat.value}
-            </span>
-            <span className="text-[13px] text-gray-500 font-medium">{stat.label}</span>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function BenefitsSection() {
-  return (
-    <section id="destinos" className="bg-gray-50 py-16">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <span className="text-[#ffa200] text-[13px] font-semibold tracking-widest uppercase border border-gray-800 px-3 py-1 rounded-full inline-block mb-4">
-            Benefícios Donatti
-          </span>
-          <h2 className="text-[32px] md:text-[40px] font-bold text-gray-900 leading-tight">
-            Confiança logo no primeiro scroll
-          </h2>
-          <p className="text-gray-600 text-[18px] mt-3 max-w-xl mx-auto">
-            Atendimento 24/7, preço garantido e suporte completo antes, durante e depois da viagem.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {benefits.map((b, i) => (
-            <motion.div
-              key={b.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white border border-gray-200 rounded-[18px] p-7 shadow-sm hover:shadow-lg hover:border-[#ffa200]/30 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-[#ffa200]/10 group-hover:bg-[#ffa200]/20 transition-colors">
-                <b.icon className="h-6 w-6 text-[#ffa200]" />
-              </div>
-              <h3 className="text-[18px] font-bold text-gray-900 mb-2">{b.title}</h3>
-              <p className="text-gray-600 text-[15px] leading-relaxed">{b.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function OffersSection() {
+export default function DonattiTurismoMinimalist() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeQuery, setActiveQuery] = useState('')
+  const [activeSearchQuery, setActiveSearchQuery] = useState('')
+  const [isVisible, setIsVisible] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [searchedDestination, setSearchedDestination] = useState('')
+  const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      setActiveQuery(searchQuery.trim())
-      trackEvent('search', { query: searchQuery.trim(), location: 'hero_search' })
-    }
-  }
+  // Form states
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    destination: '',
+    period: '',
+  })
 
+  // Handler para quando não encontrar promoção para o destino
   const handleNoResults = (query: string) => {
     setSearchedDestination(query)
     trackEvent('whatsapp_click', { location: 'no_results', query })
     setShowWhatsAppModal(true)
   }
 
-  return (
-    <section id="ofertas" className="py-16 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-10">
-          <span className="text-[#ffa200] text-[13px] font-semibold tracking-widest uppercase border border-gray-800 px-3 py-1 rounded-full inline-block mb-4">
-            Ofertas Imperdíveis
-          </span>
-          <h2 className="text-[32px] md:text-[40px] font-bold text-gray-900 leading-tight">
-            Pacotes em <span className="text-[#ffa200]">destaque</span>
-          </h2>
-          <p className="text-gray-600 text-[18px] mt-3 max-w-xl mx-auto">
-            Confira nossos pacotes com os melhores preços e condições especiais de pagamento.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 mt-8 max-w-2xl mx-auto">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar destino, hotel..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl text-[15px] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffa200]/40 focus:border-[#ffa200]/50"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="bg-[#1a1a1a] hover:bg-[#333] text-[#ffa200] font-bold px-8 py-3.5 rounded-xl transition-all text-[14px] flex items-center justify-center gap-2 shadow-md"
-            >
-              <Search className="h-4 w-4" />
-              Buscar
-            </button>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <Link
-              href="/pacotes"
-              className="bg-[#1a1a1a] text-[#ffa200] font-medium text-[14px] h-10 flex items-center px-4 rounded-xl border border-gray-800 hover:bg-[#333] transition-colors"
-            >
-              Ver todos os pacotes
-            </Link>
-            <Link
-              href="/destinos"
-              className="text-gray-700 font-medium text-[14px] h-10 flex items-center gap-2 px-4 rounded-xl hover:text-gray-900 transition-colors"
-            >
-              Ver todos os destinos
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        <RealTimePromos searchQuery={activeQuery} onNoResults={handleNoResults} limit={12} />
-      </div>
-
-      {/* WhatsApp Modal */}
-      {showWhatsAppModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Monte seu pacote</h3>
-              <button onClick={() => setShowWhatsAppModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Não encontramos ofertas para <strong>{searchedDestination}</strong>, mas podemos montar um pacote personalizado!
-            </p>
-            <a
-              href={`${WHATSAPP_URL}?text=${encodeURIComponent(`Olá! Gostaria de um orçamento para ${searchedDestination}.`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Falar no WhatsApp
-            </a>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function TestimonialsSection() {
-  return (
-    <section id="avaliacoes" className="bg-gray-50 py-16">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <span className="text-[#ffa200] text-[13px] font-semibold tracking-widest uppercase border border-gray-800 px-3 py-1 rounded-full inline-block mb-4">
-            Depoimentos Verificados
-          </span>
-          <h2 className="text-[32px] md:text-[40px] font-bold text-gray-900 leading-tight">
-            O que nossos clientes <span className="text-[#ffa200]">dizem</span>
-          </h2>
-          <p className="text-gray-600 text-[18px] mt-3 max-w-xl mx-auto">
-            Mais de 5.000 viajantes já realizaram seus sonhos com a Donatti Turismo
-          </p>
-          <a
-            href="https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#ffa200] text-[14px] font-semibold inline-flex items-center gap-2 mt-4 hover:underline"
-          >
-            <Star className="h-4 w-4" />
-            Ver todas as avaliações no Google
-          </a>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white border border-gray-200 rounded-[18px] p-7 shadow-sm hover:shadow-lg hover:border-[#ffa200]/30 transition-all"
-            >
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: t.rating }).map((_, j) => (
-                  <Star key={j} className="h-5 w-5 text-[#ffa200] fill-[#ffa200]" />
-                ))}
-              </div>
-              <p className="text-gray-700 text-[15px] leading-relaxed mb-5 italic">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#ffa200]/10 flex items-center justify-center text-[#ffa200] font-bold text-[14px]">
-                  {t.name[0]}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-[14px]">{t.name}</p>
-                  <p className="text-gray-500 text-[12px]">Viagem para {t.destination}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function CTASection() {
-  return (
-    <section id="contato" className="py-16 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-[24px] p-10 text-center shadow-lg hover:shadow-xl hover:border-[#ffa200]/30 transition-all">
-          <MessageCircle className="h-12 w-12 text-[#ffa200] mx-auto mb-4" />
-          <h2 className="text-[32px] md:text-[36px] font-bold text-gray-900 mb-3">
-            Pronto para sua próxima viagem?
-          </h2>
-          <p className="text-gray-600 text-[17px] mb-8 max-w-lg mx-auto">
-            Fale com nossa equipe e receba um orçamento personalizado em minutos. Atendimento 24/7.
-          </p>
-          <a
-            href={`${WHATSAPP_URL}?text=${encodeURIComponent('Olá! Quero montar um pacote de viagem personalizado.')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold px-10 py-4 rounded-full text-[15px] transition-all hover:scale-105 shadow-[0_4px_20px_rgba(37,211,102,0.3)]"
-          >
-            <MessageCircle className="h-5 w-5" />
-            Falar no WhatsApp
-          </a>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="bg-[#1a1a1a] text-gray-400 py-14">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-10 mb-10">
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <img src="/assets/logo-preto.png" alt="Donatti" className="h-8 brightness-0 invert object-contain" />
-            </div>
-            <p className="text-[14px] leading-relaxed">
-              Sua agência de viagens em Campo Grande/MS. Pacotes nacionais e internacionais com atendimento personalizado.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold text-[14px] mb-4">Links</h4>
-            <div className="flex flex-col gap-2 text-[14px]">
-              <Link href="/pacotes" className="hover:text-white transition-colors">Pacotes</Link>
-              <Link href="/destinos" className="hover:text-white transition-colors">Destinos</Link>
-              <a href="#avaliacoes" className="hover:text-white transition-colors">Avaliações</a>
-              <a href="#contato" className="hover:text-white transition-colors">Contato</a>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold text-[14px] mb-4">Contato</h4>
-            <div className="flex flex-col gap-2 text-[14px]">
-              <a href="tel:+5567992167694" className="hover:text-white transition-colors">(67) 99216-7694</a>
-              <a href="mailto:contato@donattiturismo.com.br" className="hover:text-white transition-colors">contato@donattiturismo.com.br</a>
-              <span>Av. Tamandaré, 8 - Vila Planalto</span>
-              <span>Campo Grande - MS</span>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold text-[14px] mb-4">Redes Sociais</h4>
-            <div className="flex gap-3">
-              <a
-                href="https://www.instagram.com/donattiturismo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#ffa200]/20 hover:text-[#ffa200] transition-all"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href="https://www.facebook.com/donattiturismo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#ffa200]/20 hover:text-[#ffa200] transition-all"
-              >
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a
-                href={WHATSAPP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#25D366]/20 hover:text-[#25D366] transition-all"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-[13px]">
-          <p>© 2025 Donatti Turismo. Todos os direitos reservados. CNPJ 41.887.394/0001-29.</p>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-[#ffa200]" />
-              <span>Site seguro SSL</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Award className="h-4 w-4 text-[#ffa200]" />
-              <span>Cadastur ativo</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
-  )
-}
-
-// Floating WhatsApp button
-function WhatsAppFAB() {
-  const [visible, setVisible] = useState(false)
-
+  // Fade in effect
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 3000)
-    return () => clearTimeout(timer)
+    setIsVisible(true)
+    setIsMounted(true)
   }, [])
 
-  if (!visible) return null
+  // Stats data
+  const stats = [
+    { value: '5.000+', label: 'Viajantes Felizes', icon: Users },
+    { value: '150+', label: 'Destinos', icon: Globe },
+    { value: '4.9/5', label: 'Avaliação Google', icon: Star },
+    { value: '15 Anos', label: 'Experiência', icon: Award },
+  ]
+
+  // Quick search chips
+  const quickChips = [
+    { label: 'All Inclusive', icon: Star },
+    { label: 'Com aéreo', icon: Plane },
+    { label: 'Cancelamento grátis', icon: CheckCircle2 },
+  ]
+
+  // Benefits
+  const benefits = [
+    {
+      icon: Phone,
+      title: 'Atendimento 24/7 via WhatsApp',
+      description: 'Resposta humana em minutos, inclusive finais de semana e feriados',
+    },
+    {
+      icon: Award,
+      title: 'Preço garantido',
+      description: 'Se baixar, devolvemos a diferença — combinado e documentado',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Cancelamento grátis em ofertas selecionadas',
+      description: 'Opções flexíveis para você reagendar ou cancelar quando indicado',
+    },
+    {
+      icon: MapPin,
+      title: 'Roteiros personalizados',
+      description: 'Criados sob medida para seu estilo de viagem e orçamento',
+    },
+    {
+      icon: Heart,
+      title: 'Suporte completo',
+      description: 'Antes, durante e depois da viagem, com acompanhamento proativo',
+    },
+    {
+      icon: TrendingUp,
+      title: '15 anos de experiência e 5.000+ clientes',
+      description: 'Avaliação média 5/5 no Google e histórico sólido de emissões',
+    },
+  ]
+
+  // Testimonials
+  const testimonials = [
+    {
+      name: 'Ana & Carlos',
+      location: 'São Paulo',
+      text: 'A Donatti tornou nossa lua de mel nas Maldivas um sonho real. Cada detalhe foi perfeito!',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Juliana F.',
+      location: 'Rio de Janeiro',
+      text: 'Minha viagem solo para a Itália foi incrível. Me senti segura e aproveitei cada segundo.',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Família Martins',
+      location: 'Belo Horizonte',
+      text: 'As crianças amaram a Disney! A organização foi impecável.',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1597466599360-3b9775841aec?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Letícia N.',
+      location: 'Curitiba',
+      text: 'Fechamos cruzeiro no Caribe e o suporte pelo WhatsApp foi 24/7. Recomendo muito!',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Rafael & Mariana',
+      location: 'Campinas',
+      text: 'Gramado com roteiro personalizado e preço garantido. Voltarei a comprar com a Donatti.',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1455763916899-e8b50eca9967?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      name: 'Bruna L.',
+      location: 'Florianópolis',
+      text: 'Punta Cana all inclusive com cancelamento grátis. Tudo bem explicado e transparente.',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
+    },
+  ]
+  const googleReviewsUrl = 'https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8'
 
   return (
-    <motion.a
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      href={`${WHATSAPP_URL}?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de mais informações.')}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform"
-      aria-label="Falar no WhatsApp"
-    >
-      <MessageCircle className="h-7 w-7 text-white" />
-    </motion.a>
-  )
-}
+    <div className="relative min-h-screen overflow-hidden bg-white text-gray-900">
+      {/* Gradient blur from top */}
+      <div className="gradient-blur-top" />
 
-export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
-      <FloatingNav />
-      <HeroIsland />
-      <StatsSection />
-      <BenefitsSection />
-      <OffersSection />
-      <TestimonialsSection />
-      <CTASection />
-      <Footer />
-      <WhatsAppFAB />
+      
+
+      {/* Main Content */}
+      <main id="main-content" role="main" className="relative z-10">
+        {/* Hero Section with Integrated Header */}
+        <section
+          aria-labelledby="hero-title"
+          className={`min-h-screen flex flex-col px-4 transition-all duration-1000 relative ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/images/hero-beach.jpg"
+              alt=""
+              className="h-full w-full object-cover blur-[6px] scale-105"
+              aria-hidden="true"
+            />
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-white" />
+          </div>
+
+          {/* Header - Integrated into Hero */}
+          <header role="banner" className="w-full py-4 relative z-10">
+            <div className="container mx-auto flex h-20 items-center justify-between">
+              <div className="flex items-center">
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGOTIPO_PNG_COR-HrrWIVyKTna8rzMaQYpuC0rmVAgCd3.png"
+                  alt="Donatti Turismo"
+                  className="h-16 w-auto object-contain"
+                  width="64"
+                  height="64"
+                />
+              </div>
+
+              <nav role="navigation" aria-label="Navegação principal" className="hidden items-center gap-8 md:flex">
+                <a
+                  href="#ofertas"
+                  className="text-sm font-bold text-white transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1 drop-shadow-md"
+                >
+                  Ofertas
+                </a>
+                <a
+                  href="#destinos"
+                  className="text-sm font-bold text-white transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1 drop-shadow-md"
+                >
+                  Destinos
+                </a>
+                <a
+                  href="#avaliacoes"
+                  className="text-sm font-bold text-white transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary rounded-sm px-2 py-1 drop-shadow-md"
+                >
+                  Avaliações
+                </a>
+              </nav>
+
+              <Button className="bg-primary text-white hover:bg-primary/90 font-semibold min-h-[44px]">
+                <Phone className="mr-2 h-4 w-4" />
+                Consulte Agora
+              </Button>
+            </div>
+          </header>
+
+          {/* Hero Content */}
+          <div className="flex-1 flex items-center justify-center relative z-10">
+          <div className="container mx-auto max-w-7xl">
+            <div className="text-center">
+              
+
+              {/* Main Heading */}
+              <h1
+                id="hero-title"
+                className="mb-6 text-6xl leading-[1.1] tracking-tight md:text-7xl lg:text-8xl xl:text-9xl drop-shadow-lg"
+              >
+                <span className="font-bold text-white">Realize sua</span>
+                <br />
+                <span className="font-italic text-white">próxima <span className="gradient-text font-semibold">aventura</span></span>
+                <br />
+                <span className="font-bold text-white">com a</span> <span className="font-bold gradient-text">Donatti</span>
+              </h1>
+
+              {/* Subtitle with urgency + social proof */}
+              <p className="mx-auto mb-8 max-w-3xl text-lg md:text-xl leading-relaxed font-bold text-white drop-shadow-md">
+                Os melhores pacotes de viagem com até 12x sem juros + Suporte 24/7 no WhatsApp
+              </p>
+
+
+              {/* Enhanced Search Bar */}
+              <div className="mx-auto mb-6 max-w-3xl">
+                <form
+                  role="search"
+                  aria-label="Buscar pacotes de viagem"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    setActiveSearchQuery(searchQuery)
+                    document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  className="glass rounded-2xl p-4 overflow-hidden"
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                    <div className="relative flex flex-1 items-center overflow-hidden">
+                      <label htmlFor="hero-search" className="sr-only">
+                        Digite seu destino dos sonhos
+                      </label>
+                      <div className="absolute left-3 flex items-center pointer-events-none z-10">
+                        <MapPin className="h-4 w-4 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <Input
+                        id="hero-search"
+                        type="search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Para onde você quer ir?"
+                        className="h-12 w-full border border-gray-200 bg-gray-50 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 rounded-lg"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="h-12 bg-primary px-6 text-sm font-semibold text-white hover:bg-primary/90 whitespace-nowrap"
+                    >
+                      <Search className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Buscar
+                    </Button>
+                  </div>
+
+                  {/* Quick Search Chips */}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {quickChips.map((chip, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(chip.label)
+                          setActiveSearchQuery(chip.label)
+                          trackEvent('catalog_filter', { chip: chip.label })
+                          document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
+                        }}
+                        className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        <chip.icon className="h-3 w-3" />
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </form>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="mb-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    trackEvent('cta_click', { label: 'ver_ofertas' })
+                    document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  className="group inline-flex items-center justify-center h-14 rounded-full bg-primary p-4  text-base font-bold text-white shadow-xl hover:shadow-primary/50 hover:bg-primary/90 transition-all hover:scale-105"
+                >
+                  <span>Ver ofertas</span>
+                  <ArrowRight className="ml-2 h-5 w-5 flex-shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => {
+                    trackEvent('whatsapp_click', { location: 'hero' })
+                    setShowWhatsAppModal(true)
+                  }}
+                  className="inline-flex items-center justify-center h-14 rounded-full border-2 border-gray-300 bg-transparent p-4 text-base font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <Phone className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span>Falar no WhatsApp</span>
+                </Button>
+              </div>
+
+              {/* Social Proof */}
+              <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
+                <div className="flex -space-x-2">
+                  {[
+                    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
+                    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face',
+                  ].map((src, i) => (
+                    <img
+                      key={i}
+                      src={src}
+                      alt=""
+                      className="h-8 w-8 rounded-full border-2 border-white object-cover"
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
+                <span className="text-xs md:text-sm">
+                  <strong className="text-gray-900">2.847 pessoas</strong> visualizando agora
+                </span>
+              </div>
+            </div>
+          </div>
+          </div>
+
+         
+        </section>
+
+        {/* Benefits right after hero */}
+        <section id="destinos" aria-labelledby="benefits-title" className="relative py-16 bg-gray-50 border-y border-gray-200">
+          <div className="container mx-auto px-4">
+            <div className="mb-10 text-center">
+              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                Benefícios Donatti
+              </Badge>
+              <h2 id="benefits-title" className="mb-3 text-3xl font-bold md:text-4xl text-gray-900">
+                Confiança logo no primeiro scroll
+              </h2>
+              <p className="text-lg text-gray-600">
+                Atendimento 24/7 no WhatsApp, preço garantido e suporte completo antes, durante e depois da viagem.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {benefits.map((item, index) => (
+                <div key={index} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <item.icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">{item.title}</h3>
+                  <p className="text-gray-600 leading-relaxed text-sm">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section aria-label="Estatísticas da empresa" className="relative py-20 border-y border-gray-200">
+          <div className="container mx-auto px-4">
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold md:text-4xl text-gray-900">
+                Mais de <span className="gradient-text">5.000 viajantes felizes</span>
+              </h2>
+              <p className="mt-3 text-lg text-gray-600">Nota média 4,9/5 — Baseado em avaliações verificadas</p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+              {stats.map((stat, index) => (
+                <div
+                  key={index}
+                  className="glass card-glow rounded-2xl p-8 text-center transition-all hover:scale-105"
+                >
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                    <stat.icon className="h-8 w-8 text-primary" aria-hidden="true" />
+                  </div>
+                  <div className="mb-2 text-4xl font-bold gradient-text">{stat.value}</div>
+                  <div className="text-sm text-gray-600">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Offers Section */}
+        <section id="ofertas" aria-labelledby="offers-title" className="relative py-20 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="mb-16 text-center">
+              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                Ofertas Imperdíveis
+              </Badge>
+              <h2 id="offers-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
+                Pacotes em <span className="gradient-text">destaque</span>
+              </h2>
+              <p className="mx-auto max-w-2xl text-lg text-gray-600">
+                {activeSearchQuery
+                  ? `Resultados para "${activeSearchQuery}"`
+                  : 'Confira nossos pacotes com os melhores preços e condições especiais de pagamento.'}
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                  <a href="/pacotes">Ver todos os pacotes</a>
+                </Button>
+                <Button asChild variant="ghost" className="text-gray-700 hover:text-primary" onClick={() => trackEvent('cta_click', { label: 'ver_destinos' })}>
+                  <a href="/destinos" className="flex items-center gap-2">
+                    Ver todos os destinos
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+              {activeSearchQuery && (
+                <Button
+                  onClick={() => {
+                    setActiveSearchQuery('')
+                    setSearchQuery('')
+                  }}
+                  variant="outline"
+                  className="mt-4 border-gray-300 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  Limpar filtro
+                </Button>
+              )}
+            </div>
+
+            {/* Real-time promos component */}
+            <RealTimePromos searchQuery={activeSearchQuery} onNoResults={handleNoResults} />
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section id="avaliacoes" aria-labelledby="testimonials-title" className="relative py-20 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="mb-16 text-center">
+              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                Depoimentos Verificados
+              </Badge>
+              <h2 id="testimonials-title" className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
+                O que nossos clientes <span className="gradient-text">dizem</span>
+              </h2>
+              <p className="mx-auto max-w-2xl text-lg text-gray-600">
+                Mais de 5.000 viajantes já realizaram seus sonhos com a Donatti Turismo
+              </p>
+              <div className="mt-6">
+                <a
+                  href={googleReviewsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Star className="h-4 w-4 fill-primary" />
+                  Ler mais no Google Reviews
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-3">
+              {testimonials.map((testimonial, index) => (
+                <div
+                  key={index}
+                  className="glass card-glow rounded-2xl overflow-hidden transition-all hover:scale-105"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={testimonial.image}
+                      alt={`Viagem de ${testimonial.name}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent" />
+                  </div>
+                  <div className="p-8">
+                    <div className="mb-4 flex items-center gap-2" aria-label={`Avaliação ${testimonial.rating} de 5 estrelas`}>
+                      <div className="flex gap-1">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star key={i} className="h-5 w-5 fill-primary text-primary" aria-hidden="true" />
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">{testimonial.rating}/5</span>
+                    </div>
+                    <p className="mb-6 italic leading-relaxed text-gray-600">"{testimonial.text}"</p>
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                      <p className="text-sm text-gray-500">{testimonial.location}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Contact Form */}
+        <section id="contato" aria-labelledby="contact-title" className="relative py-20 border-y border-gray-200">
+          <div className="container mx-auto px-4">
+            <div className="glass card-glow mx-auto max-w-3xl rounded-3xl p-8 md:p-12">
+              <div className="mb-8 text-center">
+                <Mail className="mx-auto mb-4 h-12 w-12 text-primary" />
+                <h2 id="cta-title" className="mb-6 text-4xl font-bold md:text-5xl lg:text-6xl text-gray-900">
+                Sua próxima viagem
+                <br />
+                <span className="gradient-text">começa aqui</span>
+              </h2>
+              <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-600">
+                Parcele em até 12x sem juros e conte com suporte 24/7 durante toda a viagem.
+              </p>
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  setFormStatus('idle')
+                  try {
+                    await fetch('/api/leads', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        name: formData.name,
+                        phone: formData.phone,
+                        email: formData.email,
+                        destination: formData.destination,
+                        period: formData.period,
+                        source: 'contact_form',
+                      }),
+                    })
+                    setFormStatus('success')
+                    trackEvent('lead_form_submit', {
+                      source: 'contact_form',
+                      destination: formData.destination,
+                      period: formData.period,
+                    })
+                    trackEvent('rdstation_lead', {
+                      product: formData.destination || 'formulario',
+                    })
+                    setFormData({ name: '', email: '', phone: '', destination: '', period: '' })
+                  } catch (error) {
+                    console.error('Erro ao enviar:', error)
+                    setFormStatus('error')
+                  }
+                }}
+                className="space-y-6"
+              >
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-gray-700">
+                      Nome completo *
+                    </label>
+                    <Input
+                      id="contact-name"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Seu nome"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-gray-700">
+                      Telefone *
+                    </label>
+                    <Input
+                      id="contact-phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-gray-700">
+                      E-mail *
+                    </label>
+                    <Input
+                      id="contact-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="seu@email.com"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="contact-destination" className="mb-2 block text-sm font-medium text-gray-700">
+                      Destino de interesse *
+                    </label>
+                    <Input
+                      id="contact-destination"
+                      type="text"
+                      value={formData.destination}
+                      onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                      placeholder="Ex.: Cancún, Noronha, Cruzeiro Caribe"
+                      className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="contact-period" className="mb-2 block text-sm font-medium text-gray-700">
+                    Período desejado
+                  </label>
+                  <Input
+                    id="contact-period"
+                    type="text"
+                    value={formData.period}
+                    onChange={(e) => setFormData({ ...formData, period: e.target.value })}
+                    placeholder="Ex.: julho/2025 ou 10 a 17/08"
+                    className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="h-14 w-full bg-primary text-base font-semibold text-white hover:bg-primary/90"
+                >
+                  <Send className="mr-2 h-5 w-5" />
+                  Solicitar Orçamento
+                </Button>
+
+                {formStatus === 'success' && (
+                  <p className="text-center text-sm text-green-600">Obrigado! Recebemos seu pedido e retornaremos em instantes.</p>
+                )}
+                {formStatus === 'error' && (
+                  <p className="text-center text-sm text-red-600">Não foi possível enviar. Tente novamente ou fale no WhatsApp.</p>
+                )}
+
+                <p className="text-center text-xs text-gray-500">
+                  Seus dados estão protegidos pela LGPD e usados apenas para retornar seu contato.
+                </p>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* Marquee Partners */}
+        <section aria-label="Nossos diferenciais" className="relative overflow-hidden border-y border-gray-200 py-12 bg-gray-50">
+          <div className="flex items-center gap-12 animate-marquee whitespace-nowrap">
+            {[...Array(2)].map((_, groupIndex) => (
+              <div key={groupIndex} className="flex items-center gap-12">
+                {[
+                  'Cadastur Certificado',
+                  'Pagamento 100% Seguro',
+                  'Suporte 24/7',
+                  'Melhor Preço Garantido',
+                  '15 Anos no Mercado',
+                  '5.000+ Clientes Satisfeitos',
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-primary" aria-hidden="true" />
+                    <span className="text-lg font-semibold text-gray-600">{item}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer role="contentinfo" className="relative border-t border-gray-200 py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <div className="mb-4">
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGOTIPO_PNG_COR-HrrWIVyKTna8rzMaQYpuC0rmVAgCd3.png"
+                  alt="Donatti Turismo"
+                  className="h-16 w-auto object-contain"
+                  width="64"
+                  height="64"
+                />
+              </div>
+              <p className="text-sm text-gray-600 mb-3">Realizando sonhos de viagem há mais de 15 anos.</p>
+              <div className="space-y-2 text-sm text-gray-700">
+                <p className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  Avenida Tamandaré, 8 - Vila Planalto, Campo Grande/MS - CEP 79009-790
+                </p>
+                <p className="flex items-center gap-2 text-gray-600">
+                  <Shield className="h-4 w-4 text-primary" />
+                  CNPJ: 41.887.394/0001-29
+                </p>
+                <p className="text-gray-600 text-sm">Atendimento humano 24/7 • Central MS/SP</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-4 font-semibold text-gray-900">Links Rápidos</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <a href="/destinos" className="hover:text-primary transition-colors">
+                    Destinos
+                  </a>
+                </li>
+                <li>
+                  <a href="/pacotes" className="hover:text-primary transition-colors">
+                    Pacotes
+                  </a>
+                </li>
+                <li>
+                  <a href="#destinos" className="hover:text-primary transition-colors">
+                    Sobre Nós
+                  </a>
+                </li>
+                <li>
+                  <a href="#contato" className="hover:text-primary transition-colors">
+                    Contato
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="mb-4 font-semibold text-gray-900">Políticas</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <a href="/faq" className="hover:text-primary transition-colors">
+                    Perguntas Frequentes
+                  </a>
+                </li>
+                <li>
+                  <a href="/politica-cancelamento" className="hover:text-primary transition-colors">
+                    Cancelamento e Reembolso
+                  </a>
+                </li>
+                <li>
+                  <a href="/termos-uso" className="hover:text-primary transition-colors">
+                    Termos de Uso
+                  </a>
+                </li>
+                <li>
+                  <a href="/politica-privacidade" className="hover:text-primary transition-colors">
+                    Privacidade (LGPD)
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="mb-4 font-semibold text-gray-900">Contato</h3>
+              <address className="not-italic space-y-3 text-sm text-gray-600">
+                <p className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <a href="tel:+5567992167694" className="hover:text-primary transition-colors">
+                    (67) 99216-7694
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <a href="mailto:contato@donattiturismo.com.br" className="hover:text-primary transition-colors">
+                    contato@donattiturismo.com.br
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Site seguro SSL • Proteção de dados certificada
+                </p>
+                <div className="pt-2">
+                  <p className="text-xs text-gray-500 mb-2">Formas de pagamento:</p>
+                  <div className="flex flex-wrap gap-2">
+                    <CreditCard className="h-5 w-5 text-gray-500" />
+                    <span className="text-xs text-gray-500">Pix, Cartões, Boleto</span>
+                  </div>
+                </div>
+              </address>
+            </div>
+          </div>
+
+          <div className="mt-12 border-t border-gray-200 pt-8">
+            <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-gray-500 md:flex-row">
+              <p>© 2025 Donatti Turismo. Todos os direitos reservados. CNPJ 41.887.394/0001-29.</p>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="text-xs">Site seguro SSL</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-xs">Proteção de dados certificada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Floating WhatsApp Button */}
+      <button
+        onClick={() => {
+          trackEvent('whatsapp_click', { location: 'floating_button' })
+          setShowWhatsAppModal(true)
+        }}
+        aria-label="Falar no WhatsApp"
+        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-2xl transition-all hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-500/50 animate-float"
+      >
+        <Phone className="h-7 w-7" aria-hidden="true" />
+        <span className="absolute -top-1 -right-1 flex h-5 w-5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex h-5 w-5 rounded-full bg-green-500"></span>
+        </span>
+      </button>
+
+      {/* WhatsApp Lead Modal */}
+      {showWhatsAppModal && isMounted &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setShowWhatsAppModal(false)}
+          >
+            <div
+              className="bg-white shadow-2xl w-full max-w-md rounded-2xl p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366]">
+                    <Phone className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {searchedDestination ? `Orçamento para ${searchedDestination}` : 'Falar no WhatsApp'}
+                    </h3>
+                    <p className="text-sm text-gray-500">Resposta em minutos</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowWhatsAppModal(false)
+                    setSearchedDestination('')
+                  }}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  aria-label="Fechar"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {searchedDestination && (
+                <div className="mb-6 p-4 bg-primary/10 rounded-xl border border-primary/20">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Destino desejado:</span> {searchedDestination}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Vamos preparar um orçamento personalizado para você!
+                  </p>
+                </div>
+              )}
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  // Salvar lead no banco
+                  try {
+                    await fetch('/api/leads', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        name: formData.name,
+                        phone: formData.phone,
+                        email: formData.email,
+                        source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+                        destino: searchedDestination || null,
+                      }),
+                    })
+                  } catch (error) {
+                    console.error('Erro ao salvar lead:', error)
+                  }
+                  trackEvent('lead_form_submit', {
+                    source: searchedDestination ? 'search_popup' : 'whatsapp_popup',
+                    destination: searchedDestination || null,
+                  })
+                  trackEvent('whatsapp_click', { location: 'modal', destino: searchedDestination || 'geral' })
+                  const message = searchedDestination
+                    ? `Olá! Meu nome é ${formData.name}. Gostaria de um orçamento para ${searchedDestination}. Podem me ajudar?`
+                    : `Olá! Meu nome é ${formData.name}. Gostaria de saber mais sobre as ofertas de viagem.`
+                  const whatsappUrl = `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
+                  window.open(whatsappUrl, '_blank')
+                  setShowWhatsAppModal(false)
+                  setSearchedDestination('')
+                  setFormData({ name: '', email: '', phone: '', destination: '', period: '' })
+                }}
+                className="space-y-4"
+              >
+              <div>
+                <label htmlFor="whatsapp-name" className="mb-2 block text-sm font-medium text-gray-700">
+                  Seu nome *
+                </label>
+                <Input
+                  id="whatsapp-name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Como podemos te chamar?"
+                  className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="whatsapp-phone" className="mb-2 block text-sm font-medium text-gray-700">
+                  Seu telefone *
+                </label>
+                <Input
+                  id="whatsapp-phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(00) 00000-0000"
+                  className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="whatsapp-email" className="mb-2 block text-sm font-medium text-gray-700">
+                  Seu e-mail *
+                </label>
+                <Input
+                  id="whatsapp-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="seu@email.com"
+                  className="h-12 border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="h-12 w-full bg-[#25D366] text-base font-semibold text-white hover:bg-[#20BA5A]"
+              >
+                <Phone className="mr-2 h-5 w-5" />
+                Iniciar Conversa
+              </Button>
+
+              <p className="text-center text-xs text-gray-500">
+                Ao continuar, você será redirecionado para o WhatsApp
+              </p>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
