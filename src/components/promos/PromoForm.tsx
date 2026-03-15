@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import type React from "react"
 
 import { usePromo } from "@/hooks/usePromo"
-import { MapPin, Hotel, Calendar, DollarSign, Users, Utensils, Plane, Loader2, Save, X, CreditCard } from "lucide-react"
+import { MapPin, Hotel, Calendar, DollarSign, Users, Utensils, Plane, Loader2, Save, X, CreditCard, FileUp, CheckCircle2, AlertCircle } from "lucide-react"
 
 interface PromoFormProps {
   promo?: any
@@ -48,6 +48,11 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   const [formSuccess, setFormSuccess] = useState<string | null>(null)
   const [deDate, setDeDate] = useState("")
   const [ateDate, setAteDate] = useState("")
+
+  // PDF extraction state
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false)
+  const [pdfResult, setPdfResult] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const { savePromo, isLoading } = usePromo()
 
@@ -351,6 +356,121 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     setAteDate("")
   }
 
+  const handlePdfUpload = async (file: File) => {
+    if (file.type !== "application/pdf") {
+      setPdfResult({ type: "error", message: "Apenas arquivos PDF sao aceitos" })
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setPdfResult({ type: "error", message: "Arquivo muito grande (max 10MB)" })
+      return
+    }
+
+    setIsExtractingPdf(true)
+    setPdfResult(null)
+
+    try {
+      const body = new FormData()
+      body.append("file", file)
+
+      const res = await fetch("/api/promos/extract-pdf", { method: "POST", body })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setPdfResult({ type: "error", message: data.error || "Erro ao processar PDF" })
+        return
+      }
+
+      const f = data.fields || {}
+      let filledCount = 0
+
+      // Text fields
+      if (f.DESTINO) { handleChange("DESTINO", f.DESTINO); filledCount++ }
+      if (f.HOTEL) { handleChange("HOTEL", f.HOTEL); filledCount++ }
+      if (f.NUMERO_DE_NOITES) { handleChange("NUMERO_DE_NOITES", String(f.NUMERO_DE_NOITES)); filledCount++ }
+      if (f.PARCELAS) { handleChange("PARCELAS", String(f.PARCELAS)); filledCount++ }
+
+      // Price
+      if (f.VALOR) {
+        const numericValue = parseFloat(String(f.VALOR))
+        if (!isNaN(numericValue)) {
+          handleChange("VALOR", numericValue.toFixed(2))
+          setFormattedAmount(
+            numericValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+          )
+          filledCount++
+        }
+      }
+
+      // Dates
+      if (f.DE && f.MES_DE && f.ANO) {
+        const y = String(f.ANO)
+        const m = String(f.MES_DE).padStart(2, "0")
+        const d = String(f.DE).padStart(2, "0")
+        setDeDate(`${y}-${m}-${d}`)
+        handleChange("DE", d)
+        handleChange("MES_DE", m)
+        handleChange("ANO", y)
+        filledCount++
+      }
+      if (f.ATE && f.MES_ATE) {
+        const y = String(f.ANO || new Date().getFullYear())
+        const m = String(f.MES_ATE).padStart(2, "0")
+        const d = String(f.ATE).padStart(2, "0")
+        setAteDate(`${y}-${m}-${d}`)
+        handleChange("ATE", d)
+        handleChange("MES_ATE", m)
+        filledCount++
+      }
+
+      // Build DATA_FORMATADA
+      if (f.DE && f.ATE && f.MES_DE && f.MES_ATE && f.ANO) {
+        const de = String(f.DE).padStart(2, "0")
+        const ate = String(f.ATE).padStart(2, "0")
+        const mesDE = String(f.MES_DE).padStart(2, "0")
+        const mesATE = String(f.MES_ATE).padStart(2, "0")
+        handleChange("DATA_FORMATADA", `${de}/${mesDE} até ${ate}/${mesATE} de ${f.ANO}`)
+      }
+
+      // Regime
+      if (f.regime) {
+        handleChangeRegimeAlimentacao(String(f.regime))
+        filledCount++
+      }
+
+      // Booleans
+      if (f.AEREO === true) { handleChange("AEREO", true); filledCount++ }
+      if (f.SP === true) { handleChange("SP", true); filledCount++ }
+      if (f.CG === true) { handleChange("CG", true); filledCount++ }
+
+      const warnings = data.warnings?.length ? ` (${data.warnings.join("; ")})` : ""
+      setPdfResult({
+        type: "success",
+        message: `${filledCount} campos preenchidos automaticamente${warnings}`,
+      })
+    } catch (err) {
+      setPdfResult({
+        type: "error",
+        message: err instanceof Error ? err.message : "Erro ao processar PDF",
+      })
+    } finally {
+      setIsExtractingPdf(false)
+    }
+  }
+
+  const handlePdfDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handlePdfUpload(file)
+  }
+
+  const handlePdfInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handlePdfUpload(file)
+    e.target.value = "" // reset so same file can be re-uploaded
+  }
+
   // Calculate installment value for display
   const getInstallmentValue = () => {
     // formData.VALOR já está no formato "5000.00" (valor total)
@@ -377,6 +497,57 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
         <h2 className="text-xl font-semibold text-primary-blue mb-6 font-mon">
           {promo ? "Editar Promoção" : "Adicionar Nova Promoção"}
         </h2>
+
+        {/* PDF Upload Zone - only for new promos */}
+        {!promo && (
+          <div className="mb-6">
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handlePdfDrop}
+              className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragOver
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300 hover:border-gray-400 bg-gray-50"
+              }`}
+            >
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handlePdfInputChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={isExtractingPdf}
+              />
+              {isExtractingPdf ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+                  <p className="text-sm text-gray-600 font-mon">Extraindo dados do PDF...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <FileUp className="h-8 w-8 text-gray-400" />
+                  <p className="text-sm text-gray-600 font-mon">
+                    Arraste um PDF de promocao ou <span className="text-blue-600 font-medium">clique para selecionar</span>
+                  </p>
+                  <p className="text-xs text-gray-400 font-mon">PDF de operadora/hotel — preenche o formulario automaticamente</p>
+                </div>
+              )}
+            </div>
+
+            {pdfResult && (
+              <div className={`mt-3 p-3 rounded-lg flex items-center gap-2 text-sm font-mon ${
+                pdfResult.type === "success"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}>
+                {pdfResult.type === "success"
+                  ? <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                  : <AlertCircle className="h-4 w-4 flex-shrink-0" />}
+                <p>{pdfResult.message}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {formError && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 font-mon">

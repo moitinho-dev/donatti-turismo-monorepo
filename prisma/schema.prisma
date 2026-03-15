@@ -99,6 +99,7 @@ model Promo {
   siteInclusions  String[] @default([])
   siteDepartures  String[] @default([])
   googleBusinessPostName String? @db.Text
+  instagramPostId String?  @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -118,6 +119,18 @@ model GoogleBusinessConnection {
   updatedAt     DateTime @updatedAt
 
   @@map("google_business_connections")
+}
+
+model InstagramConnection {
+  id              String    @id @default(cuid())
+  accessToken     String    @db.Text
+  igUserId        String
+  pageName        String?
+  tokenExpiresAt  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("instagram_connections")
 }
 
 // Lead model for capturing interested customers
