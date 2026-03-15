@@ -7,7 +7,7 @@ const nextConfig = {
     domains: [
       "lh3.googleusercontent.com",
       "images.unsplash.com",
-      "owqcxfslomrlefrdeomt.supabase.co",
+      "sempjntlabpgaqhnbbfs.supabase.co",
     ],
   },
   webpack: (config, { isServer }) => {
