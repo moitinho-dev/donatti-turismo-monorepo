@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { buildConnectUrl } from "@/lib/instagram"
 
 export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {

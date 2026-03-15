@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { createClient } from "@supabase/supabase-js"
 
 export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 const MAX_SIZE = 8 * 1024 * 1024 // 8MB
 
