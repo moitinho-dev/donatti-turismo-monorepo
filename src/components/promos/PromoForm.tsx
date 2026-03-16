@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import type React from "react"
 
@@ -55,6 +55,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   const [pdfResult, setPdfResult] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [pdfPacoteDuplo, setPdfPacoteDuplo] = useState(true) // default: PDF vem com valor para 2 adultos
+  const pdfPacoteDuploRef = useRef(true)
 
   const { savePromo, isLoading } = usePromo()
   const searchParams = useSearchParams()
@@ -451,7 +452,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       if (f.VALOR) {
         let numericValue = parseFloat(String(f.VALOR))
         if (!isNaN(numericValue)) {
-          if (pdfPacoteDuplo) {
+          if (pdfPacoteDuploRef.current) {
             numericValue = numericValue / 2
           }
           handleChange("VALOR", numericValue.toFixed(2))
@@ -592,34 +593,32 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                   <p className="text-xs text-gray-400 font-mon">PDF de operadora/hotel — preenche o formulario automaticamente</p>
                 </div>
               )}
-            </div>
 
-            {/* Package type toggle */}
-            <div className="mt-3 flex items-center gap-4 px-1">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pdf-package-type"
-                  checked={pdfPacoteDuplo}
-                  onChange={() => setPdfPacoteDuplo(true)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 font-mon">
-                  Pacote duplo <span className="text-xs text-gray-400">(2 adultos — divide valor por 2)</span>
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pdf-package-type"
-                  checked={!pdfPacoteDuplo}
-                  onChange={() => setPdfPacoteDuplo(false)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 font-mon">
-                  Unitario <span className="text-xs text-gray-400">(valor ja e por pessoa)</span>
-                </span>
-              </label>
+              {/* Price type toggle inside drop zone */}
+              <div className="flex items-center justify-center gap-1 mt-3" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPdfPacoteDuplo(false); pdfPacoteDuploRef.current = false }}
+                  className={`px-3 py-1.5 rounded-l-lg text-xs font-semibold border transition-colors ${
+                    !pdfPacoteDuplo
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Preco Unitario
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPdfPacoteDuplo(true); pdfPacoteDuploRef.current = true }}
+                  className={`px-3 py-1.5 rounded-r-lg text-xs font-semibold border border-l-0 transition-colors ${
+                    pdfPacoteDuplo
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Preco Total (÷2)
+                </button>
+              </div>
             </div>
 
             {pdfResult && (
