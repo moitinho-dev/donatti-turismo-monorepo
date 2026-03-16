@@ -303,6 +303,65 @@
   pointer-events: auto;
 }
 
+/* Driver.js tour styling */
+.donatti-tour-popover {
+  background: #1a1a1a !important;
+  color: #fff !important;
+  border-radius: 16px !important;
+  border: 1px solid #333 !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+}
+.donatti-tour-popover .driver-popover-title {
+  color: #ffa200 !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+}
+.donatti-tour-popover .driver-popover-description {
+  color: #ccc !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+.donatti-tour-popover .driver-popover-progress-text {
+  color: #666 !important;
+}
+.donatti-tour-popover .driver-popover-next-btn {
+  background: #ffa200 !important;
+  color: #1a1a1a !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 800 !important;
+  padding: 8px 20px !important;
+  text-shadow: none !important;
+}
+.donatti-tour-popover .driver-popover-next-btn:hover {
+  background: #e89200 !important;
+}
+.donatti-tour-popover .driver-popover-prev-btn {
+  background: transparent !important;
+  color: #888 !important;
+  border: 1px solid #444 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 8px 20px !important;
+  text-shadow: none !important;
+}
+.donatti-tour-popover .driver-popover-prev-btn:hover {
+  color: #fff !important;
+  border-color: #666 !important;
+}
+.donatti-tour-popover .driver-popover-close-btn {
+  color: #666 !important;
+}
+.donatti-tour-popover .driver-popover-close-btn:hover {
+  color: #fff !important;
+}
+.donatti-tour-popover .driver-popover-arrow-side-left .driver-popover-arrow,
+.donatti-tour-popover .driver-popover-arrow-side-right .driver-popover-arrow,
+.donatti-tour-popover .driver-popover-arrow-side-top .driver-popover-arrow,
+.donatti-tour-popover .driver-popover-arrow-side-bottom .driver-popover-arrow {
+  border-color: #1a1a1a !important;
+}
+
 @font-face {
   font-family: "BLOVERLY";
   src: url("../../public/fonts/BLOVERLY.ttf");

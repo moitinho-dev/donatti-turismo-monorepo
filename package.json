@@ -24,6 +24,7 @@
     "clsx": "^2.0.0",
     "crypto": "^1.0.1",
     "date-fns": "^2.30.0",
+    "driver.js": "^1.4.0",
     "framer-motion": "^10.16.16",
     "google-auth-library": "^9.4.1",
     "google-spreadsheet": "^4.1.1",

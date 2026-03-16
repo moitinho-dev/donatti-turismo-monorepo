@@ -126,7 +126,7 @@ export function PromoListPanel({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div data-tour="stats-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total de Promos" value={stats?.overall?.totalPromos || promos.length} />
         <StatCard label="Destinos Ativos" value={stats?.overall?.uniqueDestinations || 0} />
         <StatCard
@@ -152,7 +152,7 @@ export function PromoListPanel({
 
       {/* Grid View */}
       {!isLoading && viewMode === "grid" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div data-tour="promo-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence mode="popLayout">
             {filteredPromos.map((promo, index) => (
               <motion.div

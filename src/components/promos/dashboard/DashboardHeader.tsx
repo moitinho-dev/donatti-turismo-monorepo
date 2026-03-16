@@ -13,6 +13,7 @@ import {
 import Link from "next/link"
 import { motion } from "framer-motion"
 import type { UserData, ActivePanel } from "./types"
+import { TutorialButton } from "./TutorialButton"
 
 interface DashboardHeaderProps {
   user: UserData
@@ -58,6 +59,7 @@ export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo }
                 <button
                   key={tab.id}
                   onClick={tab.action}
+                  data-tour={tab.id === "form" ? "nav-nova-promo" : undefined}
                   className={`relative flex items-center gap-2 font-bold text-[13px] px-4 py-2 rounded-[12px] transition-all duration-300 whitespace-nowrap focus:outline-none ${
                     isActive
                       ? "text-gray-900"
@@ -91,6 +93,7 @@ export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo }
 
         {/* Right: Actions & Profile */}
         <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
+          <TutorialButton />
           <button
             title="Notificacoes"
             className="relative bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-[14px] transition-all border border-gray-200 shadow-sm focus:outline-none"
