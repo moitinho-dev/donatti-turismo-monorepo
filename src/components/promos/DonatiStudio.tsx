@@ -432,7 +432,7 @@ export function DonatiStudio({
                 </div>
                 <div className="h-px bg-gray-800" />
                 {/* Image Gallery */}
-                <div className="flex flex-col gap-2.5">
+                <div data-tour="studio-gallery" className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-gray-400 font-semibold text-[10px] uppercase tracking-wider">Galeria de Imagens</label>
                     <button onClick={() => setShowImageGallery(!showImageGallery)} className="text-amber-500 hover:text-amber-400 flex items-center gap-1 text-[11px] font-bold bg-amber-500/10 px-2 py-0.5 rounded-md transition-colors">
@@ -442,7 +442,7 @@ export function DonatiStudio({
                   {showImageGallery && (
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
-                      <input type="text" placeholder="Buscar imagens..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                      <input data-tour="studio-search" type="text" placeholder="Buscar imagens..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") searchImages(searchQuery || promo.DESTINO) }}
                         className="w-full pl-8 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-[12px] text-gray-200 placeholder-gray-500 focus:outline-none focus:border-amber-500/50 transition-all" />
                     </div>
@@ -538,20 +538,26 @@ export function DonatiStudio({
                     <p className="text-amber-500/80 text-[11px] leading-relaxed">Configure SEO e disparo para redes sociais.</p>
                   </div>
                 </div>
-                <SiteCardForm sitePublished={sitePublished} setSitePublished={setSitePublished} siteSection={siteSection} setSiteSection={setSiteSection}
-                  siteSlug={siteSlug} setSiteSlug={setSiteSlug} siteDescription={siteDescription} setSiteDescription={setSiteDescription}
-                  destinoName={promo.DESTINO || ""} savingSiteCard={savingSiteCard} siteCardError={siteCardError} siteCardMessage={siteCardMessage} onSave={onSaveSiteCard} />
+                <div data-tour="studio-site-card">
+                  <SiteCardForm sitePublished={sitePublished} setSitePublished={setSitePublished} siteSection={siteSection} setSiteSection={setSiteSection}
+                    siteSlug={siteSlug} setSiteSlug={setSiteSlug} siteDescription={siteDescription} setSiteDescription={setSiteDescription}
+                    destinoName={promo.DESTINO || ""} savingSiteCard={savingSiteCard} siteCardError={siteCardError} siteCardMessage={siteCardMessage} onSave={onSaveSiteCard} />
+                </div>
                 {user.role === "admin" && (
                   <>
-                    <GoogleBusinessPanel gbpConnected={gbp.gbpConnected} gbpAccountName={gbp.gbpAccountName} setGbpAccountName={gbp.setGbpAccountName}
-                      gbpLocationName={gbp.gbpLocationName} setGbpLocationName={gbp.setGbpLocationName} gbpAccounts={gbp.gbpAccounts} gbpLocations={gbp.gbpLocations}
-                      setGbpLocations={gbp.setGbpLocations} gbpMessage={gbp.gbpMessage} gbpError={gbp.gbpError} gbpBusy={gbp.gbpBusy}
-                      onLoadAccounts={gbp.loadGbpAccounts} onLoadLocations={gbp.loadGbpLocations} onSaveTarget={gbp.saveGbpTarget} onSync={gbp.syncGbpPosts}
-                      onPostSelected={() => promo.id && gbp.postPromoToGbp(promo.id)} hasSelectedPromo={!!promo.id} />
-                    <InstagramPanel igConnected={ig.igConnected} igPageName={ig.igPageName} igBusy={ig.igBusy} igError={ig.igError} igMessage={ig.igMessage}
+                    <div data-tour="studio-gbp">
+                      <GoogleBusinessPanel gbpConnected={gbp.gbpConnected} gbpAccountName={gbp.gbpAccountName} setGbpAccountName={gbp.setGbpAccountName}
+                        gbpLocationName={gbp.gbpLocationName} setGbpLocationName={gbp.setGbpLocationName} gbpAccounts={gbp.gbpAccounts} gbpLocations={gbp.gbpLocations}
+                        setGbpLocations={gbp.setGbpLocations} gbpMessage={gbp.gbpMessage} gbpError={gbp.gbpError} gbpBusy={gbp.gbpBusy}
+                        onLoadAccounts={gbp.loadGbpAccounts} onLoadLocations={gbp.loadGbpLocations} onSaveTarget={gbp.saveGbpTarget} onSync={gbp.syncGbpPosts}
+                        onPostSelected={() => promo.id && gbp.postPromoToGbp(promo.id)} hasSelectedPromo={!!promo.id} />
+                    </div>
+                    <div data-tour="studio-instagram">
+                      <InstagramPanel igConnected={ig.igConnected} igPageName={ig.igPageName} igBusy={ig.igBusy} igError={ig.igError} igMessage={ig.igMessage}
                       promoDestino={promo.DESTINO || ""} promoHotel={promo.HOTEL || ""} promoValor={promo.VALOR || ""} promoParcelas={promo.PARCELAS || "10"}
                       onPostFeed={(c) => { if (!lastDataUrl) { alert("Exporte a imagem primeiro."); return }; ig.postToInstagram(lastDataUrl, c, "FEED", promo.id) }}
                       onPostStories={(c) => { if (!lastDataUrl) { alert("Exporte a imagem primeiro."); return }; ig.postToInstagram(lastDataUrl, c, "STORIES", promo.id) }} />
+                    </div>
                   </>
                 )}
                 <button onClick={onSaveSiteCard} disabled={savingSiteCard}
@@ -609,7 +615,7 @@ export function DonatiStudio({
             </div>
 
             {/* Artboard */}
-            <div className="flex-1 overflow-auto flex items-center justify-center p-8 relative z-10 studio-scrollbar">
+            <div data-tour="studio-editor" className="flex-1 overflow-auto flex items-center justify-center p-8 relative z-10 studio-scrollbar">
               {isLoadingLayouts || !currentLayout ? (
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-amber-500" />

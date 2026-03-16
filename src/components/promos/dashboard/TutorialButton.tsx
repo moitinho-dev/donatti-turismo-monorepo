@@ -7,6 +7,7 @@ import "driver.js/dist/driver.css"
 
 interface TutorialButtonProps {
   onOpenModal?: () => void
+  onOpenStudio?: () => void
 }
 
 function createTourCadastrar(onOpenModal?: () => void) {
@@ -121,101 +122,137 @@ function createTourPdf(onOpenModal?: () => void) {
   }
 }
 
-function createTourGerarImagem() {
+function createTourGerarImagem(onOpenStudio?: () => void) {
   return () => {
-    const d = driver({
-      showProgress: true,
-      animate: true,
-      overlayColor: "rgba(0,0,0,0.6)",
-      popoverClass: "donatti-tour-popover",
-      nextBtnText: "Proximo",
-      prevBtnText: "Anterior",
-      doneBtnText: "Entendi!",
-      steps: [
-        {
-          element: "[data-tour='promo-list']",
-          popover: {
-            title: "1. Escolha uma promo",
-            description: "Na lista, encontre a promo e clique em 'GERAR IMAGENS' ou no icone de pincel.",
-            side: "top" as const,
-            align: "center" as const,
+    // Open studio with mock promo first
+    onOpenStudio?.()
+
+    setTimeout(() => {
+      const d = driver({
+        showProgress: true,
+        animate: true,
+        overlayColor: "rgba(0,0,0,0.6)",
+        popoverClass: "donatti-tour-popover",
+        nextBtnText: "Proximo",
+        prevBtnText: "Anterior",
+        doneBtnText: "Entendi!",
+        steps: [
+          {
+            element: "[data-tour='studio-gallery']",
+            popover: {
+              title: "1. Galeria de imagens",
+              description: "Aqui voce busca e seleciona a imagem de fundo para a promo. Clique em uma foto para usar como fundo.",
+              side: "right" as const,
+              align: "start" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "2. Donatti Studio abre",
-            description: "O editor visual abre em tela cheia. No painel esquerdo voce escolhe a imagem de fundo.",
+          {
+            element: "[data-tour='studio-search']",
+            popover: {
+              title: "2. Buscar imagens",
+              description: "Digite qualquer termo (ex: 'praia', 'montanha', 'cancun') e pressione Enter para buscar novas fotos.",
+              side: "bottom" as const,
+              align: "center" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "3. Busque imagens",
-            description: "Use a barra de busca para encontrar fotos do destino. Clique na imagem desejada para selecionar como fundo.",
+          {
+            element: "[data-tour='studio-editor']",
+            popover: {
+              title: "3. Editor visual",
+              description: "Aqui voce ve o preview da imagem gerada. Ajuste layout, cores e textos usando os controles do editor.",
+              side: "left" as const,
+              align: "center" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "4. Baixe a imagem",
-            description: "Clique no botao 'Baixar' no editor para gerar o PNG. A imagem sera salva no seu computador.",
+          {
+            element: "[data-tour='studio-site-card']",
+            popover: {
+              title: "4. Card do site",
+              description: "Configure a publicacao no site: ative 'Publicar', escolha a secao e clique em 'Salvar card'.",
+              side: "right" as const,
+              align: "center" as const,
+            },
           },
-        },
-      ],
-    })
-    d.drive()
+          {
+            popover: {
+              title: "5. Baixar imagem",
+              description: "Use o botao 'Baixar' no editor para gerar e salvar o PNG no seu computador. Pronto!",
+            },
+          },
+        ],
+      })
+      d.drive()
+    }, 1500) // wait for studio to load + images to fetch
   }
 }
 
-function createTourCompartilhar() {
+function createTourCompartilhar(onOpenStudio?: () => void) {
   return () => {
-    const d = driver({
-      showProgress: true,
-      animate: true,
-      overlayColor: "rgba(0,0,0,0.6)",
-      popoverClass: "donatti-tour-popover",
-      nextBtnText: "Proximo",
-      prevBtnText: "Anterior",
-      doneBtnText: "Entendi!",
-      steps: [
-        {
-          element: "[data-tour='promo-list']",
-          popover: {
-            title: "1. Abra o editor de uma promo",
-            description: "Clique em 'GERAR IMAGENS' em qualquer promo para abrir o Donatti Studio.",
-            side: "top" as const,
-            align: "center" as const,
+    onOpenStudio?.()
+
+    setTimeout(() => {
+      const d = driver({
+        showProgress: true,
+        animate: true,
+        overlayColor: "rgba(0,0,0,0.6)",
+        popoverClass: "donatti-tour-popover",
+        nextBtnText: "Proximo",
+        prevBtnText: "Anterior",
+        doneBtnText: "Entendi!",
+        steps: [
+          {
+            element: "[data-tour='studio-gallery']",
+            popover: {
+              title: "1. Escolha a imagem",
+              description: "Selecione uma foto de fundo para a promo na galeria.",
+              side: "right" as const,
+              align: "start" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "2. Gere e baixe a imagem",
-            description: "Escolha a foto de fundo e clique em Baixar. Isso gera o PNG da promo.",
+          {
+            element: "[data-tour='studio-editor']",
+            popover: {
+              title: "2. Gere a imagem",
+              description: "Clique em 'Baixar' no editor para gerar o PNG. Isso tambem salva a imagem no sistema.",
+              side: "left" as const,
+              align: "center" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "3. Publique no site",
-            description: "No painel esquerdo, ative 'Publicar', defina a secao (nacionais, internacionais...) e clique em 'Salvar card'.",
+          {
+            element: "[data-tour='studio-site-card']",
+            popover: {
+              title: "3. Publique no site",
+              description: "Ative 'Publicar', defina a secao e slug, e clique em 'Salvar card'. A promo aparece na home do site!",
+              side: "right" as const,
+              align: "center" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "4. Poste no Instagram",
-            description: "No painel do Instagram (abaixo), escreva a legenda e clique em 'Feed' ou 'Stories'. A imagem e enviada automaticamente!",
+          {
+            element: "[data-tour='studio-instagram']",
+            popover: {
+              title: "4. Poste no Instagram",
+              description: "Escreva a legenda e clique em 'Feed' ou 'Stories'. A imagem e convertida e postada automaticamente!",
+              side: "right" as const,
+              align: "center" as const,
+            },
           },
-        },
-        {
-          popover: {
-            title: "5. Google Business (automatico)",
-            description: "Se o Google Business estiver conectado, a promo e postada automaticamente quando voce publica no site.",
+          {
+            element: "[data-tour='studio-gbp']",
+            popover: {
+              title: "5. Google Business",
+              description: "Se conectado, a promo e postada automaticamente no Google ao publicar no site. Tudo em um so lugar!",
+              side: "right" as const,
+              align: "center" as const,
+            },
           },
-        },
-      ],
-    })
-    d.drive()
+        ],
+      })
+      d.drive()
+    }, 1500)
   }
 }
 
-export function TutorialButton({ onOpenModal }: TutorialButtonProps) {
+export function TutorialButton({ onOpenModal, onOpenStudio }: TutorialButtonProps) {
   const [open, setOpen] = useState(false)
 
   const tutorials = [
@@ -235,13 +272,13 @@ export function TutorialButton({ onOpenModal }: TutorialButtonProps) {
       icon: Image,
       label: "Cadastrar e gerar imagem",
       description: "Criar imagem promocional no editor",
-      action: createTourGerarImagem(),
+      action: createTourGerarImagem(onOpenStudio),
     },
     {
       icon: Share2,
       label: "Cadastrar, gerar e compartilhar",
       description: "Publicar no site, Instagram e Google",
-      action: createTourCompartilhar(),
+      action: createTourCompartilhar(onOpenStudio),
     },
   ]
 

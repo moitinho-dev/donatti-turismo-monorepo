@@ -173,6 +173,32 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     setShowFormModal(true)
   }
 
+  const handleOpenStudioDemo = () => {
+    const mockPromo: PromoData = {
+      id: "demo-tutorial",
+      DESTINO: "Cancun",
+      HOTEL: "Grand Oasis Cancun",
+      DATA_FORMATADA: "15/07 ate 22/07 de 2026",
+      VALOR: "8500.00",
+      PARCELAS: 10,
+      COM_CAFE: false,
+      SEM_CAFE: false,
+      MEIA_PENSAO: false,
+      PENSAO_COMPLETA: false,
+      ALL_INCLUSIVE: true,
+      NUMERO_DE_NOITES: "7",
+      SP: true,
+      CG: true,
+      AEREO: true,
+      SITE_PUBLISHED: false,
+      SITE_SECTION: "internacionais",
+      SITE_SLUG: "cancun-all-inclusive",
+      SITE_IMAGE: null,
+      SITE_DESCRIPTION: "Cancun All Inclusive 7 noites",
+    }
+    handleGenerateImage(mockPromo)
+  }
+
   const handleCloseEditor = () => {
     setActivePanel("list")
     setSelectedPromo(null)
@@ -188,6 +214,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         onPanelChange={setActivePanel}
         onNewPromo={handleNewPromo}
         onOpenModal={handleNewPromo}
+        onOpenStudio={handleOpenStudioDemo}
       />
 
       <main className="p-6">
