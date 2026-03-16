@@ -20,11 +20,12 @@ interface DashboardHeaderProps {
   activePanel: ActivePanel
   onPanelChange: (panel: ActivePanel) => void
   onNewPromo: () => void
+  onOpenModal?: () => void
 }
 
 const DONATTI_LOGO = "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/uploads/1511914d-33e8-4dbe-aaf4-8a27bd98a45a/1773605008514-bb2f07ed/LOGOTIPO_PNG_COR.png"
 
-export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo }: DashboardHeaderProps) {
+export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo, onOpenModal }: DashboardHeaderProps) {
   const tabs = [
     { id: "list" as const, label: "Lista", Icon: List, action: () => onPanelChange("list") },
     { id: "form" as const, label: "Nova Promo", Icon: Plus, action: onNewPromo },
@@ -93,7 +94,7 @@ export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo }
 
         {/* Right: Actions & Profile */}
         <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
-          <TutorialButton />
+          <TutorialButton onOpenModal={onOpenModal} />
           <button
             title="Notificacoes"
             className="relative bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-[14px] transition-all border border-gray-200 shadow-sm focus:outline-none"

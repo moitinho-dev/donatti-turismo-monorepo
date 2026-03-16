@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import type React from "react"
 import { usePromo } from "@/hooks/usePromo"
 import { motion, AnimatePresence } from "framer-motion"
@@ -38,6 +38,8 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
   const [isExtractingPdf, setIsExtractingPdf] = useState(false)
   const [pdfResult, setPdfResult] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [pdfValorTipo, setPdfValorTipo] = useState<"total" | "unitario">("total") // total = divide por 2
+  const pdfValorTipoRef = useRef<"total" | "unitario">("total")
   const { savePromo, isLoading } = usePromo()
 
   const slugify = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "")
@@ -154,7 +156,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
       if (f.HOTEL) { handleChange("HOTEL", f.HOTEL); cnt++ }
       if (f.NUMERO_DE_NOITES) { handleChange("NUMERO_DE_NOITES", String(f.NUMERO_DE_NOITES)); cnt++ }
       if (f.PARCELAS) { handleChange("PARCELAS", String(f.PARCELAS)); cnt++ }
-      if (f.VALOR) { const n = parseFloat(String(f.VALOR)); if (!isNaN(n)) { handleChange("VALOR", n.toFixed(2)); setFormattedAmount(n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })); cnt++ } }
+      if (f.VALOR) { let n = parseFloat(String(f.VALOR)); if (!isNaN(n)) { if (pdfValorTipoRef.current === "total") n = n / 2; handleChange("VALOR", n.toFixed(2)); setFormattedAmount(n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })); cnt++ } }
       if (f.DE && f.MES_DE && f.ANO) { setDeDate(`${f.ANO}-${String(f.MES_DE).padStart(2,"0")}-${String(f.DE).padStart(2,"0")}`); handleChange("DE", String(f.DE).padStart(2,"0")); handleChange("MES_DE", String(f.MES_DE).padStart(2,"0")); handleChange("ANO", String(f.ANO)); cnt++ }
       if (f.ATE && f.MES_ATE) { const y = String(f.ANO || new Date().getFullYear()); setAteDate(`${y}-${String(f.MES_ATE).padStart(2,"0")}-${String(f.ATE).padStart(2,"0")}`); handleChange("ATE", String(f.ATE).padStart(2,"0")); handleChange("MES_ATE", String(f.MES_ATE).padStart(2,"0")); cnt++ }
       if (f.DE && f.ATE && f.MES_DE && f.MES_ATE && f.ANO) handleChange("DATA_FORMATADA", `${String(f.DE).padStart(2,"0")}/${String(f.MES_DE).padStart(2,"0")} até ${String(f.ATE).padStart(2,"0")}/${String(f.MES_ATE).padStart(2,"0")} de ${f.ANO}`)
@@ -205,6 +207,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
                   onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
                   onDragLeave={() => setIsDragOver(false)}
                   onDrop={(e) => { e.preventDefault(); setIsDragOver(false); const f = e.dataTransfer.files[0]; if (f) handlePdfUpload(f) }}
+                  data-tour="pdf-upload-zone"
                   className={`relative border-2 border-dashed rounded-[18px] p-5 text-center transition-colors ${isDragOver ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300 bg-gray-50"}`}
                 >
                   <input type="file" accept=".pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f); e.target.value = "" }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={isExtractingPdf} />
@@ -214,6 +217,37 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
                     <div className="flex flex-col items-center gap-1"><FileUp className="h-6 w-6 text-gray-400" /><p className="text-sm text-gray-500">Arraste um PDF ou <span className="text-amber-600 font-medium">clique para selecionar</span></p></div>
                   )}
                 </div>
+
+                {/* Valor tipo toggle */}
+                <div data-tour="pdf-valor-toggle" className="flex items-center justify-center gap-0 mt-3" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPdfValorTipo("unitario"); pdfValorTipoRef.current = "unitario" }}
+                    className={`px-4 py-2 rounded-l-xl text-[13px] font-bold border transition-all ${
+                      pdfValorTipo === "unitario"
+                        ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                        : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    Valor Unitario
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPdfValorTipo("total"); pdfValorTipoRef.current = "total" }}
+                    className={`px-4 py-2 rounded-r-xl text-[13px] font-bold border border-l-0 transition-all ${
+                      pdfValorTipo === "total"
+                        ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                        : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    Valor Total (÷2)
+                  </button>
+                </div>
+                <p className="text-center text-[11px] text-gray-400 mt-1.5">
+                  {pdfValorTipo === "total"
+                    ? "O valor do PDF sera dividido por 2 (preco por pessoa)"
+                    : "O valor do PDF sera mantido (ja e por pessoa)"}
+                </p>
                 {pdfResult && (
                   <div className={`mt-2 p-2.5 rounded-xl flex items-center gap-2 text-sm ${pdfResult.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                     {pdfResult.type === "success" ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
@@ -231,7 +265,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
                   <label className={labelClass}><MapPin className="w-4 h-4 text-amber-500" />Destino <span className="text-red-500">*</span></label>
-                  <input className={inputClass} type="text" value={formData.DESTINO} onChange={(e) => handleChange("DESTINO", e.target.value)} placeholder="Ex: Rio de Janeiro" required />
+                  <input data-tour="form-destino" className={inputClass} type="text" value={formData.DESTINO} onChange={(e) => handleChange("DESTINO", e.target.value)} placeholder="Ex: Rio de Janeiro" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className={labelClass}><Building2 className="w-4 h-4 text-amber-500" />Hotel <span className="text-red-500">*</span></label>
@@ -326,7 +360,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
               className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-[14px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all text-[14px]">
               <Trash2 className="w-4 h-4" /> Cancelar
             </button>
-            <button type="submit" onClick={handleSubmit} disabled={isLoading}
+            <button data-tour="form-submit" type="submit" onClick={handleSubmit} disabled={isLoading}
               className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-[14px] font-bold bg-amber-500 text-white hover:bg-amber-400 shadow-[0_4px_14px_rgba(247,158,10,0.3)] hover:shadow-[0_6px_20px_rgba(247,158,10,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 text-[14px]">
               {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Salvando...</> : <><Plus className="w-4 h-4" />{promo ? "Atualizar" : "Criar Promocao"}</>}
             </button>

@@ -187,6 +187,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         activePanel={activePanel}
         onPanelChange={setActivePanel}
         onNewPromo={handleNewPromo}
+        onOpenModal={handleNewPromo}
       />
 
       <main className="p-6">

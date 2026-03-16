@@ -5,229 +5,245 @@ import { HelpCircle, X, FileText, FileUp, Image, Share2 } from "lucide-react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 
-const tourCadastrar = () => {
-  const d = driver({
-    showProgress: true,
-    animate: true,
-    overlayColor: "rgba(0,0,0,0.6)",
-    popoverClass: "donatti-tour-popover",
-    nextBtnText: "Proximo",
-    prevBtnText: "Anterior",
-    doneBtnText: "Entendi!",
-    steps: [
-      {
-        element: "[data-tour='nav-nova-promo']",
-        popover: {
-          title: "1. Criar nova promo",
-          description: "Clique aqui para abrir o formulario de nova promocao. Voce pode preencher manualmente todos os campos.",
-          side: "bottom" as const,
-          align: "center" as const,
-        },
-      },
-      {
-        element: "[data-tour='promo-list']",
-        popover: {
-          title: "2. Lista de promos",
-          description: "Aqui ficam todas as promos cadastradas. Voce pode buscar, filtrar, editar ou excluir.",
-          side: "top" as const,
-          align: "center" as const,
-        },
-      },
-      {
-        element: "[data-tour='stats-grid']",
-        popover: {
-          title: "3. Estatisticas",
-          description: "Acompanhe o total de promos, destinos ativos, valor medio e destino mais buscado.",
-          side: "bottom" as const,
-          align: "center" as const,
-        },
-      },
-    ],
-  })
-  d.drive()
+interface TutorialButtonProps {
+  onOpenModal?: () => void
 }
 
-const tourPdf = () => {
-  const d = driver({
-    showProgress: true,
-    animate: true,
-    overlayColor: "rgba(0,0,0,0.6)",
-    popoverClass: "donatti-tour-popover",
-    nextBtnText: "Proximo",
-    prevBtnText: "Anterior",
-    doneBtnText: "Entendi!",
-    steps: [
-      {
-        element: "[data-tour='nav-nova-promo']",
-        popover: {
-          title: "1. Abra o formulario",
-          description: "Clique em 'Nova Promo' para abrir o formulario de cadastro.",
-          side: "bottom" as const,
-          align: "center" as const,
+function createTourCadastrar(onOpenModal?: () => void) {
+  return () => {
+    const d = driver({
+      showProgress: true,
+      animate: true,
+      overlayColor: "rgba(0,0,0,0.6)",
+      popoverClass: "donatti-tour-popover",
+      nextBtnText: "Proximo",
+      prevBtnText: "Anterior",
+      doneBtnText: "Entendi!",
+      steps: [
+        {
+          element: "[data-tour='nav-nova-promo']",
+          popover: {
+            title: "1. Criar nova promo",
+            description: "Clique aqui para abrir o formulario de nova promocao.",
+            side: "bottom" as const,
+            align: "center" as const,
+          },
         },
-      },
-      {
-        popover: {
-          title: "2. Upload de PDF",
-          description: "No formulario, voce vera uma area de upload no topo. Arraste o PDF da operadora ou clique para selecionar o arquivo.",
-          side: "bottom" as const,
-          align: "center" as const,
+        {
+          element: "[data-tour='nav-nova-promo']",
+          popover: {
+            title: "2. Formulario abre",
+            description: "O formulario abre como modal. Preencha destino, hotel, datas, valor, noites e regime de alimentacao.",
+            side: "bottom" as const,
+            align: "center" as const,
+          },
+          onHighlightStarted: () => { onOpenModal?.() },
         },
-      },
-      {
-        popover: {
-          title: "3. Escolha o tipo de preco",
-          description: "Selecione 'Preco Total (÷2)' se o PDF tem valor para 2 adultos, ou 'Preco Unitario' se ja e por pessoa.",
-          side: "bottom" as const,
-          align: "center" as const,
+        {
+          element: "[data-tour='promo-list']",
+          popover: {
+            title: "3. Promo na lista",
+            description: "Apos salvar, a promo aparece aqui na lista. Voce pode editar, excluir ou gerar imagens.",
+            side: "top" as const,
+            align: "center" as const,
+          },
         },
-      },
-      {
-        popover: {
-          title: "4. Revise e salve",
-          description: "A IA extrai automaticamente destino, hotel, datas, valor e regime. Revise os campos e clique em Adicionar.",
-          side: "bottom" as const,
-          align: "center" as const,
+        {
+          element: "[data-tour='stats-grid']",
+          popover: {
+            title: "4. Estatisticas atualizadas",
+            description: "Os numeros atualizam automaticamente: total de promos, destinos, valor medio.",
+            side: "bottom" as const,
+            align: "center" as const,
+          },
         },
-      },
-    ],
-  })
-  d.drive()
+      ],
+    })
+    d.drive()
+  }
 }
 
-const tourGerarImagem = () => {
-  const d = driver({
-    showProgress: true,
-    animate: true,
-    overlayColor: "rgba(0,0,0,0.6)",
-    popoverClass: "donatti-tour-popover",
-    nextBtnText: "Proximo",
-    prevBtnText: "Anterior",
-    doneBtnText: "Entendi!",
-    steps: [
-      {
-        element: "[data-tour='promo-list']",
-        popover: {
-          title: "1. Escolha uma promo",
-          description: "Na lista de promos, encontre a promo desejada.",
-          side: "top" as const,
-          align: "center" as const,
-        },
-      },
-      {
-        popover: {
-          title: "2. Abra o editor",
-          description: "Clique no botao 'GERAR IMAGENS' no card da promo, ou no icone de pincel. Isso abre o Donatti Studio.",
-          side: "bottom" as const,
-          align: "center" as const,
-        },
-      },
-      {
-        popover: {
-          title: "3. Escolha a imagem de fundo",
-          description: "No painel esquerdo, busque e selecione uma imagem de fundo para a promo. Voce pode buscar por qualquer termo.",
-          side: "bottom" as const,
-          align: "center" as const,
-        },
-      },
-      {
-        popover: {
-          title: "4. Customize e baixe",
-          description: "Ajuste o layout, cores e textos no editor visual. Quando estiver pronto, clique em Baixar para salvar a imagem.",
-          side: "bottom" as const,
-          align: "center" as const,
-        },
-      },
-    ],
-  })
-  d.drive()
+function createTourPdf(onOpenModal?: () => void) {
+  return () => {
+    // First open the modal so elements are visible
+    onOpenModal?.()
+
+    setTimeout(() => {
+      const d = driver({
+        showProgress: true,
+        animate: true,
+        overlayColor: "rgba(0,0,0,0.6)",
+        popoverClass: "donatti-tour-popover",
+        nextBtnText: "Proximo",
+        prevBtnText: "Anterior",
+        doneBtnText: "Entendi!",
+        steps: [
+          {
+            element: "[data-tour='pdf-upload-zone']",
+            popover: {
+              title: "1. Area de upload de PDF",
+              description: "Arraste o PDF da operadora aqui ou clique para selecionar o arquivo. A IA vai extrair automaticamente os dados.",
+              side: "bottom" as const,
+              align: "center" as const,
+            },
+          },
+          {
+            element: "[data-tour='pdf-valor-toggle']",
+            popover: {
+              title: "2. Tipo de valor",
+              description: "IMPORTANTE: Selecione 'Valor Total (÷2)' se o PDF tem preco para 2 adultos, ou 'Valor Unitario' se ja e por pessoa. A maioria dos PDFs vem com valor total.",
+              side: "bottom" as const,
+              align: "center" as const,
+            },
+          },
+          {
+            element: "[data-tour='form-destino']",
+            popover: {
+              title: "3. Campos preenchidos",
+              description: "Apos o upload, destino, hotel, datas, valor e regime sao preenchidos automaticamente. Revise antes de salvar!",
+              side: "bottom" as const,
+              align: "center" as const,
+            },
+          },
+          {
+            element: "[data-tour='form-submit']",
+            popover: {
+              title: "4. Salvar",
+              description: "Confira tudo e clique em 'Criar Promocao' para salvar.",
+              side: "top" as const,
+              align: "center" as const,
+            },
+          },
+        ],
+      })
+      d.drive()
+    }, 500) // wait for modal animation
+  }
 }
 
-const tourCompartilhar = () => {
-  const d = driver({
-    showProgress: true,
-    animate: true,
-    overlayColor: "rgba(0,0,0,0.6)",
-    popoverClass: "donatti-tour-popover",
-    nextBtnText: "Proximo",
-    prevBtnText: "Anterior",
-    doneBtnText: "Entendi!",
-    steps: [
-      {
-        element: "[data-tour='promo-list']",
-        popover: {
-          title: "1. Escolha a promo e abra o editor",
-          description: "Clique em 'GERAR IMAGENS' em qualquer promo para abrir o Donatti Studio.",
-          side: "top" as const,
-          align: "center" as const,
+function createTourGerarImagem() {
+  return () => {
+    const d = driver({
+      showProgress: true,
+      animate: true,
+      overlayColor: "rgba(0,0,0,0.6)",
+      popoverClass: "donatti-tour-popover",
+      nextBtnText: "Proximo",
+      prevBtnText: "Anterior",
+      doneBtnText: "Entendi!",
+      steps: [
+        {
+          element: "[data-tour='promo-list']",
+          popover: {
+            title: "1. Escolha uma promo",
+            description: "Na lista, encontre a promo e clique em 'GERAR IMAGENS' ou no icone de pincel.",
+            side: "top" as const,
+            align: "center" as const,
+          },
         },
-      },
-      {
-        popover: {
-          title: "2. Gere a imagem",
-          description: "No editor, escolha a imagem de fundo e clique em Baixar. Isso gera o PNG e salva a imagem no sistema.",
-          side: "bottom" as const,
-          align: "center" as const,
+        {
+          popover: {
+            title: "2. Donatti Studio abre",
+            description: "O editor visual abre em tela cheia. No painel esquerdo voce escolhe a imagem de fundo.",
+          },
         },
-      },
-      {
-        popover: {
-          title: "3. Publique no site",
-          description: "No painel esquerdo, marque 'Publicar', defina a secao e slug, e clique em 'Salvar card'. A promo aparece no site.",
-          side: "bottom" as const,
-          align: "center" as const,
+        {
+          popover: {
+            title: "3. Busque imagens",
+            description: "Use a barra de busca para encontrar fotos do destino. Clique na imagem desejada para selecionar como fundo.",
+          },
         },
-      },
-      {
-        popover: {
-          title: "4. Poste no Instagram",
-          description: "Ainda no painel esquerdo, use o painel do Instagram para postar no Feed ou Stories. A imagem e enviada automaticamente.",
-          side: "bottom" as const,
-          align: "center" as const,
+        {
+          popover: {
+            title: "4. Baixe a imagem",
+            description: "Clique no botao 'Baixar' no editor para gerar o PNG. A imagem sera salva no seu computador.",
+          },
         },
-      },
-      {
-        popover: {
-          title: "5. Google Business",
-          description: "Se o Google Business estiver conectado, a promo e postada automaticamente ao publicar no site.",
-          side: "bottom" as const,
-          align: "center" as const,
-        },
-      },
-    ],
-  })
-  d.drive()
+      ],
+    })
+    d.drive()
+  }
 }
 
-const tutorials = [
-  {
-    icon: FileText,
-    label: "Cadastrar uma promocao",
-    description: "Preencher manualmente o formulario",
-    action: tourCadastrar,
-  },
-  {
-    icon: FileUp,
-    label: "Cadastrar com PDF",
-    description: "Importar dados de PDF de operadora",
-    action: tourPdf,
-  },
-  {
-    icon: Image,
-    label: "Cadastrar e gerar imagem",
-    description: "Criar imagem promocional no editor",
-    action: tourGerarImagem,
-  },
-  {
-    icon: Share2,
-    label: "Cadastrar, gerar e compartilhar",
-    description: "Publicar no site, Instagram e Google",
-    action: tourCompartilhar,
-  },
-]
+function createTourCompartilhar() {
+  return () => {
+    const d = driver({
+      showProgress: true,
+      animate: true,
+      overlayColor: "rgba(0,0,0,0.6)",
+      popoverClass: "donatti-tour-popover",
+      nextBtnText: "Proximo",
+      prevBtnText: "Anterior",
+      doneBtnText: "Entendi!",
+      steps: [
+        {
+          element: "[data-tour='promo-list']",
+          popover: {
+            title: "1. Abra o editor de uma promo",
+            description: "Clique em 'GERAR IMAGENS' em qualquer promo para abrir o Donatti Studio.",
+            side: "top" as const,
+            align: "center" as const,
+          },
+        },
+        {
+          popover: {
+            title: "2. Gere e baixe a imagem",
+            description: "Escolha a foto de fundo e clique em Baixar. Isso gera o PNG da promo.",
+          },
+        },
+        {
+          popover: {
+            title: "3. Publique no site",
+            description: "No painel esquerdo, ative 'Publicar', defina a secao (nacionais, internacionais...) e clique em 'Salvar card'.",
+          },
+        },
+        {
+          popover: {
+            title: "4. Poste no Instagram",
+            description: "No painel do Instagram (abaixo), escreva a legenda e clique em 'Feed' ou 'Stories'. A imagem e enviada automaticamente!",
+          },
+        },
+        {
+          popover: {
+            title: "5. Google Business (automatico)",
+            description: "Se o Google Business estiver conectado, a promo e postada automaticamente quando voce publica no site.",
+          },
+        },
+      ],
+    })
+    d.drive()
+  }
+}
 
-export function TutorialButton() {
+export function TutorialButton({ onOpenModal }: TutorialButtonProps) {
   const [open, setOpen] = useState(false)
+
+  const tutorials = [
+    {
+      icon: FileText,
+      label: "Cadastrar uma promocao",
+      description: "Preencher manualmente o formulario",
+      action: createTourCadastrar(onOpenModal),
+    },
+    {
+      icon: FileUp,
+      label: "Cadastrar com PDF",
+      description: "Importar dados de PDF de operadora",
+      action: createTourPdf(onOpenModal),
+    },
+    {
+      icon: Image,
+      label: "Cadastrar e gerar imagem",
+      description: "Criar imagem promocional no editor",
+      action: createTourGerarImagem(),
+    },
+    {
+      icon: Share2,
+      label: "Cadastrar, gerar e compartilhar",
+      description: "Publicar no site, Instagram e Google",
+      action: createTourCompartilhar(),
+    },
+  ]
 
   return (
     <div className="relative">
@@ -241,11 +257,8 @@ export function TutorialButton() {
 
       {open && (
         <>
-          {/* Backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-
-          {/* Menu */}
-          <div className="absolute right-0 top-12 z-50 w-80 bg-white rounded-[18px] border border-gray-200 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute right-0 top-12 z-50 w-80 bg-white rounded-[18px] border border-gray-200 shadow-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-[15px] font-black text-gray-900">Tutoriais</h3>
@@ -262,7 +275,6 @@ export function TutorialButton() {
                   key={t.label}
                   onClick={() => {
                     setOpen(false)
-                    // Small delay so the menu closes before the tour starts
                     setTimeout(t.action, 200)
                   }}
                   className="w-full flex items-start gap-3 px-3 py-3 rounded-[12px] hover:bg-amber-50 transition-colors text-left group"
