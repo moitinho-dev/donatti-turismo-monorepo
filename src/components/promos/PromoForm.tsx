@@ -53,6 +53,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   const [isExtractingPdf, setIsExtractingPdf] = useState(false)
   const [pdfResult, setPdfResult] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [pdfPacoteDuplo, setPdfPacoteDuplo] = useState(true) // default: PDF vem com valor para 2 adultos
 
   const { savePromo, isLoading } = usePromo()
 
@@ -390,10 +391,13 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       if (f.NUMERO_DE_NOITES) { handleChange("NUMERO_DE_NOITES", String(f.NUMERO_DE_NOITES)); filledCount++ }
       if (f.PARCELAS) { handleChange("PARCELAS", String(f.PARCELAS)); filledCount++ }
 
-      // Price
+      // Price — divide by 2 if "pacote duplo" (PDF has price for 2 adults, system stores per-person)
       if (f.VALOR) {
-        const numericValue = parseFloat(String(f.VALOR))
+        let numericValue = parseFloat(String(f.VALOR))
         if (!isNaN(numericValue)) {
+          if (pdfPacoteDuplo) {
+            numericValue = numericValue / 2
+          }
           handleChange("VALOR", numericValue.toFixed(2))
           setFormattedAmount(
             numericValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -532,6 +536,34 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
                   <p className="text-xs text-gray-400 font-mon">PDF de operadora/hotel — preenche o formulario automaticamente</p>
                 </div>
               )}
+            </div>
+
+            {/* Package type toggle */}
+            <div className="mt-3 flex items-center gap-4 px-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pdf-package-type"
+                  checked={pdfPacoteDuplo}
+                  onChange={() => setPdfPacoteDuplo(true)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 font-mon">
+                  Pacote duplo <span className="text-xs text-gray-400">(2 adultos — divide valor por 2)</span>
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pdf-package-type"
+                  checked={!pdfPacoteDuplo}
+                  onChange={() => setPdfPacoteDuplo(false)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 font-mon">
+                  Unitario <span className="text-xs text-gray-400">(valor ja e por pessoa)</span>
+                </span>
+              </label>
             </div>
 
             {pdfResult && (
