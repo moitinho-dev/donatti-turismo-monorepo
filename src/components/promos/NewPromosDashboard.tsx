@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { usePromo } from "@/hooks/usePromo"
 import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
 import { useInstagram } from "@/hooks/useInstagram"
@@ -44,9 +45,17 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [siteCardMessage, setSiteCardMessage] = useState<string | null>(null)
   const [siteCardError, setSiteCardError] = useState<string | null>(null)
 
+  const searchParams = useSearchParams()
+
   useEffect(() => {
     fetchPromos()
     fetchStats()
+    // Auto-open form when coming from Chrome extension
+    if (searchParams.get("autofill")) {
+      setActivePanel("form")
+      setSelectedPromo(null)
+      setShowFormModal(true)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import type React from "react"
 
 import { usePromo } from "@/hooks/usePromo"
@@ -56,6 +57,61 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
   const [pdfPacoteDuplo, setPdfPacoteDuplo] = useState(true) // default: PDF vem com valor para 2 adultos
 
   const { savePromo, isLoading } = usePromo()
+  const searchParams = useSearchParams()
+
+  // Auto-fill from Chrome extension query params
+  useEffect(() => {
+    if (promo) return // don't autofill when editing
+    const autofillRaw = searchParams.get("autofill")
+    if (!autofillRaw) return
+
+    try {
+      const params = new URLSearchParams(autofillRaw)
+      const f: Record<string, string> = {}
+      params.forEach((v, k) => { f[k] = v })
+
+      if (f.DESTINO) handleChange("DESTINO", f.DESTINO)
+      if (f.HOTEL) handleChange("HOTEL", f.HOTEL)
+      if (f.NUMERO_DE_NOITES) handleChange("NUMERO_DE_NOITES", f.NUMERO_DE_NOITES)
+      if (f.PARCELAS) handleChange("PARCELAS", f.PARCELAS)
+
+      if (f.VALOR) {
+        const numVal = parseFloat(f.VALOR)
+        if (!isNaN(numVal)) {
+          handleChange("VALOR", numVal.toFixed(2))
+          setFormattedAmount(numVal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }))
+        }
+      }
+
+      if (f.DE && f.MES_DE && f.ANO) {
+        const d = f.DE.padStart(2, "0")
+        const m = f.MES_DE.padStart(2, "0")
+        setDeDate(`${f.ANO}-${m}-${d}`)
+        handleChange("DE", d)
+        handleChange("MES_DE", m)
+        handleChange("ANO", f.ANO)
+      }
+      if (f.ATE && f.MES_ATE) {
+        const d = f.ATE.padStart(2, "0")
+        const m = f.MES_ATE.padStart(2, "0")
+        const y = f.ANO || String(new Date().getFullYear())
+        setAteDate(`${y}-${m}-${d}`)
+        handleChange("ATE", d)
+        handleChange("MES_ATE", m)
+      }
+      if (f.DE && f.ATE && f.MES_DE && f.MES_ATE && f.ANO) {
+        handleChange("DATA_FORMATADA", `${f.DE.padStart(2, "0")}/${f.MES_DE.padStart(2, "0")} até ${f.ATE.padStart(2, "0")}/${f.MES_ATE.padStart(2, "0")} de ${f.ANO}`)
+      }
+      if (f.regime) handleChangeRegimeAlimentacao(f.regime)
+      if (f.AEREO === "true") handleChange("AEREO", true)
+      if (f.SP === "true") handleChange("SP", true)
+      if (f.CG === "true") handleChange("CG", true)
+
+      setPdfResult({ type: "success", message: "Dados importados da extensão Chrome" })
+    } catch {
+      // ignore parse errors
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const slugify = (value: string) =>
     value

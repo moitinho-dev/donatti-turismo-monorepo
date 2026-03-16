@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fafafa;
+      color: #1a1a1a;
+    }
+    .header {
+      background: #1a1a1a;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 32px;
+      height: 32px;
+      background: #ffa200;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #1a1a1a;
+      font-size: 14px;
+    }
+    .header-text h1 { color: #fff; font-size: 15px; font-weight: 800; }
+    .header-text p { color: #888; font-size: 11px; }
+
+    .content { padding: 16px 20px; }
+
+    .status {
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+      line-height: 1.4;
+    }
+    .status.show { display: block; }
+    .status.info { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+    .status.success { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+    .status.error { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+    .status.loading { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+
+    .option-group {
+      margin-bottom: 16px;
+    }
+    .option-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+      margin-bottom: 6px;
+    }
+    .option-group label:hover { border-color: #ffa200; }
+    .option-group label input { accent-color: #ffa200; }
+    .option-group .hint { color: #999; font-size: 11px; margin-left: auto; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: #ffa200;
+      color: #1a1a1a;
+    }
+    .btn-primary:hover { background: #e89200; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: #1a1a1a;
+      color: #ffa200;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover { background: #333; }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .preview {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: none;
+      font-size: 12px;
+    }
+    .preview.show { display: block; }
+    .preview-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .preview-row:last-child { border-bottom: none; }
+    .preview-label { color: #888; }
+    .preview-value { font-weight: 700; color: #1a1a1a; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer {
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">D</div>
+    <div class="header-text">
+      <h1>Donatti Turismo</h1>
+      <p>Extrator de Promoções</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="status" class="status"></div>
+
+    <div class="option-group">
+      <label>
+        <input type="radio" name="tipo" value="duplo" checked>
+        Pacote duplo (2 adultos)
+        <span class="hint">÷2</span>
+      </label>
+      <label>
+        <input type="radio" name="tipo" value="unitario">
+        Unitário (por pessoa)
+        <span class="hint">valor integral</span>
+      </label>
+    </div>
+
+    <div id="preview" class="preview"></div>
+
+    <button id="btn-extract" class="btn btn-primary">
+      Extrair Promo desta Página
+    </button>
+
+    <button id="btn-send" class="btn btn-secondary" disabled style="display:none">
+      Enviar para Donatti Promos
+    </button>
+  </div>
+
+  <div class="footer">
+    donattiturismo.com/promos
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
