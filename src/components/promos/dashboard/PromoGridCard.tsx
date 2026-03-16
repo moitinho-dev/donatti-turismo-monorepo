@@ -2,13 +2,12 @@
 
 import {
   MapPin,
-  Hotel,
   Calendar,
   Edit2,
   Trash2,
   Loader2,
   Plane,
-  ImagePlus,
+  PenTool,
   ImageIcon,
 } from "lucide-react"
 import type { PromoData } from "./types"
@@ -18,6 +17,7 @@ interface PromoGridCardProps {
   promo: PromoData
   imageUrl?: string
   loadingImage?: boolean
+  viewMode?: "grid" | "list"
   onEdit: (promo: PromoData) => void
   onGenerateImage: (promo: PromoData) => void
   onDelete: (id: string) => void
@@ -27,19 +27,28 @@ export function PromoGridCard({
   promo,
   imageUrl,
   loadingImage,
+  viewMode = "grid",
   onEdit,
   onGenerateImage,
   onDelete,
 }: PromoGridCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group">
-      {/* Image Header */}
-      <div className="relative h-40 bg-gradient-to-br from-[#F59E0B] to-[#efaa34] overflow-hidden">
+    <div
+      className={`bg-white rounded-[24px] border border-gray-200 overflow-hidden group/card hover:shadow-2xl hover:border-amber-300/50 transition-all duration-500 flex ${
+        viewMode === "list" ? "flex-col sm:flex-row" : "flex-col"
+      }`}
+    >
+      {/* Image Section */}
+      <div
+        className={`relative overflow-hidden bg-gradient-to-br from-amber-400 to-amber-600 shrink-0 ${
+          viewMode === "list" ? "sm:w-[300px] h-56 sm:h-auto" : "h-[220px] w-full"
+        }`}
+      >
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={promo.DESTINO}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-700 ease-out"
           />
         ) : loadingImage ? (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -50,89 +59,92 @@ export function PromoGridCard({
             <MapPin className="h-12 w-12 text-white/30" />
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-        {/* Action buttons */}
-        <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Floating Actions */}
+        <div className="absolute top-3 right-3 flex gap-2 opacity-100 md:opacity-0 group-hover/card:opacity-100 transition-all duration-300 md:translate-y-2 md:group-hover/card:translate-y-0">
           <button
             onClick={() => onEdit(promo)}
-            className="p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white shadow-sm"
             title="Editar"
+            className="bg-white/90 backdrop-blur-md p-2 rounded-xl text-gray-700 hover:bg-white hover:text-amber-600 shadow-lg transition-colors"
           >
-            <Edit2 className="h-4 w-4 text-gray-700" />
+            <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onGenerateImage(promo)}
-            className="p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white shadow-sm"
-            title="Abrir Editor"
+            title="Editor Visual"
+            className="bg-white/90 backdrop-blur-md p-2 rounded-xl text-amber-600 hover:bg-white shadow-lg transition-colors"
           >
-            <ImagePlus className="h-4 w-4 text-blue-600" />
+            <PenTool className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(promo.id)}
-            className="p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white shadow-sm"
             title="Excluir"
+            className="bg-white/90 backdrop-blur-md p-2 rounded-xl text-red-500 hover:bg-white hover:text-red-600 shadow-lg transition-colors"
           >
-            <Trash2 className="h-4 w-4 text-red-600" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
 
         {/* Badges */}
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-800 shadow-sm">
-            {promo.NUMERO_DE_NOITES} noites
-          </span>
-          {promo.AEREO && (
-            <span className="px-2.5 py-1 bg-blue-600 text-white rounded-full text-xs font-semibold flex items-center gap-1 shadow-sm">
-              <Plane className="h-3 w-3" />
-              Aereo
+        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
+          <div className="flex gap-2">
+            <span className="bg-white/90 backdrop-blur-md text-gray-900 px-3 py-1.5 rounded-[10px] text-[12px] font-bold shadow-sm">
+              {promo.NUMERO_DE_NOITES} noites
             </span>
-          )}
+            {promo.AEREO && (
+              <span className="bg-amber-500 text-white px-3 py-1.5 rounded-[10px] text-[12px] font-bold shadow-sm flex items-center gap-1.5">
+                <Plane className="w-3.5 h-3.5" />
+                Aereo
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 truncate text-lg">{promo.DESTINO}</h3>
-            <p className="text-sm text-gray-500 truncate flex items-center gap-1">
-              <Hotel className="h-3.5 w-3.5" />
-              {promo.HOTEL}
-            </p>
-          </div>
+      {/* Content Section */}
+      <div className={`p-5 flex flex-col grow ${viewMode === "list" ? "justify-center" : ""}`}>
+        <div className="mb-1">
+          <h3 className="text-xl font-black text-gray-900 tracking-tight leading-tight mb-1">{promo.DESTINO}</h3>
+          <p className="text-gray-500 text-[13px] flex items-center gap-1.5 font-medium">
+            <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="truncate">{promo.HOTEL}</span>
+          </p>
         </div>
 
-        {/* Price */}
-        <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
-          <div className="flex items-baseline gap-1">
-            <span className="text-xs text-gray-500">{promo.PARCELAS || 15}x de</span>
-            <span className="text-xl font-bold text-blue-600">{formatPrice(promo)}</span>
+        {/* Price Box */}
+        <div className="bg-amber-50 mt-4 p-4 rounded-[16px] border border-amber-100 relative overflow-hidden group-hover/card:bg-amber-100/50 transition-colors">
+          <div className="flex items-baseline gap-2 relative z-10">
+            <span className="text-gray-500 text-[12px] font-bold uppercase">{promo.PARCELAS || 15}x</span>
+            <span className="text-amber-600 text-[28px] font-black tracking-tighter leading-none">{formatPrice(promo)}</span>
           </div>
-          <p className="text-[10px] text-gray-400 mt-0.5">por pessoa no cartao</p>
+          <p className="text-gray-400 text-[11px] mt-1 font-medium relative z-10">por pessoa</p>
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-200/50 rounded-full blur-xl pointer-events-none" />
         </div>
 
         {/* Info Row */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{promo.DATA_FORMATADA}</span>
+        <div className="flex justify-between items-center mt-4 mb-6">
+          <div className="text-gray-500 text-[12px] flex items-center gap-1.5 truncate pr-2 font-medium">
+            <Calendar className="w-3.5 h-3.5 shrink-0 text-gray-700" />
+            <span className="truncate">{promo.DATA_FORMATADA}</span>
           </div>
-          {(promo.COM_CAFE || promo.ALL_INCLUSIVE || promo.MEIA_PENSAO || promo.PENSAO_COMPLETA) && (
-            <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
+          {(promo.COM_CAFE || promo.ALL_INCLUSIVE || promo.MEIA_PENSAO || promo.PENSAO_COMPLETA || promo.SEM_CAFE) && (
+            <span className="bg-gray-100 text-gray-600 text-[10px] uppercase tracking-wider font-black px-2.5 py-1 rounded-md shrink-0">
               {getRegimeLabel(promo)}
             </span>
           )}
         </div>
 
-        <button
-          onClick={() => onGenerateImage(promo)}
-          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
-        >
-          <ImageIcon className="h-4 w-4" />
-          Gerar Imagem
-        </button>
+        {/* CTA */}
+        <div className="mt-auto pt-3 border-t border-gray-100">
+          <button
+            onClick={() => onGenerateImage(promo)}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white flex justify-center items-center gap-2 px-5 py-3 rounded-[14px] font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.98] text-[13px]"
+          >
+            <ImageIcon className="w-4 h-4" />
+            GERAR IMAGENS
+          </button>
+        </div>
       </div>
     </div>
   )
