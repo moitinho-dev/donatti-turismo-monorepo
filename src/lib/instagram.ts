@@ -1,13 +1,16 @@
 import prisma from "@/lib/db"
 
-const GRAPH_API_VERSION = "v19.0"
-const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`
+// Instagram API with Instagram Login (NOT Facebook Login)
+// Docs: https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/
 
+const GRAPH_API_VERSION = "v21.0"
+const GRAPH_BASE = `https://graph.instagram.com/${GRAPH_API_VERSION}`
+
+// Scopes for Instagram Login (business content publishing)
 const SCOPES = [
-  "instagram_basic",
-  "instagram_content_publish",
-  "pages_read_engagement",
-  "pages_show_list",
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+  "instagram_business_manage_comments",
 ].join(",")
 
 const getBaseUrl = () => {
@@ -20,18 +23,22 @@ const getBaseUrl = () => {
   return normalized.replace(/\/$/, "")
 }
 
-// --- OAuth ---
+// --- OAuth (Instagram Login flow) ---
 
 export function buildConnectUrl() {
   const appId = process.env.META_APP_ID
   if (!appId) throw new Error("Missing META_APP_ID")
 
   const redirectUri = `${getBaseUrl()}/api/instagram/callback`
-  const url = new URL(`https://www.facebook.com/${GRAPH_API_VERSION}/dialog/oauth`)
+
+  // Instagram Login uses api.instagram.com for OAuth
+  const url = new URL("https://api.instagram.com/oauth/authorize")
   url.searchParams.set("client_id", appId)
   url.searchParams.set("redirect_uri", redirectUri)
   url.searchParams.set("scope", SCOPES)
   url.searchParams.set("response_type", "code")
+  url.searchParams.set("enable_fb_login", "0")
+  url.searchParams.set("force_authentication", "1")
   return url.toString()
 }
 
@@ -41,36 +48,65 @@ export async function exchangeCodeForToken(code: string) {
   if (!appId || !appSecret) throw new Error("Missing META_APP_ID/META_APP_SECRET")
 
   const redirectUri = `${getBaseUrl()}/api/instagram/callback`
-  const url = new URL(`${GRAPH_BASE}/oauth/access_token`)
-  url.searchParams.set("client_id", appId)
-  url.searchParams.set("client_secret", appSecret)
-  url.searchParams.set("redirect_uri", redirectUri)
-  url.searchParams.set("code", code)
 
-  const res = await fetch(url.toString())
+  // Instagram Login token exchange uses graph.instagram.com
+  const res = await fetch(`${GRAPH_BASE}/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: appId,
+      client_secret: appSecret,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      code,
+    }),
+  })
+
   if (!res.ok) {
     const text = await res.text().catch(() => "")
     throw new Error(`Token exchange failed ${res.status}: ${text}`)
   }
-  return (await res.json()) as { access_token: string; token_type: string }
+
+  return (await res.json()) as {
+    access_token: string
+    user_id: number
+    permissions: string[]
+  }
 }
 
 export async function exchangeLongLivedToken(shortLivedToken: string) {
-  const appId = process.env.META_APP_ID
   const appSecret = process.env.META_APP_SECRET
-  if (!appId || !appSecret) throw new Error("Missing META_APP_ID/META_APP_SECRET")
+  if (!appSecret) throw new Error("Missing META_APP_SECRET")
 
-  const url = new URL(`${GRAPH_BASE}/oauth/access_token`)
-  url.searchParams.set("grant_type", "fb_exchange_token")
-  url.searchParams.set("client_id", appId)
+  const url = new URL(`${GRAPH_BASE}/access_token`)
+  url.searchParams.set("grant_type", "ig_exchange_token")
   url.searchParams.set("client_secret", appSecret)
-  url.searchParams.set("fb_exchange_token", shortLivedToken)
+  url.searchParams.set("access_token", shortLivedToken)
 
   const res = await fetch(url.toString())
   if (!res.ok) {
     const text = await res.text().catch(() => "")
     throw new Error(`Long-lived token exchange failed ${res.status}: ${text}`)
   }
+
+  return (await res.json()) as {
+    access_token: string
+    token_type: string
+    expires_in: number // 60 days in seconds
+  }
+}
+
+export async function refreshLongLivedToken(token: string) {
+  const url = new URL(`${GRAPH_BASE}/refresh_access_token`)
+  url.searchParams.set("grant_type", "ig_refresh_token")
+  url.searchParams.set("access_token", token)
+
+  const res = await fetch(url.toString())
+  if (!res.ok) {
+    const text = await res.text().catch(() => "")
+    throw new Error(`Token refresh failed ${res.status}: ${text}`)
+  }
+
   return (await res.json()) as {
     access_token: string
     token_type: string
@@ -78,36 +114,22 @@ export async function exchangeLongLivedToken(shortLivedToken: string) {
   }
 }
 
-// --- Instagram Account Discovery ---
+// --- Instagram Account Info ---
 
-export async function getInstagramAccountId(accessToken: string) {
-  // Step 1: Get Facebook Pages the user manages
-  const pagesRes = await fetch(
-    `${GRAPH_BASE}/me/accounts?fields=id,name,instagram_business_account&access_token=${accessToken}`,
+export async function getInstagramUserInfo(accessToken: string, userId: string) {
+  const res = await fetch(
+    `${GRAPH_BASE}/${userId}?fields=user_id,username,name,profile_picture_url&access_token=${accessToken}`,
   )
-  if (!pagesRes.ok) {
-    const text = await pagesRes.text().catch(() => "")
-    throw new Error(`Failed to fetch pages: ${pagesRes.status}: ${text}`)
-  }
-  const pagesData = (await pagesRes.json()) as {
-    data: Array<{
-      id: string
-      name: string
-      instagram_business_account?: { id: string }
-    }>
+  if (!res.ok) {
+    const text = await res.text().catch(() => "")
+    throw new Error(`Failed to fetch user info: ${res.status}: ${text}`)
   }
 
-  // Find first page with an Instagram Business account
-  const pageWithIg = pagesData.data.find((p) => p.instagram_business_account?.id)
-  if (!pageWithIg || !pageWithIg.instagram_business_account) {
-    throw new Error(
-      "Nenhuma conta Instagram Business encontrada. Verifique se sua pagina do Facebook esta conectada a uma conta Instagram profissional.",
-    )
-  }
-
-  return {
-    igUserId: pageWithIg.instagram_business_account.id,
-    pageName: pageWithIg.name,
+  return (await res.json()) as {
+    user_id: string
+    username: string
+    name?: string
+    profile_picture_url?: string
   }
 }
 
@@ -134,6 +156,7 @@ export async function getConnection() {
 }
 
 // --- Content Publishing ---
+// Uses graph.instagram.com for Instagram Login apps
 
 export async function createMediaContainer(
   igUserId: string,
@@ -144,20 +167,24 @@ export async function createMediaContainer(
 ) {
   const url = `${GRAPH_BASE}/${igUserId}/media`
 
-  const params: Record<string, string> = {
+  const params = new URLSearchParams({
     access_token: accessToken,
     image_url: imageUrl,
-    caption,
-  }
+  })
+
   if (mediaType === "STORIES") {
-    params.media_type = "STORIES"
+    params.set("media_type", "STORIES")
+  } else {
+    // Feed posts support captions
+    params.set("caption", caption)
   }
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params,
   })
+
   if (!res.ok) {
     const text = await res.text().catch(() => "")
     throw new Error(`Erro ao criar container: ${res.status}: ${text}`)
@@ -169,14 +196,14 @@ export async function checkContainerStatus(
   accessToken: string,
   containerId: string,
 ): Promise<string> {
-  const url = `${GRAPH_BASE}/${containerId}?fields=status_code&access_token=${accessToken}`
+  const url = `${GRAPH_BASE}/${containerId}?fields=status_code,status&access_token=${accessToken}`
   const res = await fetch(url)
   if (!res.ok) {
     const text = await res.text().catch(() => "")
     throw new Error(`Erro ao verificar status: ${res.status}: ${text}`)
   }
-  const data = (await res.json()) as { status_code: string }
-  return data.status_code
+  const data = (await res.json()) as { status_code?: string; status?: string }
+  return data.status_code || data.status || "IN_PROGRESS"
 }
 
 export async function publishMedia(
@@ -187,12 +214,13 @@ export async function publishMedia(
   const url = `${GRAPH_BASE}/${igUserId}/media_publish`
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
       creation_id: containerId,
       access_token: accessToken,
     }),
   })
+
   if (!res.ok) {
     const text = await res.text().catch(() => "")
     throw new Error(`Erro ao publicar: ${res.status}: ${text}`)
@@ -207,7 +235,7 @@ async function waitForContainer(accessToken: string, containerId: string, maxWai
   while (Date.now() - startTime < maxWaitMs) {
     const status = await checkContainerStatus(accessToken, containerId)
     if (status === "FINISHED") return
-    if (status === "ERROR") throw new Error("Container com erro — imagem pode ser invalida")
+    if (status === "ERROR") throw new Error("Container com erro — imagem pode ser invalida ou URL inacessivel")
     await new Promise((r) => setTimeout(r, interval))
   }
   throw new Error("Timeout aguardando processamento da imagem pelo Instagram")

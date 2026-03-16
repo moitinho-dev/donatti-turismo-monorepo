@@ -4,7 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import {
   exchangeCodeForToken,
   exchangeLongLivedToken,
-  getInstagramAccountId,
+  getInstagramUserInfo,
   upsertConnection,
 } from "@/lib/instagram"
 
@@ -36,21 +36,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/promos?instagram=error&reason=no_code`)
     }
 
-    // Exchange code for short-lived token
-    const { access_token: shortToken } = await exchangeCodeForToken(code)
+    // Step 1: Exchange code for short-lived token (Instagram Login flow)
+    const { access_token: shortToken, user_id } = await exchangeCodeForToken(code)
 
-    // Exchange for long-lived token (60 days)
+    // Step 2: Exchange for long-lived token (60 days)
     const longLived = await exchangeLongLivedToken(shortToken)
     const expiresAt = new Date(Date.now() + longLived.expires_in * 1000)
 
-    // Discover Instagram Business Account
-    const { igUserId, pageName } = await getInstagramAccountId(longLived.access_token)
+    // Step 3: Get user info (username, name)
+    const userInfo = await getInstagramUserInfo(longLived.access_token, String(user_id))
 
-    // Save connection
+    // Step 4: Save connection
     await upsertConnection({
       accessToken: longLived.access_token,
-      igUserId,
-      pageName,
+      igUserId: String(user_id),
+      pageName: userInfo.username || userInfo.name || null,
       tokenExpiresAt: expiresAt,
     })
 
