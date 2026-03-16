@@ -615,41 +615,46 @@ export default function TemplateManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-950 flex flex-col">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+      <header className="bg-gray-900 border-b border-gray-800 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/promos")}
-              className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"
+              className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div>
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <Layers className="h-5 w-5" />
-                Gerenciador de Templates
-              </h1>
-              <p className="text-xs text-gray-400">Upload, edite areas de foto e configure seus templates</p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(247,158,10,0.4)] border border-gray-700">
+                <img src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/uploads/1511914d-33e8-4dbe-aaf4-8a27bd98a45a/1773605008514-bb2f07ed/LOGOTIPO_PNG_COR.png" alt="Logo" className="w-4 h-4 object-contain" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-amber-500" />
+                  Donatti Studio - Templates
+                </h1>
+                <p className="text-xs text-gray-400">Upload, edite areas de foto e configure seus templates</p>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Format Toggle */}
-            <div className="flex items-center gap-1 bg-gray-700 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1 border border-gray-700">
               <button
                 onClick={() => setSelectedFormat("story")}
-                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                  selectedFormat === "story" ? "bg-blue-600 text-white" : "hover:bg-gray-600 text-gray-300"
+                className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${
+                  selectedFormat === "story" ? "bg-amber-500 text-black" : "hover:bg-gray-700 text-gray-300"
                 }`}
               >
                 Story (1080x1920)
               </button>
               <button
                 onClick={() => setSelectedFormat("feed")}
-                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                  selectedFormat === "feed" ? "bg-blue-600 text-white" : "hover:bg-gray-600 text-gray-300"
+                className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${
+                  selectedFormat === "feed" ? "bg-amber-500 text-black" : "hover:bg-gray-700 text-gray-300"
                 }`}
               >
                 Feed (1080x1350)
@@ -660,7 +665,7 @@ export default function TemplateManager() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-lg font-bold disabled:opacity-50 shadow-[0_2px_10px_rgba(247,158,10,0.3)] transition-all"
             >
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {isUploading ? "Enviando..." : "Upload Template"}
@@ -672,9 +677,9 @@ export default function TemplateManager() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Templates List Sidebar */}
-        <div className="w-72 bg-gray-800 border-r border-gray-700 flex flex-col">
-          <div className="p-3 border-b border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-200">
+        <div className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col">
+          <div className="p-3 border-b border-gray-800">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
               Templates ({filteredLayouts.length})
             </h3>
           </div>
@@ -682,7 +687,7 @@ export default function TemplateManager() {
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
               </div>
             ) : filteredLayouts.length === 0 ? (
               <div className="text-center py-8">
@@ -701,12 +706,12 @@ export default function TemplateManager() {
                   }}
                   className={`relative group rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
                     currentLayout?.id === layout.id
-                      ? "border-blue-500 ring-2 ring-blue-500/30"
+                      ? "border-amber-500 ring-2 ring-amber-500/30"
                       : "border-gray-700 hover:border-gray-600"
                   }`}
                 >
                   {/* Thumbnail */}
-                  <div className="aspect-[9/16] bg-gray-900 relative">
+                  <div className="aspect-[9/16] bg-gray-950 relative">
                     {layout.url && (
                       <img
                         src={layout.url}
@@ -717,7 +722,7 @@ export default function TemplateManager() {
 
                     {/* Default badge */}
                     {layout.isDefault && (
-                      <div className="absolute top-2 left-2 px-2 py-1 bg-yellow-600 text-white text-[10px] font-bold rounded flex items-center gap-1">
+                      <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-black text-[10px] font-bold rounded flex items-center gap-1">
                         <Star className="h-3 w-3 fill-current" />
                         Padrao
                       </div>
@@ -785,7 +790,7 @@ export default function TemplateManager() {
                             e.stopPropagation()
                             handleRename(layout.id)
                           }}
-                          className="p-1 bg-blue-600 rounded text-white"
+                          className="p-1 bg-amber-500 rounded text-black"
                         >
                           <Save className="h-3 w-3" />
                         </button>
@@ -804,7 +809,7 @@ export default function TemplateManager() {
         {currentLayout ? (
           <div className="flex-1 flex flex-col">
             {/* Toolbar */}
-            <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+            <div className="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Zoom */}
                 <div className="flex items-center gap-1 bg-gray-700 rounded-lg p-1">
@@ -832,7 +837,7 @@ export default function TemplateManager() {
                 {/* Grid */}
                 <button
                   onClick={() => setShowGrid(!showGrid)}
-                  className={`p-2 rounded-lg ${showGrid ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-300"}`}
+                  className={`p-2 rounded-lg ${showGrid ? "bg-amber-500 text-black" : "bg-gray-800 hover:bg-gray-700 text-gray-300"}`}
                   title="Mostrar grade"
                 >
                   <Grid3X3 className="h-4 w-4" />
@@ -841,7 +846,7 @@ export default function TemplateManager() {
                 {/* Snap/Magnetic */}
                 <button
                   onClick={() => setSnapEnabled(!snapEnabled)}
-                  className={`p-2 rounded-lg ${snapEnabled ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-300"}`}
+                  className={`p-2 rounded-lg ${snapEnabled ? "bg-amber-500 text-black" : "bg-gray-800 hover:bg-gray-700 text-gray-300"}`}
                   title="Snap magnetico"
                 >
                   <Magnet className="h-4 w-4" />
@@ -878,7 +883,7 @@ export default function TemplateManager() {
                     setSelectedArea(null)
                   }}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium ${
-                    areaDrawMode ? "bg-green-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    areaDrawMode ? "bg-emerald-600 text-white" : "bg-gray-800 hover:bg-gray-700 text-gray-300"
                   }`}
                 >
                   <Square className="h-4 w-4" />
@@ -888,7 +893,7 @@ export default function TemplateManager() {
                 {/* Add Custom Text */}
                 <button
                   onClick={() => setShowAddTextModal(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium bg-purple-600 hover:bg-purple-700 text-white"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium bg-gray-800 hover:bg-gray-700 text-amber-500 border border-amber-500/30"
                 >
                   <Type className="h-4 w-4" />
                   Adicionar Texto
@@ -898,7 +903,7 @@ export default function TemplateManager() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 text-black rounded-lg font-bold disabled:opacity-50 shadow-md transition-all"
               >
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Salvar Alteracoes
@@ -908,7 +913,7 @@ export default function TemplateManager() {
             <div className="flex flex-1 overflow-hidden">
               {/* Canvas */}
               <div
-                className="flex-1 overflow-auto bg-gray-900 p-8"
+                className="flex-1 overflow-auto bg-gray-950 p-8"
                 onMouseMove={(e) => {
                   handleMouseMove(e)
                   handleCanvasMouseMove(e)
@@ -1089,7 +1094,7 @@ export default function TemplateManager() {
                           <div
                             key={id}
                             className={`absolute cursor-move select-none whitespace-pre-wrap ${
-                              isSelected ? "ring-2 ring-yellow-400 ring-offset-2 ring-offset-transparent" : ""
+                              isSelected ? "ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent" : ""
                             }`}
                             style={{
                               left: element.x,
@@ -1116,7 +1121,7 @@ export default function TemplateManager() {
                         <div
                           key={id}
                           className={`absolute cursor-move select-none whitespace-nowrap ${
-                            isSelected ? "ring-2 ring-yellow-400 ring-offset-2 ring-offset-transparent" : ""
+                            isSelected ? "ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent" : ""
                           }`}
                           style={{
                             left: element.x,
@@ -1138,11 +1143,11 @@ export default function TemplateManager() {
               </div>
 
               {/* Properties Panel */}
-              <div className="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto">
+              <div className="w-80 bg-gray-900 border-l border-gray-800 overflow-y-auto">
                 {/* Image Areas List */}
-                <div className="border-b border-gray-700">
+                <div className="border-b border-gray-800">
                   <div className="p-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-200">Areas de Foto</h3>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Areas de Foto</h3>
                     <span className="text-xs text-gray-500">{currentLayout?.imageAreas?.length || 0}</span>
                   </div>
                   <div className="px-2 pb-2 space-y-1 max-h-48 overflow-y-auto">
@@ -1168,7 +1173,7 @@ export default function TemplateManager() {
                         </button>
                         <ImageIcon className="h-3.5 w-3.5 text-gray-400" />
                         <span className="text-xs text-gray-300 flex-1 truncate">{area.name}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${area.zIndex < 0 ? "bg-orange-600" : "bg-blue-600"} text-white`}>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${area.zIndex < 0 ? "bg-orange-600" : "bg-amber-500 !text-black"} text-white`}>
                           z:{area.zIndex}
                         </span>
                         <button
@@ -1211,7 +1216,7 @@ export default function TemplateManager() {
                           type="text"
                           value={area.name}
                           onChange={(e) => updateImageArea(area.id, { name: e.target.value })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                         />
                       </div>
 
@@ -1231,7 +1236,7 @@ export default function TemplateManager() {
                             type="number"
                             value={area.zIndex}
                             onChange={(e) => updateImageArea(area.id, { zIndex: parseInt(e.target.value) || 0 })}
-                            className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200 text-center"
+                            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500 text-center"
                           />
                           <button
                             onClick={() => updateImageArea(area.id, { zIndex: area.zIndex + 1 })}
@@ -1249,7 +1254,7 @@ export default function TemplateManager() {
                           </button>
                           <button
                             onClick={() => updateImageArea(area.id, { zIndex: 1 })}
-                            className={`flex-1 px-2 py-1.5 text-xs rounded ${area.zIndex >= 0 ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300"}`}
+                            className={`flex-1 px-2 py-1.5 text-xs rounded ${area.zIndex >= 0 ? "bg-amber-500 text-black" : "bg-gray-800 text-gray-300"}`}
                           >
                             Na Frente
                           </button>
@@ -1270,7 +1275,7 @@ export default function TemplateManager() {
                                 points: area.points.map(p => ({ x: p.x + deltaX, y: p.y }))
                               })
                             }}
-                            className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                           />
                         </div>
                         <div>
@@ -1285,7 +1290,7 @@ export default function TemplateManager() {
                                 points: area.points.map(p => ({ x: p.x, y: p.y + deltaY }))
                               })
                             }}
-                            className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                           />
                         </div>
                       </div>
@@ -1308,7 +1313,7 @@ export default function TemplateManager() {
                                 ]
                               })
                             }}
-                            className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                             min="20"
                           />
                         </div>
@@ -1328,7 +1333,7 @@ export default function TemplateManager() {
                                 ]
                               })
                             }}
-                            className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                             min="20"
                           />
                         </div>
@@ -1340,7 +1345,7 @@ export default function TemplateManager() {
                         <select
                           value={area.fit}
                           onChange={(e) => updateImageArea(area.id, { fit: e.target.value as "cover" | "contain" | "fill" })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                         >
                           <option value="cover">Cobrir (Cover)</option>
                           <option value="contain">Conter (Contain)</option>
@@ -1382,7 +1387,7 @@ export default function TemplateManager() {
                             setSelectedArea(null)
                           }}
                           className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                            isSelected ? "bg-blue-600" : "hover:bg-gray-700"
+                            isSelected ? "bg-amber-500/10 border-amber-500/40" : "hover:bg-gray-800"
                           } ${!promoVisible ? "opacity-40" : ""}`}
                         >
                           <button
@@ -1400,7 +1405,7 @@ export default function TemplateManager() {
                             )}
                           </button>
                           {isCustom && (
-                            <Type className="h-3 w-3 text-purple-400" />
+                            <Type className="h-3 w-3 text-amber-400" />
                           )}
                           <span className="text-xs text-gray-300 flex-1 truncate">
                             {elementLabels[id] || id}
@@ -1427,7 +1432,7 @@ export default function TemplateManager() {
                 {selectedElement && currentLayout?.elements[selectedElement] && (
                   <div className="p-3 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-blue-400">
+                      <h3 className="text-sm font-bold text-amber-500">
                         {elementLabels[selectedElement] || selectedElement}
                       </h3>
                       {currentLayout.elements[selectedElement].isCustom && (
@@ -1449,7 +1454,7 @@ export default function TemplateManager() {
                           value={currentLayout.elements[selectedElement].template || ""}
                           onChange={(e) => updateElement(selectedElement, { template: e.target.value })}
                           rows={3}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200 font-mono"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500 font-mono"
                         />
                         <div className="flex flex-wrap gap-1 mt-2">
                           {AVAILABLE_VARIABLES.slice(0, 5).map((v) => (
@@ -1458,7 +1463,7 @@ export default function TemplateManager() {
                               onClick={() => updateElement(selectedElement, {
                                 template: (currentLayout.elements[selectedElement].template || "") + `{${v.name}}`
                               })}
-                              className="px-1.5 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-[10px] text-purple-400 font-mono"
+                              className="px-1.5 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-[10px] text-amber-400 font-mono"
                               title={v.description}
                             >
                               {`{${v.name}}`}
@@ -1496,7 +1501,7 @@ export default function TemplateManager() {
                           type="number"
                           value={Math.round(currentLayout.elements[selectedElement].x)}
                           onChange={(e) => updateElement(selectedElement, { x: parseInt(e.target.value) || 0 })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                         />
                       </div>
                       <div>
@@ -1505,7 +1510,7 @@ export default function TemplateManager() {
                           type="number"
                           value={Math.round(currentLayout.elements[selectedElement].y)}
                           onChange={(e) => updateElement(selectedElement, { y: parseInt(e.target.value) || 0 })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                         />
                       </div>
                     </div>
@@ -1517,7 +1522,7 @@ export default function TemplateManager() {
                         type="number"
                         value={currentLayout.elements[selectedElement].fontSize}
                         onChange={(e) => updateElement(selectedElement, { fontSize: parseInt(e.target.value) || 16 })}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                         min="8"
                         max="200"
                       />
@@ -1529,7 +1534,7 @@ export default function TemplateManager() {
                       <select
                         value={normalizeFontFamily(currentLayout.elements[selectedElement].fontFamily)}
                         onChange={(e) => updateElement(selectedElement, { fontFamily: e.target.value })}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                       >
                         {AVAILABLE_FONTS.map(font => (
                           <option key={font.name} value={font.value}>{font.name}</option>
@@ -1543,7 +1548,7 @@ export default function TemplateManager() {
                       <select
                         value={currentLayout.elements[selectedElement].fontWeight}
                         onChange={(e) => updateElement(selectedElement, { fontWeight: e.target.value })}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500"
                       >
                         <option value="400">Normal</option>
                         <option value="500">Medium</option>
@@ -1686,7 +1691,7 @@ export default function TemplateManager() {
                       <button
                         key={v.name}
                         onClick={() => setNewTextTemplate(prev => prev + `{${v.name}}`)}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-purple-400 font-mono"
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-amber-400 font-mono"
                         title={`${v.description} (ex: ${v.example})`}
                       >
                         {`{${v.name}}`}
@@ -1736,7 +1741,7 @@ export default function TemplateManager() {
               <button
                 onClick={handleAddCustomText}
                 disabled={!newTextTemplate.trim() || !newTextName.trim()}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-amber-500 text-black rounded-lg hover:bg-amber-400 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Adicionar
               </button>
