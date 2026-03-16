@@ -6,7 +6,7 @@ import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
 import { useInstagram } from "@/hooks/useInstagram"
 import { usePromoImages } from "@/hooks/usePromoImages"
 import { X } from "lucide-react"
-import { PromoForm } from "./PromoForm"
+import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
 import { PromoListPanel } from "./dashboard/PromoListPanel"
 import { DonatiStudio } from "./DonatiStudio"
@@ -28,6 +28,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>("list")
   const [selectedPromo, setSelectedPromo] = useState<PromoData | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [showFormModal, setShowFormModal] = useState(false)
 
   // Image gallery state
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
@@ -113,7 +114,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
   const handleEdit = (promo: PromoData) => {
     setSelectedPromo(promo)
-    setActivePanel("form")
+    setShowFormModal(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -152,7 +153,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   }
 
   const handleFormSuccess = () => {
-    setActivePanel("list")
+    setShowFormModal(false)
     setSelectedPromo(null)
     fetchPromos()
     fetchStats()
@@ -160,7 +161,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
   const handleNewPromo = () => {
     setSelectedPromo(null)
-    setActivePanel("form")
+    setShowFormModal(true)
   }
 
   const handleCloseEditor = () => {
@@ -180,7 +181,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
       />
 
       <main className="p-6">
-        {activePanel === "list" && (
+        {(activePanel === "list" || activePanel === "form") && (
           <PromoListPanel
             promos={promos}
             isLoading={isLoading}
@@ -193,23 +194,6 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
             onDelete={(id) => setDeleteConfirm(id)}
             onNewPromo={handleNewPromo}
           />
-        )}
-
-        {activePanel === "form" && (
-          <div className="max-w-3xl mx-auto">
-            <div className="mb-6 flex items-center gap-4">
-              <button
-                onClick={() => { setActivePanel("list"); setSelectedPromo(null) }}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <h2 className="text-xl font-bold text-gray-900">
-                {selectedPromo ? "Editar Promocao" : "Nova Promocao"}
-              </h2>
-            </div>
-            <PromoForm promo={selectedPromo} onSuccess={handleFormSuccess} />
-          </div>
         )}
 
         {activePanel === "editor" && selectedPromo && (
@@ -249,6 +233,13 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           onCancel={() => setDeleteConfirm(null)}
         />
       )}
+
+      <PromoFormModal
+        promo={selectedPromo}
+        isOpen={showFormModal}
+        onClose={() => { setShowFormModal(false); setSelectedPromo(null) }}
+        onSuccess={handleFormSuccess}
+      />
     </div>
   )
 }
