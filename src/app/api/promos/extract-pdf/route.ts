@@ -38,20 +38,40 @@ Regras de parsing:
 - Cafe da manha = COM_CAFE, sem cafe = SEM_CAFE, meia pensao = MEIA_PENSAO, pensao completa = PENSAO_COMPLETA, all inclusive = ALL_INCLUSIVE`
 
 function parseGeminiJson(rawText: string): Record<string, unknown> {
-  let cleaned = rawText.trim()
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "")
+  if (!rawText || !rawText.trim()) {
+    throw new Error("Gemini retornou resposta vazia")
   }
 
+  let cleaned = rawText.trim()
+
+  // Strip markdown code fences
+  cleaned = cleaned.replace(/^```(?:json)?\s*\n?/g, "").replace(/\n?\s*```$/g, "")
+
+  // Try direct parse first
   try {
-    return JSON.parse(cleaned)
-  } catch {
-    const match = cleaned.match(/\{[\s\S]*\}/)
-    if (match) {
+    const parsed = JSON.parse(cleaned)
+    if (typeof parsed === "object" && parsed !== null) return parsed
+  } catch { /* continue */ }
+
+  // Try to find JSON object in text
+  const match = cleaned.match(/\{[\s\S]*\}/)
+  if (match) {
+    try {
       return JSON.parse(match[0])
-    }
-    throw new Error("Nao foi possivel extrair JSON da resposta do Gemini")
+    } catch { /* continue */ }
   }
+
+  // Try to find JSON array and take first object
+  const arrayMatch = cleaned.match(/\[[\s\S]*\]/)
+  if (arrayMatch) {
+    try {
+      const arr = JSON.parse(arrayMatch[0])
+      if (Array.isArray(arr) && arr[0]) return arr[0]
+    } catch { /* continue */ }
+  }
+
+  console.error("Failed to parse Gemini response. Raw text:", cleaned.substring(0, 500))
+  throw new Error("Nao foi possivel extrair JSON da resposta do Gemini")
 }
 
 export async function POST(request: NextRequest) {
@@ -107,7 +127,8 @@ export async function POST(request: NextRequest) {
           }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
+            responseMimeType: "application/json",
           },
         }),
       },
@@ -120,6 +141,15 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json()
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || ""
+
+    if (!rawText) {
+      console.error("Gemini returned empty text. Full response:", JSON.stringify(data).substring(0, 1000))
+      return NextResponse.json({
+        error: "Gemini nao retornou texto. Verifique se o PDF e valido.",
+        debug: data.candidates?.[0]?.finishReason || "unknown",
+      }, { status: 500 })
+    }
+
     const fields = parseGeminiJson(rawText)
 
     // Count extracted fields
