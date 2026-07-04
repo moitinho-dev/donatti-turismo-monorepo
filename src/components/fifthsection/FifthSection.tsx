@@ -73,7 +73,7 @@ export function FifthSection() {
                 <div className="relative overflow-hidden group">
                   <Image
                     src={FotoAgencia1 || "/placeholder.svg"}
-                    alt="Agência Lemonde Tourisme"
+                    alt="Agência Donatti Turismo"
                     className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-primary-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

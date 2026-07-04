@@ -32,10 +32,10 @@ export function Header() {
         <div className="flex justify-between items-center">
           <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
             <div className="hidden sm:block">
-              <Image src={Logo || "/placeholder.svg"} alt="Lemonde Tourisme" className="h-16 w-auto" priority />
+              <Image src={Logo || "/placeholder.svg"} alt="Donatti Turismo" className="h-16 w-auto" priority />
             </div>
             <div className="sm:hidden">
-              <Image src={LogoIcon || "/placeholder.svg"} alt="Lemonde Tourisme" className="h-12 w-auto" priority />
+              <Image src={LogoIcon || "/placeholder.svg"} alt="Donatti Turismo" className="h-12 w-auto" priority />
             </div>
           </motion.div>
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Script from "next/script"
 import { GoogleTagManager } from "@next/third-parties/google"
 import { Inter } from "next/font/google"
@@ -15,6 +16,62 @@ const inter = Inter({
 })
 
 // Componente funcional para o layout principal da aplicação
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://donattiturismo.com.br"),
+  title: {
+    default: "Donatti Turismo — Pacotes de Viagem com Preço Garantido",
+    template: "%s | Donatti Turismo",
+  },
+  description:
+    "Pacotes de viagem nacionais e internacionais com melhor preço garantido, parcelamento em até 12x e suporte 24/7. Planeje sua próxima viagem com a Donatti Turismo!",
+  keywords: [
+    "pacotes de viagem",
+    "agência de viagens",
+    "turismo",
+    "viagens nacionais",
+    "viagens internacionais",
+    "cruzeiros",
+    "lua de mel",
+    "Donatti Turismo",
+    "Campo Grande MS",
+  ],
+  authors: [{ name: "Donatti Turismo" }],
+  openGraph: {
+    title: "Donatti Turismo — Pacotes de Viagem com Preço Garantido",
+    description:
+      "Pacotes nacionais e internacionais com melhor preço garantido, parcelamento em até 12x e suporte 24/7.",
+    type: "website",
+    url: "https://donattiturismo.com.br",
+    siteName: "Donatti Turismo",
+    images: [
+      {
+        url: "https://donattiturismo.com.br/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Donatti Turismo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Donatti Turismo — Pacotes de Viagem com Preço Garantido",
+    description: "Pacotes nacionais e internacionais com melhor preço garantido e suporte 24/7.",
+    images: ["https://donattiturismo.com.br/twitter-image.jpg"],
+  },
+  icons: {
+    icon: "/favicon.svg",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -51,29 +108,10 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR">
       <head>
-        {/* SEO Meta Tags */}
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Donatti Turismo </title>
-        <meta name="description" content="Aproveite a Black Friday Donatti Turismo! Até 50% de desconto em pacotes de viagem selecionados, parcelamento em até 12x sem juros e suporte 24/7. Garanta sua próxima aventura!" />
-        <meta name="keywords" content="black friday viagens, pacotes de viagem com desconto, parcelamento 12x sem juros, agência de viagens, turismo" />
-
-        {/* Open Graph */}
-        <meta property="og:title" content="Black Friday Donatti Turismo: Até 50% OFF em Pacotes de Viagem" />
-        <meta property="og:description" content="Sua próxima aventura com até 50% OFF e 12x sem juros. Ofertas válidas apenas na Black Friday!" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://donattiturismo.com.br" />
-        <meta property="og:image" content="https://donattiturismo.com.br/og-image.jpg" />
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Black Friday Donatti Turismo: Até 50% OFF" />
-        <meta name="twitter:description" content="Pacotes de viagem com até 50% de desconto e 12x sem juros!" />
-        <meta name="twitter:image" content="https://donattiturismo.com.br/twitter-image.jpg" />
-
-        {/* Favicon */}
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
         {/* RD Station Marketing - Script de Integração */}

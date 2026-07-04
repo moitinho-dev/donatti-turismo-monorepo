@@ -34,10 +34,10 @@ export function Terms({ isOpen, onClose }: TermsProps): ReactElement | null {
   const termsAndConditionsText = `
   <p><strong>Termos de Uso:</strong></p>
   <p>Ao acessar ou utilizar este site (a seguir denominado "Site"), você concorda em ficar vinculado a estes Termos de Uso e a todas as leis e regulamentos aplicáveis. Se você não concordar com algum destes termos, está proibido de usar ou acessar este site. Os materiais contidos neste site são protegidos pelas leis de direitos autorais e marcas comerciais aplicáveis.</p>
-  <p>Este Site é fornecido pela LEMONDE TURISMO (CNPJ 41.887.394/0001-29) e destina-se ao uso pessoal e não comercial. Você concorda em não modificar, distribuir, transmitir, realizar engenharia reversa, descompilar, criar trabalhos derivados ou utilizar de qualquer outra forma o conteúdo deste Site, exceto conforme expressamente autorizado por nós por escrito.</p>
+  <p>Este Site é fornecido pela DONATTI TURISMO (CNPJ 41.887.394/0001-29) e destina-se ao uso pessoal e não comercial. Você concorda em não modificar, distribuir, transmitir, realizar engenharia reversa, descompilar, criar trabalhos derivados ou utilizar de qualquer outra forma o conteúdo deste Site, exceto conforme expressamente autorizado por nós por escrito.</p>
   <p>Ao usar este Site, você concorda em fornecer informações precisas, atuais e completas. Você é responsável por manter a confidencialidade de suas informações de conta e por todas as atividades que ocorrem sob sua conta.</p>
-  <p>Os materiais exibidos ou disponibilizados através deste Site, incluindo, mas não se limitando a textos, gráficos, logotipos, ícones, imagens, áudio e vídeo, são de propriedade exclusiva da LEMONDE TURISMO ou de seus licenciadores e estão protegidos pelas leis de direitos autorais.</p>
-  <p>A LEMONDE TURISMO não será responsável por quaisquer danos diretos, indiretos, incidentais, consequenciais ou punitivos decorrentes do uso ou incapacidade de usar este Site.</p>
+  <p>Os materiais exibidos ou disponibilizados através deste Site, incluindo, mas não se limitando a textos, gráficos, logotipos, ícones, imagens, áudio e vídeo, são de propriedade exclusiva da DONATTI TURISMO ou de seus licenciadores e estão protegidos pelas leis de direitos autorais.</p>
+  <p>A DONATTI TURISMO não será responsável por quaisquer danos diretos, indiretos, incidentais, consequenciais ou punitivos decorrentes do uso ou incapacidade de usar este Site.</p>
   <p>Reservamo-nos o direito de modificar estes Termos de Uso a qualquer momento. Ao continuar a acessar ou usar o Site após a publicação de quaisquer modificações, você concorda em ficar vinculado aos termos modificados.</p>
   
   <p><strong>Política de Privacidade:</strong></p>

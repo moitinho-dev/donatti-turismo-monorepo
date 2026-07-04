@@ -341,28 +341,7 @@ export default function DonattiTurismoMinimalist() {
                 </Button>
               </div>
 
-              {/* Social Proof */}
-              <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
-                <div className="flex -space-x-2">
-                  {[
-                    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
-                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
-                    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face',
-                  ].map((src, i) => (
-                    <img
-                      key={i}
-                      src={src}
-                      alt=""
-                      className="h-8 w-8 rounded-full border-2 border-white object-cover"
-                      aria-hidden="true"
-                    />
-                  ))}
-                </div>
-                <span className="text-xs md:text-sm">
-                  <strong className="text-gray-900">2.847 pessoas</strong> visualizando agora
-                </span>
-              </div>
+              
             </div>
           </div>
           </div>

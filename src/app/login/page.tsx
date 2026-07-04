@@ -152,7 +152,7 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-xs text-gray-500">
           <p>Para fins de demonstração, use:</p>
           <p className="mt-1">Email: admin@donatti.com</p>
-          <p>Senha: lemonde123</p>
+          <p>Para recuperar seu acesso, entre em contato com o administrador.</p>
         </div>
       </div>
     </div>

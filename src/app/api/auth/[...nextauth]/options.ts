@@ -83,7 +83,7 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 horas
   },
-  secret: process.env.AUTH_SECRET || "your-secret-key-change-in-production",
+  secret: process.env.AUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 }
 

@@ -4,36 +4,13 @@ import type { Metadata } from "next"
 import prisma from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { categoryLabels, computeSlug, getSectionLabel } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Destinos | Donatti Turismo",
   description: "Veja todos os destinos atendidos pela Donatti Turismo e escolha o pacote ideal com suporte 24/7.",
 }
 
-const categoryLabels: Record<string, string> = {
-  nacionais: "Pacotes Nacionais",
-  internacionais: "Pacotes Internacionais",
-  cruzeiros: "Cruzeiros",
-  "lua-de-mel": "Lua de Mel",
-  religioso: "Turismo Religioso",
-  nordeste: "Nordeste",
-}
-const slugify = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-
-const computeSlug = (promo: { siteSlug: string | null; destino: string; id: string }) =>
-  promo.siteSlug || `${slugify(promo.destino || "destino")}-${promo.id.slice(0, 6)}`
-
-const getSectionLabel = (section?: string | null) => {
-  if (!section) return "Destino"
-  if (categoryLabels[section]) return categoryLabels[section]
-  return section.charAt(0).toUpperCase() + section.slice(1)
-}
 
 export default async function DestinosPage() {
   const packages = await prisma.promo.findMany({

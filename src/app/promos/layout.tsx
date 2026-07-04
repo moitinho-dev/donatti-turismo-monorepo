@@ -4,8 +4,8 @@ import { PromoProvider } from "@/providers/PromoProvider"
 import { AuthProvider } from "@/providers/AuthProvider"
 
 export const metadata: Metadata = {
-  title: "Gerenciador de Promoções | Lemonde Tourisme",
-  description: "Sistema de gerenciamento de promoções da Lemonde Tourisme",
+  title: "Gerenciador de Promoções | Donatti Turismo",
+  description: "Sistema de gerenciamento de promoções da Donatti Turismo",
 }
 
 export default function PromosLayout({

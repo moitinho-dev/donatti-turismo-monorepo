@@ -39,7 +39,7 @@ export function Popup() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-1">
             <Image
-              alt="Natal Lemonde"
+              alt="Natal Donatti"
               src={Foto}
               className="w-full h-64 sm:h-full object-cover rounded-xl"
               width={1770}
@@ -51,7 +51,7 @@ export function Popup() {
             <h2 className="text-lg font-bold font-mon">Ho Ho Ho, Feliz Natal!</h2>
 
             <p className="mt-4 text-sm text-gray-500 font-mon">
-              Descubra as ofertas irresistíveis da <span className="font-medium"> Lemonde Turismo </span>, onde
+              Descubra as ofertas irresistíveis da <span className="font-medium"> Donatti Turismo </span>, onde
               proporcionamos experiências de viagem excepcionais com os melhores destinos a preços imbatíveis. Agora,
               você pode realizar seus sonhos de Natal com{" "}
               <span className="font-medium"> parcelamentos de até 15x no cartão e 10x no boleto.</span>

@@ -6,32 +6,9 @@ import prisma from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, Plane } from "lucide-react"
+import { categoryLabels, computeSlug, getSectionLabel } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
-
-const categoryLabels: Record<string, string> = {
-  nacionais: "Pacotes Nacionais",
-  internacionais: "Pacotes Internacionais",
-  cruzeiros: "Cruzeiros",
-  "lua-de-mel": "Lua de Mel",
-  religioso: "Turismo Religioso",
-  nordeste: "Nordeste",
-}
-const getSectionLabel = (section?: string | null) => {
-  if (!section) return "Destino"
-  if (categoryLabels[section]) return categoryLabels[section]
-  return section.charAt(0).toUpperCase() + section.slice(1)
-}
-const slugify = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-
-const computeSlug = (promo: { siteSlug: string | null; destino: string; id: string }) =>
-  promo.siteSlug || `${slugify(promo.destino || "destino")}-${promo.id.slice(0, 6)}`
 
 type PageProps = {
   params: { slug: string }

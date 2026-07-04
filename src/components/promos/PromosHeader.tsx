@@ -26,10 +26,10 @@ export function PromosHeader({ user, onSignOut }: PromosHeaderProps) {
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <div className="hidden sm:block">
-            <Image src={Logo || "/placeholder.svg"} alt="Lemonde Tourisme" priority className="h-12 w-auto" />
+            <Image src={Logo || "/placeholder.svg"} alt="Donatti Turismo" priority className="h-12 w-auto" />
           </div>
           <div className="sm:hidden">
-            <Image src={LogoIcon || "/placeholder.svg"} alt="Lemonde Tourisme" className="h-10 w-auto" />
+            <Image src={LogoIcon || "/placeholder.svg"} alt="Donatti Turismo" className="h-10 w-auto" />
           </div>
         </Link>
 

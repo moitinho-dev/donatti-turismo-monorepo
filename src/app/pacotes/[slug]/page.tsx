@@ -6,74 +6,9 @@ import prisma from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Plane, UtensilsCrossed, Building2, MapPin } from "lucide-react"
+import { categoryLabels, computeSlug, getPriceNumber, getSectionLabel } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
-
-const categoryLabels: Record<string, string> = {
-  nacionais: "Pacotes Nacionais",
-  internacionais: "Pacotes Internacionais",
-  cruzeiros: "Cruzeiros",
-  "lua-de-mel": "Lua de Mel",
-  religioso: "Turismo Religioso",
-  nordeste: "Nordeste",
-}
-const slugify = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-
-const computeSlug = (promo: { siteSlug: string | null; destino: string; id: string }) =>
-  promo.siteSlug || `${slugify(promo.destino || "pacote")}-${promo.id.slice(0, 6)}`
-const getSectionLabel = (section?: string | null) => {
-  if (!section) return "Pacote"
-  if (categoryLabels[section]) return categoryLabels[section]
-  return section.charAt(0).toUpperCase() + section.slice(1)
-}
-
-const getPriceNumber = (valor: string) => {
-  const raw = String(valor ?? "").trim()
-  if (!raw) return 0
-
-  const cleaned = raw.replace(/[^\d.,-]/g, "")
-  if (!cleaned) return 0
-
-  if (cleaned.includes(".") && cleaned.includes(",")) {
-    const normalized = cleaned.replace(/\./g, "").replace(/,/g, ".")
-    const n = Number.parseFloat(normalized)
-    return Number.isFinite(n) ? n : 0
-  }
-
-  if (cleaned.includes(",")) {
-    const normalized = cleaned.replace(/,/g, ".")
-    const n = Number.parseFloat(normalized)
-    return Number.isFinite(n) ? n : 0
-  }
-
-  if (cleaned.includes(".")) {
-    const parts = cleaned.split(".")
-    if (parts.length > 2) {
-      const normalized = parts.join("")
-      const n = Number.parseFloat(normalized)
-      return Number.isFinite(n) ? n : 0
-    }
-
-    if (parts.length === 2 && parts[1]?.length === 3 && (parts[0]?.length ?? 0) <= 3) {
-      const normalized = parts.join("")
-      const n = Number.parseFloat(normalized)
-      return Number.isFinite(n) ? n : 0
-    }
-  }
-
-  const n = Number.parseFloat(cleaned)
-  if (Number.isFinite(n)) return n
-
-  const digitsOnly = cleaned.replace(/[^\d-]/g, "")
-  const fallback = Number.parseFloat(digitsOnly)
-  return Number.isFinite(fallback) ? fallback : 0
-}
 
 type PageProps = {
   params: { slug: string }

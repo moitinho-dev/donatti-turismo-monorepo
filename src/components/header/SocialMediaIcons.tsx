@@ -8,8 +8,8 @@ import face_icon from "../../../public/assets/face_icon.png"
 export function SocialMediaIcons({ tipoRedeSocial }: { tipoRedeSocial: "whatsapp" | "instagram" | "facebook" }) {
   const socialMediaLinks = {
     whatsapp: "https://wa.me/556796372769",
-    instagram: "https://www.instagram.com/lemondetrip",
-    facebook: "https://www.facebook.com/lemondetrip",
+    instagram: "https://www.instagram.com/donattiturismo",
+    facebook: "https://www.facebook.com/donattiturismo",
   }
 
   return (

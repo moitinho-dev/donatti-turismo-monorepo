@@ -42,7 +42,7 @@ const Dropdown = () => {
             <ul role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
               <li>
                 <a
-                  href="https://www.instagram.com/lemondetrip"
+                  href="https://www.instagram.com/donattiturismo"
                   className="flex px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={closeDropdown}
                 >

@@ -57,7 +57,7 @@ export function FooterSection() {
                     className="w-full h-[250px] rounded-xl border-2 border-white/10"
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3738.1132929822643!2d-54.63646658944231!3d-20.460539454969034!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9486e71ddefc0ac3%3A0xa552f4c0c93e9999!2sLe%20Monde%20Turismo!5e0!3m2!1spt-BR!2sbr!4v1698785317968!5m2!1spt-BR!2sbr"
                     loading="lazy"
-                    title="Localização da Lemonde Turismo"
+                    title="Localização da Donatti Turismo"
                   ></iframe>
                 </div>
               </motion.div>
@@ -76,7 +76,7 @@ export function FooterSection() {
 
                 <div className="mt-8 text-right">
                   <p className="text-white font-mon">
-                    2025 - DONATTI TURISMO®
+                    2026 - DONATTI TURISMO®
                     <br />
                     TODOS OS DIREITOS RESERVADOS
                   </p>

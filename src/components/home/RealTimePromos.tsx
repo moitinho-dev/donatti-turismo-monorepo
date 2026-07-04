@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { trackEvent, trackLead } from "@/lib/analytics"
+import { getSectionLabel, getPriceNumber, slugify, computeSlug } from "@/lib/utils"
 import { ArrowRight, Calendar, Clock3, MapPin, Plane, SlidersHorizontal, Star, UtensilsCrossed } from "lucide-react"
 
 type SiteSection = string
@@ -44,21 +45,6 @@ interface RealTimePromosProps {
 
 type CategoryFilter = SiteSection | "todas"
 
-const knownLabels: Record<string, string> = {
-  nacionais: "Pacotes Nacionais",
-  internacionais: "Pacotes Internacionais",
-  cruzeiros: "Cruzeiros",
-  "lua-de-mel": "Lua de Mel",
-  religioso: "Turismo Religioso",
-  nordeste: "Nordeste",
-}
-
-const getSectionLabel = (section?: string | null) => {
-  if (!section) return "Pacote"
-  if (knownLabels[section]) return knownLabels[section]
-  return section.charAt(0).toUpperCase() + section.slice(1)
-}
-
 const priceOptions = [
   { value: "all", label: "Todos os preços" },
   { value: "até-5000", label: "Até R$ 5.000" },
@@ -88,56 +74,6 @@ const getDepartureCities = (promo: PromoData) => {
   if (promo.SP) cities.push("São Paulo")
   return cities.length ? cities : ["Consulte"]
 }
-
-const getPriceNumber = (valor: string) => {
-  const raw = String(valor ?? "").trim()
-  if (!raw) return 0
-
-  const cleaned = raw.replace(/[^\d.,-]/g, "")
-  if (!cleaned) return 0
-
-  if (cleaned.includes(".") && cleaned.includes(",")) {
-    const normalized = cleaned.replace(/\./g, "").replace(/,/g, ".")
-    const n = Number.parseFloat(normalized)
-    return Number.isFinite(n) ? n : 0
-  }
-
-  if (cleaned.includes(",")) {
-    const normalized = cleaned.replace(/,/g, ".")
-    const n = Number.parseFloat(normalized)
-    return Number.isFinite(n) ? n : 0
-  }
-
-  if (cleaned.includes(".")) {
-    const parts = cleaned.split(".")
-    if (parts.length > 2) {
-      const normalized = parts.join("")
-      const n = Number.parseFloat(normalized)
-      return Number.isFinite(n) ? n : 0
-    }
-
-    if (parts.length === 2 && parts[1]?.length === 3 && (parts[0]?.length ?? 0) <= 3) {
-      const normalized = parts.join("")
-      const n = Number.parseFloat(normalized)
-      return Number.isFinite(n) ? n : 0
-    }
-  }
-
-  const n = Number.parseFloat(cleaned)
-  if (Number.isFinite(n)) return n
-
-  const digitsOnly = cleaned.replace(/[^\d-]/g, "")
-  const fallback = Number.parseFloat(digitsOnly)
-  return Number.isFinite(fallback) ? fallback : 0
-}
-
-const slugify = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
 
 export default function RealTimePromos({ searchQuery = "", onNoResults, limit = 12 }: RealTimePromosProps) {
   const [promos, setPromos] = useState<PromoData[]>([])

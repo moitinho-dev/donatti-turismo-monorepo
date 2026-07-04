@@ -44,7 +44,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <div className="flex flex-col items-center">
-          <Image src={Logo || "/placeholder.svg"} alt="Lemonde Tourisme" width={200} height={80} className="mb-6" />
+          <Image src={Logo || "/placeholder.svg"} alt="Donatti Turismo" width={200} height={80} className="mb-6" />
           <h2 className="text-2xl font-bold text-primary-blue">Acesso ao Gerenciador de Promoções</h2>
           <p className="mt-2 text-sm text-gray-600">Entre com suas credenciais para acessar o sistema</p>
         </div>
