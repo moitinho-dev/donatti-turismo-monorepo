@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { categoryLabels, computeSlug, getSectionLabel } from "@/lib/utils"
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Destinos | Donatti Turismo",
   description: "Veja todos os destinos atendidos pela Donatti Turismo e escolha o pacote ideal com suporte 24/7.",
