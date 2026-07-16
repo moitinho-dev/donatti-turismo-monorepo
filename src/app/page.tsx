@@ -238,7 +238,7 @@ export default function DonattiTurismoMinimalist() {
               {/* Main Heading */}
               <h1
                 id="hero-title"
-                className="mb-6 text-7xl leading-[1.1] tracking-tight md:text-7xl lg:text-8xl xl:text-9xl drop-shadow-lg"
+                className="mb-6 text-3xl font-bold leading-tight tracking-tight md:text-4xl drop-shadow-lg"
               >
                 <span className="font-bold text-white">Realize sua</span>
                 <br />
