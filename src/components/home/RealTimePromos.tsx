@@ -479,7 +479,6 @@ export default function RealTimePromos({ searchQuery = "", onNoResults, limit = 
 
                     <div className="space-y-1">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-semibold text-[#F5A524]">$</span>
                         <span className="text-4xl font-extrabold text-[#F5A524] leading-tight">{formatInstallment(installment)}</span>
                       </div>
                       <p className="text-xs text-gray-500">{parcelas}x sem juros</p>
