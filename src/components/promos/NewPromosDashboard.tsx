@@ -215,6 +215,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   }
 
   const handleFormSuccess = () => {
+    // Dados da extensão já usados: tira da URL para "Nova promo" abrir em branco
+    if (searchParams.get("autofill")) window.history.replaceState(null, "", "/promos")
     setShowFormModal(false)
     setSelectedPromo(null)
     void fetchPromos()
@@ -342,7 +344,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
       )}
 
       <PromoFormModal
-        promo={selectedPromo}
+        promo={showFormModal ? (selectedPromo as unknown as Record<string, unknown> | null) : null}
+        autofill={selectedPromo ? null : searchParams.get("autofill")}
         isOpen={showFormModal}
         onClose={() => { setShowFormModal(false); setSelectedPromo(null) }}
         onSuccess={handleFormSuccess}
