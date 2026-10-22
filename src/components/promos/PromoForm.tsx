@@ -349,7 +349,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     // Se for publicar e não houver imagem, buscar automaticamente
     if (payload.SITE_PUBLISHED && !payload.SITE_IMAGE) {
       try {
-        const resp = await fetch(`/api/image-search?query=${encodeURIComponent(payload.DESTINO)}&limit=1`)
+        const resp = await fetch(`/api/image-search?query=${encodeURIComponent(payload.DESTINO)}&limit=1&orientation=landscape`)
         const data = await resp.json()
         const first = data?.results?.[0]
         if (first?.urls?.regular || first?.urls?.small) {

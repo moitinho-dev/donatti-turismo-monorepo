@@ -4,6 +4,9 @@ import { authOptions } from "../auth/[...nextauth]/options"
 import { z } from "zod"
 import prisma from "@/lib/db"
 import { publishPromoPost } from "@/lib/googleBusiness"
+import { suggestSiteSection } from "@/lib/destinations"
+import { findSiteImageForDestination } from "@/lib/imageSearch"
+import { slugify } from "@/lib/utils"
 
 // Schema for promo validation
 const promoSchema = z.object({
@@ -88,6 +91,46 @@ function toApiFormat(promo: {
     createdBy: promo.createdById,
     createdByName: promo.createdBy?.name || null,
   }
+}
+
+/** Slug livre: se outro pacote já usa, acrescenta -2, -3... (siteSlug é único no banco) */
+async function ensureUniqueSlug(slug: string, excludeId?: string): Promise<string> {
+  const base = slugify(slug)
+  if (!base) return base
+  let candidate = base
+  for (let i = 2; i < 50; i++) {
+    const taken = await prisma.promo.findFirst({
+      where: { siteSlug: candidate, ...(excludeId ? { NOT: { id: excludeId } } : {}) },
+      select: { id: true },
+    })
+    if (!taken) return candidate
+    candidate = `${base}-${i}`
+  }
+  return `${base}-${Date.now().toString(36)}`
+}
+
+/**
+ * Completa os campos do card do site. Ao publicar sem seção ou sem foto, classifica a seção
+ * pelo destino e busca uma foto horizontal do próprio destino, para o card nunca ir ao ar
+ * com a foto genérica nem na seção errada.
+ */
+async function resolveSiteFields(data: z.infer<typeof promoSchema>) {
+  const published = data.SITE_PUBLISHED || false
+  let section = (data.SITE_SECTION || "").trim() || null
+  let image = (data.SITE_IMAGE || "").trim() || null
+  const rawSlug = (data.SITE_SLUG || "").trim()
+
+  if (published && !section) {
+    section = suggestSiteSection(data.DESTINO) || "nacionais"
+  }
+  if (published && !image) {
+    image = await findSiteImageForDestination(data.DESTINO)
+  }
+
+  const slugSource = rawSlug || (published ? data.DESTINO : "")
+  const slug = slugSource ? await ensureUniqueSlug(slugSource, data.id) : null
+
+  return { sitePublished: published, siteSection: section, siteSlug: slug || null, siteImage: image }
 }
 
 export async function GET(req: NextRequest) {
@@ -175,6 +218,7 @@ export async function POST(req: NextRequest) {
 
     // Parse parcelas to number
     const parcelas = typeof data.PARCELAS === "string" ? parseInt(data.PARCELAS, 10) || 15 : data.PARCELAS || 15
+    const siteFields = await resolveSiteFields(data)
 
     if (isUpdate) {
       // Check if promo exists
@@ -209,10 +253,7 @@ export async function POST(req: NextRequest) {
           sp: data.SP || false,
           cg: data.CG || false,
           aereo: data.AEREO || false,
-          sitePublished: data.SITE_PUBLISHED || false,
-          siteSection: data.SITE_SECTION || null,
-          siteSlug: data.SITE_SLUG || null,
-          siteImage: data.SITE_IMAGE || null,
+          ...siteFields,
           siteDescription: data.SITE_DESCRIPTION || null,
           siteInclusions: data.SITE_INCLUSIONS || [],
           siteDepartures: data.SITE_DEPARTURES || [],
@@ -246,10 +287,7 @@ export async function POST(req: NextRequest) {
           sp: data.SP || false,
           cg: data.CG || false,
           aereo: data.AEREO || false,
-          sitePublished: data.SITE_PUBLISHED || false,
-          siteSection: data.SITE_SECTION || null,
-          siteSlug: data.SITE_SLUG || null,
-          siteImage: data.SITE_IMAGE || null,
+          ...siteFields,
           siteDescription: data.SITE_DESCRIPTION || null,
           siteInclusions: data.SITE_INCLUSIONS || [],
           siteDepartures: data.SITE_DEPARTURES || [],

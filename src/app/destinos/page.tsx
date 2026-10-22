@@ -4,21 +4,23 @@ import type { Metadata } from "next"
 import prisma from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { categoryLabels, computeSlug, getSectionLabel } from "@/lib/utils"
+import { categoryLabels, computeSlug, getSectionLabel, isPromoExpired } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Destinos | Donatti Turismo",
-  description: "Veja todos os destinos atendidos pela Donatti Turismo e escolha o pacote ideal com suporte 24/7.",
+  description: "Veja todos os destinos atendidos pela Donatti Turismo e escolha o pacote ideal com atendimento humano no WhatsApp.",
 }
 
 
 export default async function DestinosPage() {
-  const packages = await prisma.promo.findMany({
-    where: { sitePublished: true },
-    orderBy: { createdAt: "desc" },
-  })
+  const packages = (
+    await prisma.promo.findMany({
+      where: { sitePublished: true },
+      orderBy: { createdAt: "desc" },
+    })
+  ).filter((pkg) => !isPromoExpired(pkg.dataFormatada))
 
   return (
     <div className="bg-white min-h-screen text-gray-900">

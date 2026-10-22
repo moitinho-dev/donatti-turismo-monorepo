@@ -80,3 +80,39 @@ export const getPriceNumber = (valor: string) => {
   return Number.isFinite(fallback) ? fallback : 0
 }
 
+
+/**
+ * Lê as datas de uma promo a partir do texto salvo em DATA_FORMATADA.
+ * Aceita "15/07 até 22/07 de 2026" (formato do painel) e "15/07/2026" ou "15 a 20/07/2026".
+ * O ano informado é o da volta; se a ida for em mês posterior à volta, a ida é no ano anterior.
+ */
+export const parsePromoDates = (dataFormatada: string): { start: Date | null; end: Date | null } => {
+  const text = String(dataFormatada ?? "")
+
+  const range = text.match(/(\d{1,2})\/(\d{1,2})\s*(?:at[eé]|a|-)\s*(\d{1,2})\/(\d{1,2})\s*(?:de\s*)?(\d{4})/i)
+  if (range) {
+    const [, d1, m1, d2, m2, y] = range.map(Number)
+    const end = new Date(y, m2 - 1, d2)
+    const start = new Date(m1 > m2 ? y - 1 : y, m1 - 1, d1)
+    return { start, end }
+  }
+
+  const single = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (single) {
+    const [, d, m, y] = single.map(Number)
+    const date = new Date(y, m - 1, d)
+    return { start: date, end: date }
+  }
+
+  return { start: null, end: null }
+}
+
+/** Promo cuja data de ida já passou (com 1 dia de tolerância). Datas ilegíveis não expiram. */
+export const isPromoExpired = (dataFormatada: string, now: Date = new Date()) => {
+  const { start } = parsePromoDates(dataFormatada)
+  if (!start) return false
+  const threshold = new Date(now)
+  threshold.setDate(threshold.getDate() - 1)
+  threshold.setHours(0, 0, 0, 0)
+  return start < threshold
+}
