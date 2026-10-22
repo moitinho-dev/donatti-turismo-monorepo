@@ -34,6 +34,8 @@ export interface PublicPromo {
   SITE_DESCRIPTION?: string | null
   SITE_INCLUSIONS?: string[]
   SITE_DEPARTURES?: string[]
+  VALOR_ORIGINAL?: string | null
+  CAMPAIGN?: string | null
 }
 
 interface RealTimePromosProps {
@@ -434,6 +436,7 @@ export default function RealTimePromos({
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((pkg) => {
                 const total = getPriceNumber(pkg.VALOR)
+                const originalTotal = getPriceNumber(pkg.VALOR_ORIGINAL || "")
                 const parcelas = getParcelas(pkg)
                 const installment = parcelas > 0 ? total / parcelas : total
                 const departures = getDepartureCities(pkg).join(" e ")
@@ -536,6 +539,14 @@ export default function RealTimePromos({
                       </ul>
 
                       <div className="mt-auto">
+                        {originalTotal > total && (
+                          <p className="mb-1 flex items-center gap-2 text-xs">
+                            <span className="text-gray-400 line-through">De {formatBRL(originalTotal)}</span>
+                            <span className="rounded-full bg-green-100 px-2 py-0.5 font-bold text-green-700">
+                              -{Math.round((1 - total / originalTotal) * 100)}%
+                            </span>
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500">{parcelas}x de</p>
                         <p className="text-3xl font-extrabold leading-tight text-[#F5A524] sm:text-4xl">{formatBRL(installment)}</p>
                         <p className="text-xs text-gray-500">ou {formatBRL(total)} por pessoa</p>

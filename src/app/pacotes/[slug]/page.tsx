@@ -78,6 +78,8 @@ export default async function PackagePage({ params }: PageProps) {
   })
 
   const totalValue = getPriceNumber(pkg.valor)
+  const originalValue = getPriceNumber(pkg.valorOriginal || "")
+  const brl = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n)
   const parcelas = pkg.parcelas || 15
   const installmentValue = parcelas > 0 ? totalValue / parcelas : totalValue
   const installmentFormatted = new Intl.NumberFormat("pt-BR", {
@@ -221,9 +223,17 @@ export default async function PackagePage({ params }: PageProps) {
 
           <aside className="rounded-2xl border border-gray-100 p-6 shadow-md bg-gray-50">
             <p className="text-sm text-gray-500 mb-2">Investimento por pessoa</p>
+            {originalValue > totalValue && (
+              <p className="mb-1 flex items-center gap-2 text-sm">
+                <span className="text-gray-400 line-through">De {brl(originalValue)}</span>
+                <span className="rounded-full bg-green-100 px-2 py-0.5 font-bold text-green-700">
+                  -{Math.round((1 - totalValue / originalValue) * 100)}%
+                </span>
+              </p>
+            )}
             <p className="text-4xl font-bold text-gray-900 mb-1">{installmentFormatted}</p>
             <p className="text-sm text-gray-600 mb-6">
-              {parcelas}x sem juros • {pkg.numeroDeNoites} noites • {departures}
+              {parcelas}x • total {brl(totalValue)} • {pkg.numeroDeNoites} noites • {departures}
             </p>
             <div className="space-y-3">
               <Button

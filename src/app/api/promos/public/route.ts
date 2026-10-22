@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
       SITE_DESCRIPTION: promo.siteDescription,
       SITE_INCLUSIONS: promo.siteInclusions,
       SITE_DEPARTURES: promo.siteDepartures,
+      VALOR_ORIGINAL: promo.valorOriginal,
+      CAMPAIGN: promo.campaign,
     }))
 
     return NextResponse.json(formattedPromos)
