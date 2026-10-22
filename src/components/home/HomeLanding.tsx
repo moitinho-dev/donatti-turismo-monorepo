@@ -830,6 +830,8 @@ export default function HomeLanding({ phase, initialPromos, destinations = [] }:
                 <li><a href="#ofertas" className="transition-colors hover:text-primary">Ofertas</a></li>
                 <li><Link href="/pacotes" className="transition-colors hover:text-primary">Todos os pacotes</Link></li>
                 <li><Link href="/destinos" className="transition-colors hover:text-primary">Destinos</Link></li>
+                <li><Link href="/saindo-de-campo-grande" className="transition-colors hover:text-primary">Saindo de Campo Grande</Link></li>
+                <li><Link href="/saindo-de-sao-paulo" className="transition-colors hover:text-primary">Saindo de São Paulo</Link></li>
                 <li><a href="#duvidas" className="transition-colors hover:text-primary">Dúvidas frequentes</a></li>
                 <li><a href="#contato" className="transition-colors hover:text-primary">Pedir cotação</a></li>
               </ul>

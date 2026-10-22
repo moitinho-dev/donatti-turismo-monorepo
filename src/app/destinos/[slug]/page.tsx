@@ -93,7 +93,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const s = summarize(d)
   const heading = destinationHeading(d.name)
-  const title = `${heading} com aéreo e hotel`
+  // Nicho com pouca concorrência: "pacote <destino> saindo de Campo Grande"
+  const title = s.departures.includes("Campo Grande") ? `${heading} saindo de Campo Grande` : `${heading} com aéreo e hotel`
   const description = clampDescription(
     `${heading} saindo de ${s.departures.length ? s.departures.join(" e ") : "Campo Grande e São Paulo"}${
       s.minPrice ? `, a partir de ${brl(s.minPrice)} por pessoa` : ""
