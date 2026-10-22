@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next"
 import { getActivePromos, getDestinations } from "@/lib/publicPromos"
 import { SITE_URL, absoluteUrl, promoImageUrl } from "@/lib/site"
 import { computeSlug } from "@/lib/utils"
+import { getBlackFridayPhase, isBlackFridayActive } from "@/config/blackFriday"
+import { getBlackFridaySettings } from "@/lib/blackFridaySettings"
 
 export const revalidate = 3600
 
@@ -14,6 +16,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/saindo-de-campo-grande`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/saindo-de-sao-paulo`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
   ]
+  // Página da Black só entra no sitemap enquanto está no ar
+  if (isBlackFridayActive(getBlackFridayPhase(await getBlackFridaySettings()))) {
+    staticRoutes.push({ url: `${SITE_URL}/black-friday`, lastModified: now, changeFrequency: "daily", priority: 0.9 })
+  }
 
   try {
     // Só ofertas ativas: as encerradas ficam com noindex e saem do sitemap

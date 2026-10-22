@@ -113,3 +113,16 @@ export async function getDestinationBySlug(slug: string): Promise<DestinationGro
   const groups = await getDestinations()
   return groups.find((g) => g.slug === slug) || null
 }
+
+/**
+ * Ofertas da página Black Friday: as promos ativas marcadas com a campanha "black-friday".
+ * Se nenhuma foi marcada ainda, usa as que têm preço "de" maior que o "por".
+ */
+export async function getBlackFridayPromos(): Promise<PublicPromo[]> {
+  const active = await getActivePromos()
+  const tagged = active.filter((p) => p.campaign === "black-friday")
+  const list = tagged.length
+    ? tagged
+    : active.filter((p) => p.valorOriginal && getPriceNumber(p.valorOriginal) > getPriceNumber(p.valor))
+  return list.map(toPublicPromo)
+}
