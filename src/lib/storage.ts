@@ -11,6 +11,9 @@ import { createClient } from "@supabase/supabase-js"
  * 1. S3, se AWS_S3_BUCKET estiver definido (URL pública via AWS_S3_PUBLIC_URL ou URL padrão do bucket)
  * 2. Supabase Storage, bucket "promo-images" (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
  * 3. Disco local em public/uploads — só fora de produção, para desenvolvimento
+ * 4. Sem nenhum dos anteriores: a imagem vai inline (data URL) no banco, como os
+ *    templates sempre foram salvos. Funciona com as variáveis atuais de produção,
+ *    mas pesa no banco; configure S3 ou Supabase quando puder.
  */
 
 const EXT: Record<string, string> = {
@@ -22,6 +25,7 @@ const EXT: Record<string, string> = {
 
 export const ALLOWED_IMAGE_TYPES = Object.keys(EXT)
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const MAX_INLINE_BYTES = 3 * 1024 * 1024
 
 let s3: S3Client | null = null
 
@@ -33,7 +37,7 @@ export function storageDriver(): "s3" | "supabase" | "local" | null {
 }
 
 /** Grava a imagem e devolve a URL pública. `folder` organiza por uso: "studio", "ai", "layouts"... */
-export async function uploadImage(buffer: Buffer, contentType: string, folder: string): Promise<string> {
+export async function uploadImage(buffer: Buffer, contentType: string, folder: string, opts: { inline?: boolean } = {}): Promise<string> {
   const ext = EXT[contentType]
   if (!ext) throw new Error(`Tipo de imagem não suportado: ${contentType}`)
   if (buffer.length > MAX_IMAGE_BYTES) throw new Error("Imagem maior que 10MB")
@@ -71,7 +75,9 @@ export async function uploadImage(buffer: Buffer, contentType: string, folder: s
       return `/uploads/${key}`
     }
     default:
-      throw new Error("Nenhum armazenamento configurado (defina AWS_S3_BUCKET ou as chaves do Supabase)")
+      if (opts.inline === false) throw new Error("Nenhum armazenamento configurado (defina AWS_S3_BUCKET ou as chaves do Supabase)")
+      if (buffer.length > MAX_INLINE_BYTES) throw new Error("Imagem maior que 3MB. Configure S3 ou Supabase para enviar imagens maiores.")
+      return `data:${contentType};base64,${buffer.toString("base64")}`
   }
 }
 

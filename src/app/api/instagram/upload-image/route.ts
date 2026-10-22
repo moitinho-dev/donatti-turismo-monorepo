@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Imagem muito grande (max 8MB)" }, { status: 400 })
     }
 
-    const publicUrl = await uploadImage(buffer, "image/jpeg", "instagram")
+    const publicUrl = await uploadImage(buffer, "image/jpeg", "instagram", { inline: false })
 
     return NextResponse.json({ publicUrl })
   } catch (error) {
