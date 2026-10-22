@@ -85,8 +85,6 @@ export function usePromo() {
   }, [])
 
   const fetchStats = useCallback(async () => {
-    setIsLoading(true)
-
     try {
       const response = await fetch("/api/promos/stats")
 
@@ -99,8 +97,6 @@ export function usePromo() {
     } catch (err) {
       console.error("Error fetching stats:", err)
       // Don't set error state for stats to avoid blocking the UI
-    } finally {
-      setIsLoading(false)
     }
   }, [])
 
@@ -122,7 +118,13 @@ export function usePromo() {
         throw new Error(errorData.error || "Erro ao salvar promoção")
       }
 
-      return await response.json()
+      const saved = await response.json()
+      // Atualiza a lista na hora, sem esperar o próximo fetch
+      setPromos((prev) => {
+        const exists = prev.some((p) => p.id === saved.id)
+        return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
+      })
+      return saved
     } catch (err) {
       console.error("Error saving promo:", err)
       setError(err instanceof Error ? err.message : "Erro desconhecido ao salvar promoção")
@@ -146,6 +148,7 @@ export function usePromo() {
         throw new Error(errorData.error || "Erro ao excluir promoção")
       }
 
+      setPromos((prev) => prev.filter((p) => p.id !== id))
       return await response.json()
     } catch (err) {
       console.error("Error deleting promo:", err)

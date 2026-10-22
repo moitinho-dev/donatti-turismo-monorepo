@@ -20,11 +20,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL("https://donattiturismo.com.br"),
   title: {
-    default: "Donatti Turismo — Pacotes de Viagem com Preço Garantido",
+    default: "Donatti Turismo — Pacotes de viagem saindo de Campo Grande e São Paulo",
     template: "%s | Donatti Turismo",
   },
   description:
-    "Pacotes de viagem nacionais e internacionais com melhor preço garantido, parcelamento em até 12x e suporte 24/7. Planeje sua próxima viagem com a Donatti Turismo!",
+    "Pacotes de viagem nacionais e internacionais com aéreo e hotel, saindo de Campo Grande e São Paulo. Parcelamento no cartão e atendimento humano no WhatsApp.",
   keywords: [
     "pacotes de viagem",
     "agência de viagens",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Donatti Turismo" }],
   openGraph: {
-    title: "Donatti Turismo — Pacotes de Viagem com Preço Garantido",
+    title: "Donatti Turismo — Pacotes de viagem saindo de Campo Grande e São Paulo",
     description:
-      "Pacotes nacionais e internacionais com melhor preço garantido, parcelamento em até 12x e suporte 24/7.",
+      "Pacotes com aéreo e hotel saindo de Campo Grande e São Paulo, com parcelamento no cartão e atendimento humano no WhatsApp.",
     type: "website",
     url: "https://donattiturismo.com.br",
     siteName: "Donatti Turismo",
@@ -55,8 +55,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Donatti Turismo — Pacotes de Viagem com Preço Garantido",
-    description: "Pacotes nacionais e internacionais com melhor preço garantido e suporte 24/7.",
+    title: "Donatti Turismo — Pacotes de viagem saindo de Campo Grande e São Paulo",
+    description: "Pacotes com aéreo e hotel saindo de Campo Grande e São Paulo, com atendimento humano no WhatsApp.",
     images: ["https://donattiturismo.com.br/twitter-image.jpg"],
   },
   icons: {

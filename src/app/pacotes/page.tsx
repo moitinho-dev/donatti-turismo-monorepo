@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "Pacotes de Viagem | Donatti Turismo",
-  description: "Pacotes nacionais, internacionais, cruzeiros e lua de mel com melhor preço garantido e suporte 24/7.",
+  description: "Pacotes nacionais, internacionais, cruzeiros e lua de mel saindo de Campo Grande e São Paulo, com parcelamento e atendimento no WhatsApp.",
 }
 
 export default function PacotesPage() {

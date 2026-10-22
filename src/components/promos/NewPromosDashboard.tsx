@@ -6,15 +6,17 @@ import { usePromo } from "@/hooks/usePromo"
 import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
 import { useInstagram } from "@/hooks/useInstagram"
 import { usePromoImages } from "@/hooks/usePromoImages"
-import { X } from "lucide-react"
+import { CheckCircle2, AlertCircle } from "lucide-react"
 import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
 import { PromoListPanel } from "./dashboard/PromoListPanel"
 import { DonatiStudio } from "./DonatiStudio"
 import { StatsPanel } from "./dashboard/StatsPanel"
 import { DeleteConfirmModal } from "./dashboard/DeleteConfirmModal"
+import { BlackFridayPanel } from "./dashboard/BlackFridayPanel"
 import type { PromoData, ActivePanel, UserData } from "./dashboard/types"
 import { slugify } from "./dashboard/types"
+import { suggestSiteSection } from "@/lib/destinations"
 
 interface NewPromosDashboardProps {
   user: UserData
@@ -30,6 +32,14 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [selectedPromo, setSelectedPromo] = useState<PromoData | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showFormModal, setShowFormModal] = useState(false)
+  const [publishingIds, setPublishingIds] = useState<Record<string, boolean>>({})
+  const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  useEffect(() => {
+    if (!notice) return
+    const id = window.setTimeout(() => setNotice(null), 4000)
+    return () => window.clearTimeout(id)
+  }, [notice])
 
   // Image gallery state
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
@@ -67,7 +77,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   useEffect(() => {
     if (!selectedPromo) return
     setSitePublished(!!selectedPromo.SITE_PUBLISHED)
-    setSiteSection(selectedPromo.SITE_SECTION || "nacionais")
+    setSiteSection(selectedPromo.SITE_SECTION || suggestSiteSection(selectedPromo.DESTINO || "") || "nacionais")
     setSiteSlug(selectedPromo.SITE_SLUG || slugify(selectedPromo.DESTINO || ""))
     setSiteDescription(selectedPromo.SITE_DESCRIPTION || selectedPromo.HOTEL || "")
     setSiteCardMessage(null)
@@ -88,7 +98,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
     const nextSection = (siteSection || "").trim()
     if (sitePublished && !nextSection) {
-      setSiteCardError("Defina a secao antes de publicar (ex.: nacionais, internacionais, cruzeiros).")
+      setSiteCardError("Escolha a seção antes de publicar.")
       return
     }
 
@@ -127,15 +137,58 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   }
 
   const handleDelete = async (id: string) => {
-    await deletePromo(id)
-    setDeleteConfirm(null)
-    fetchPromos()
+    try {
+      await deletePromo(id)
+      setNotice({ type: "success", text: "Promo excluída." })
+    } catch (err) {
+      setNotice({ type: "error", text: err instanceof Error ? err.message : "Erro ao excluir" })
+    } finally {
+      setDeleteConfirm(null)
+    }
+  }
+
+  const setPublishing = (ids: string[], value: boolean) =>
+    setPublishingIds((prev) => {
+      const next = { ...prev }
+      ids.forEach((id) => (value ? (next[id] = true) : delete next[id]))
+      return next
+    })
+
+  // Publicar sem foto/seção funciona: o servidor completa com foto do destino e seção sugerida
+  const handleTogglePublish = async (promo: PromoData) => {
+    const publish = !promo.SITE_PUBLISHED
+    setPublishing([promo.id], true)
+    try {
+      const updated = await savePromo({ ...promo, SITE_PUBLISHED: publish })
+      if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
+      setNotice({
+        type: "success",
+        text: publish ? `${promo.DESTINO} publicado no site.` : `${promo.DESTINO} saiu do site.`,
+      })
+    } catch (err) {
+      setNotice({ type: "error", text: err instanceof Error ? err.message : "Erro ao atualizar a promo" })
+    } finally {
+      setPublishing([promo.id], false)
+    }
+  }
+
+  const handleUnpublishExpired = async (expired: PromoData[]) => {
+    const ids = expired.map((p) => p.id)
+    setPublishing(ids, true)
+    const results = await Promise.allSettled(expired.map((p) => savePromo({ ...p, SITE_PUBLISHED: false })))
+    setPublishing(ids, false)
+    const failed = results.filter((r) => r.status === "rejected").length
+    setNotice(
+      failed
+        ? { type: "error", text: `${failed} promo(s) não puderam ser atualizadas. Tente de novo.` }
+        : { type: "success", text: `${expired.length} promo(s) vencida(s) retiradas do site.` },
+    )
   }
 
   const handleGenerateImage = async (promo: PromoData) => {
     setSelectedPromo(promo)
     setSitePublished(!!promo.SITE_PUBLISHED)
-    setSiteSection(promo.SITE_SECTION || "nacionais")
+    setSiteSection(promo.SITE_SECTION || suggestSiteSection(promo.DESTINO || "") || "nacionais")
     setSiteSlug(promo.SITE_SLUG || slugify(promo.DESTINO || ""))
     setSiteDescription(promo.SITE_DESCRIPTION || promo.HOTEL || "")
     setSiteCardMessage(null)
@@ -164,8 +217,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const handleFormSuccess = () => {
     setShowFormModal(false)
     setSelectedPromo(null)
-    fetchPromos()
-    fetchStats()
+    void fetchPromos()
+    void fetchStats()
   }
 
   const handleNewPromo = () => {
@@ -217,20 +270,25 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         onOpenStudio={handleOpenStudioDemo}
       />
 
-      <main className="p-6">
+      <main className="p-3 sm:p-6">
         {(activePanel === "list" || activePanel === "form") && (
-          <PromoListPanel
-            promos={promos}
-            isLoading={isLoading}
-            error={error}
-            stats={stats}
-            promoImages={promoImages}
-            loadingPromoImages={loadingPromoImages}
-            onEdit={handleEdit}
-            onGenerateImage={handleGenerateImage}
-            onDelete={(id) => setDeleteConfirm(id)}
-            onNewPromo={handleNewPromo}
-          />
+          <>
+            <BlackFridayPanel promos={promos} />
+            <PromoListPanel
+              promos={promos}
+              isLoading={isLoading}
+              error={error}
+              promoImages={promoImages}
+              loadingPromoImages={loadingPromoImages}
+              publishingIds={publishingIds}
+              onEdit={handleEdit}
+              onGenerateImage={handleGenerateImage}
+              onDelete={(id) => setDeleteConfirm(id)}
+              onNewPromo={handleNewPromo}
+              onTogglePublish={(promo) => void handleTogglePublish(promo)}
+              onUnpublishExpired={(list) => void handleUnpublishExpired(list)}
+            />
+          </>
         )}
 
         {activePanel === "editor" && selectedPromo && (
@@ -263,6 +321,18 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
         {activePanel === "stats" && <StatsPanel stats={stats} />}
       </main>
+
+      {notice && (
+        <div
+          role="status"
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-[14px] px-4 py-3 text-sm font-semibold shadow-xl max-w-[calc(100vw-2rem)] ${
+            notice.type === "success" ? "bg-gray-900 text-white" : "bg-red-600 text-white"
+          }`}
+        >
+          {notice.type === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+          {notice.text}
+        </div>
+      )}
 
       {deleteConfirm && (
         <DeleteConfirmModal

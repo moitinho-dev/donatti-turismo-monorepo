@@ -2,12 +2,14 @@
 import { useState, useEffect, useRef } from "react"
 import type React from "react"
 import { usePromo } from "@/hooks/usePromo"
+import { suggestSiteSection } from "@/lib/destinations"
+import { parsePromoDates } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   MapPin, Building2, CalendarDays, CalendarRange,
   DollarSign, CreditCard, Moon, UtensilsCrossed,
-  Plane, Globe, Trash2, Plus, ChevronDown, X,
-  Loader2, FileUp, CheckCircle2, AlertCircle,
+  Plane, Globe, Plus, ChevronDown, X,
+  Loader2, FileUp, CheckCircle2, AlertCircle, LayoutGrid, Save,
 } from "lucide-react"
 
 interface PromoFormModalProps {
@@ -19,6 +21,18 @@ interface PromoFormModalProps {
 
 const inputClass = "w-full bg-gray-50 border border-gray-200 rounded-[14px] px-4 py-3.5 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm hover:border-amber-400/50 text-[14px]"
 const labelClass = "flex items-center gap-2 text-gray-900 font-bold text-[12px] uppercase tracking-wider"
+const SITE_SECTIONS = [
+  { value: "nacionais", label: "Nacional" },
+  { value: "internacionais", label: "Internacional" },
+  { value: "cruzeiros", label: "Cruzeiro" },
+  { value: "lua-de-mel", label: "Lua de mel" },
+  { value: "nordeste", label: "Nordeste" },
+  { value: "religioso", label: "Religioso" },
+]
+
+const toInputDate = (d: Date | null) =>
+  d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : ""
+
 const selectClass = "w-full appearance-none bg-gray-50 border border-gray-200 rounded-[14px] pl-4 pr-10 py-3.5 text-gray-900 font-medium focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all cursor-pointer shadow-sm hover:border-amber-400/50 text-[14px]"
 
 export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormModalProps) {
@@ -40,6 +54,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
   const [isDragOver, setIsDragOver] = useState(false)
   const [pdfValorTipo, setPdfValorTipo] = useState<"total" | "unitario">("total") // total = divide por 2
   const pdfValorTipoRef = useRef<"total" | "unitario">("total")
+  const sectionTouched = useRef(false)
   const { savePromo, isLoading } = usePromo()
 
   const slugify = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "")
@@ -63,21 +78,44 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
         const n = parseFloat(promo.VALOR)
         if (!isNaN(n)) setFormattedAmount(n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }))
       }
+      const { start, end } = parsePromoDates(promo.DATA_FORMATADA || "")
+      setDeDate(toInputDate(start))
+      setAteDate(toInputDate(end))
+      if (start && end) {
+        setFormData((prev) => ({
+          ...prev,
+          DE: String(start.getDate()).padStart(2, "0"), MES_DE: String(start.getMonth() + 1).padStart(2, "0"),
+          ATE: String(end.getDate()).padStart(2, "0"), MES_ATE: String(end.getMonth() + 1).padStart(2, "0"),
+          ANO: String(end.getFullYear()),
+        }))
+      }
       if (promo.ALL_INCLUSIVE) setRegimeAlimentacao("ALL_INCLUSIVE")
       else if (promo.PENSAO_COMPLETA) setRegimeAlimentacao("PENSAO_COMPLETA")
       else if (promo.MEIA_PENSAO) setRegimeAlimentacao("MEIA_PENSAO")
       else if (promo.COM_CAFE) setRegimeAlimentacao("COM_CAFE")
       else if (promo.SEM_CAFE) setRegimeAlimentacao("SEM_CAFE")
+      sectionTouched.current = !!promo.SITE_SECTION
     } else {
       resetForm()
     }
   }, [promo, isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [isOpen, onClose])
 
   const handleChange = (field: string, value: string | boolean | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (field === "DESTINO") {
       const autoSlug = slugify(String(value || ""))
       setFormData((prev) => (!prev.SITE_SLUG || prev.SITE_SLUG === slugify(prev.DESTINO || "")) ? { ...prev, SITE_SLUG: autoSlug } : prev)
+      if (!sectionTouched.current) {
+        const suggested = suggestSiteSection(String(value || ""))
+        if (suggested) setFormData((prev) => ({ ...prev, SITE_SECTION: suggested }))
+      }
     }
   }
 
@@ -127,20 +165,23 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setFormError(null); setFormSuccess(null)
-    const missing = ["DESTINO", "HOTEL", "DATA_FORMATADA", "VALOR", "NUMERO_DE_NOITES"].filter((f) => !(formData as any)[f])
-    if (missing.length) { setFormError(`Campos obrigatorios: ${missing.join(", ")}`); return }
+    const labels: Record<string, string> = { DESTINO: "destino", HOTEL: "hotel", DATA_FORMATADA: "datas de ida e volta", VALOR: "valor", NUMERO_DE_NOITES: "noites" }
+    const missing = Object.keys(labels).filter((f) => !(formData as any)[f] || ((f === "VALOR") && !parseFloat(formData.VALOR)))
+    if (missing.length) { setFormError(`Preencha: ${missing.map((f) => labels[f]).join(", ")}`); return }
+    if (deDate && ateDate && ateDate < deDate) { setFormError("A data de volta precisa ser depois da ida"); return }
     if (!regimeAlimentacao) { setFormError("Selecione um regime de alimentacao"); return }
     try {
       await savePromo(formData)
       setFormSuccess(formData.id ? "Promocao atualizada!" : "Promocao criada!")
       if (!formData.id) resetForm()
       setTimeout(onSuccess, 1200)
-    } catch { setFormError("Erro ao salvar. Tente novamente.") }
+    } catch (err) { setFormError(err instanceof Error && err.message ? err.message : "Erro ao salvar. Tente novamente.") }
   }
 
   const resetForm = () => {
     setFormData({ id: "", DESTINO: "", HOTEL: "", DE: "", ATE: "", MES_DE: "", MES_ATE: "", ANO: "", VALOR: "", PARCELAS: "10", COM_CAFE: false, SEM_CAFE: false, MEIA_PENSAO: false, PENSAO_COMPLETA: false, ALL_INCLUSIVE: false, NUMERO_DE_NOITES: "", SP: false, CG: false, AEREO: false, DATA_FORMATADA: "", SITE_PUBLISHED: false, SITE_SECTION: "", SITE_SLUG: "", SITE_IMAGE: "", SITE_DESCRIPTION: "", SITE_INCLUSIONS: [], SITE_DEPARTURES: [] })
     setFormattedAmount(""); setRegimeAlimentacao(""); setDeDate(""); setAteDate(""); setFormError(null); setFormSuccess(null); setPdfResult(null)
+    sectionTouched.current = false
   }
 
   const handlePdfUpload = async (file: File) => {
@@ -175,19 +216,19 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 pt-8 pb-8"
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-start justify-center overflow-y-auto p-0 sm:p-4 sm:pt-8 sm:pb-8"
         onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
       >
         <motion.div
           initial={{ y: 30, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 30, opacity: 0, scale: 0.97 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="bg-white rounded-[28px] shadow-2xl border border-gray-200 w-full max-w-4xl relative overflow-hidden"
+          className="bg-white rounded-t-[28px] sm:rounded-[28px] shadow-2xl border border-gray-200 w-full max-w-4xl relative overflow-hidden"
         >
           {/* Decorative */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* Header */}
-          <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100">
+          <div className="flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5 border-b border-gray-100">
             <h2 className="text-xl font-black text-gray-900 flex items-center gap-3">
               <span className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-600">
                 <Plus size={16} />
@@ -199,7 +240,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
             </button>
           </div>
 
-          <div className="p-6 sm:p-8 max-h-[75vh] overflow-y-auto">
+          <div className="p-5 sm:p-8 max-h-[calc(100dvh-160px)] sm:max-h-[75vh] overflow-y-auto">
             {/* PDF Upload */}
             {!promo && (
               <div className="mb-6">
@@ -351,18 +392,41 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess }: PromoFormM
                   </label>
                 </div>
               )}
+
+              {/* Seção do site */}
+              <div className="space-y-2">
+                <label className={labelClass}><LayoutGrid className="w-4 h-4 text-amber-500" />Seção no site</label>
+                <div className="flex flex-wrap gap-2">
+                  {SITE_SECTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => { sectionTouched.current = true; handleChange("SITE_SECTION", opt.value) }}
+                      className={`px-4 py-2 rounded-full text-[13px] font-bold border transition-all ${formData.SITE_SECTION === opt.value ? "bg-amber-500 text-white border-amber-500 shadow-sm" : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  {formData.SITE_SECTION
+                    ? "Sugerida pelo destino. Toque para trocar."
+                    : "Se ficar em branco, classificamos pelo destino ao publicar."}
+                  {" "}Sem foto escolhida, o site usa uma foto do próprio destino.
+                </p>
+              </div>
             </form>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex flex-row justify-end gap-3 px-5 sm:px-8 py-4 sm:py-5 border-t border-gray-100 bg-gray-50/50">
             <button type="button" onClick={() => { resetForm(); onClose() }}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-[14px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all text-[14px]">
-              <Trash2 className="w-4 h-4" /> Cancelar
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[14px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all text-[14px]">
+              <X className="w-4 h-4" /> Cancelar
             </button>
             <button data-tour="form-submit" type="submit" onClick={handleSubmit} disabled={isLoading}
-              className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-[14px] font-bold bg-amber-500 text-white hover:bg-amber-400 shadow-[0_4px_14px_rgba(247,158,10,0.3)] hover:shadow-[0_6px_20px_rgba(247,158,10,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 text-[14px]">
-              {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Salvando...</> : <><Plus className="w-4 h-4" />{promo ? "Atualizar" : "Criar Promocao"}</>}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 rounded-[14px] font-bold bg-amber-500 text-white hover:bg-amber-400 shadow-[0_4px_14px_rgba(247,158,10,0.3)] hover:shadow-[0_6px_20px_rgba(247,158,10,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 text-[14px]">
+              {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Salvando...</> : promo ? <><Save className="w-4 h-4" />Salvar alterações</> : <><Plus className="w-4 h-4" />Criar promoção</>}
             </button>
           </div>
         </motion.div>

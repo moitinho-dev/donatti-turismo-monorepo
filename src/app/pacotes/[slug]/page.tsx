@@ -97,7 +97,7 @@ export default async function PackagePage({ params }: PageProps) {
 
   const inclusions = pkg.siteInclusions?.length
     ? pkg.siteInclusions
-    : ["Hotel", pkg.aereo ? "Aéreo incluso" : "Aéreo opcional", "Suporte 24/7"]
+    : ["Hotel", pkg.aereo ? "Aéreo incluso" : "Aéreo sob consulta", "Atendimento no WhatsApp"]
 
   const keywordTags = Array.from(
     new Set([pkg.siteSection, pkg.destino, pkg.hotel].filter(Boolean) as string[]),
@@ -258,14 +258,14 @@ export default async function PackagePage({ params }: PageProps) {
                 </a>
               </Button>
               <p className="text-xs text-gray-500 text-center">
-                Atendimento 24/7 • Melhor preço garantido • Cancelamento grátis em ofertas selecionadas
+                Atendimento humano • Disponibilidade e tarifa confirmadas na hora
               </p>
             </div>
             <div className="mt-6 border-t border-gray-200 pt-4 space-y-2">
               <p className="text-sm font-semibold text-gray-900">Por que reservar com a Donatti?</p>
               <ul className="text-xs text-gray-600 space-y-1">
                 <li>✓ Suporte antes, durante e após a viagem</li>
-                <li>✓ 15 anos de experiência e 5.000+ clientes</li>
+                <li>✓ Agência em Campo Grande/MS · CNPJ 41.887.394/0001-29</li>
                 <li>✓ Emissão segura e proteção de dados (LGPD)</li>
               </ul>
             </div>

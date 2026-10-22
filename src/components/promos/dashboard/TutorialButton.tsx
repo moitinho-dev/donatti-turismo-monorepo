@@ -44,7 +44,7 @@ function createTourCadastrar(onOpenModal?: () => void) {
           element: "[data-tour='promo-list']",
           popover: {
             title: "3. Promo na lista",
-            description: "Apos salvar, a promo aparece aqui na lista. Voce pode editar, excluir ou gerar imagens.",
+            description: "Apos salvar, a promo aparece aqui na lista. Voce pode publicar ou tirar do site com um toque, editar, excluir ou gerar as artes.",
             side: "top" as const,
             align: "center" as const,
           },
@@ -52,8 +52,8 @@ function createTourCadastrar(onOpenModal?: () => void) {
         {
           element: "[data-tour='stats-grid']",
           popover: {
-            title: "4. Estatisticas atualizadas",
-            description: "Os numeros atualizam automaticamente: total de promos, destinos, valor medio.",
+            title: "4. Status das promos",
+            description: "Quantas estao no site, em rascunho ou vencidas. Toque em um numero para filtrar a lista.",
             side: "bottom" as const,
             align: "center" as const,
           },
