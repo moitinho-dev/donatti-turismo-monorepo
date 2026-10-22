@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import HomeLanding from '@/components/home/HomeLanding'
 import { getBlackFridayPhase, isBlackFridayActive } from '@/config/blackFriday'
+import { getBlackFridaySettings } from '@/lib/blackFridaySettings'
 import { pageMeta } from '@/lib/seo'
 import { getActivePromos, getDestinations, toPublicPromo } from '@/lib/publicPromos'
 
@@ -13,7 +14,7 @@ const DEFAULT_DESCRIPTION =
   'Pacotes de viagem com aéreo e hotel saindo de Campo Grande e São Paulo: Nordeste, Caribe e cruzeiros. Parcelado no cartão, com atendimento no WhatsApp.'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const bf = isBlackFridayActive(getBlackFridayPhase())
+  const bf = isBlackFridayActive(getBlackFridayPhase(await getBlackFridaySettings()))
   const title = bf ? 'Black Friday Donatti Turismo: pacotes de viagem em oferta' : DEFAULT_TITLE
   const description = bf
     ? 'Black Friday de pacotes com aéreo e hotel saindo de Campo Grande e São Paulo. Parcelado no cartão, com atendimento no WhatsApp. Tarifas por lote.'
@@ -42,6 +43,6 @@ async function loadOffers() {
 }
 
 export default async function Home() {
-  const { promos, destinations } = await loadOffers()
-  return <HomeLanding phase={getBlackFridayPhase()} initialPromos={promos} destinations={destinations} />
+  const [{ promos, destinations }, campaign] = await Promise.all([loadOffers(), getBlackFridaySettings()])
+  return <HomeLanding phase={getBlackFridayPhase(campaign)} campaign={campaign} initialPromos={promos} destinations={destinations} />
 }

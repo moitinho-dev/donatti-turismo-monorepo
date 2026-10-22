@@ -228,3 +228,12 @@ model Asset {
   @@index([createdAt])
   @@map("assets")
 }
+
+// Configurações do site editadas pelo painel (ex.: campanha Black Friday), uma linha por chave
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

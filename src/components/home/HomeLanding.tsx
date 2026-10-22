@@ -21,11 +21,11 @@ import { JsonLd } from '@/components/seo/JsonLd'
 import { destinationHeading } from '@/lib/site'
 import { Countdown } from '@/components/blackfriday/Countdown'
 import {
-  blackFriday,
   formatCampaignDate,
   getCountdownTarget,
   isBlackFridayActive,
   type BlackFridayPhase,
+  type BlackFridaySettings,
 } from '@/config/blackFriday'
 
 const WHATSAPP_NUMBER = '5567992167694'
@@ -137,16 +137,18 @@ const emptyLead = { name: '', phone: '', destination: '', period: '' }
 
 interface HomeLandingProps {
   phase: BlackFridayPhase
+  /** Configuração da campanha salva no painel (datas e desconto do título) */
+  campaign: BlackFridaySettings
   /** Ofertas carregadas no servidor, para virem no HTML (SEO) */
   initialPromos?: PublicPromo[]
   /** Destinos com página própria, para os links internos do rodapé */
   destinations?: { name: string; slug: string }[]
 }
 
-export default function HomeLanding({ phase, initialPromos, destinations = [] }: HomeLandingProps) {
+export default function HomeLanding({ phase, campaign, initialPromos, destinations = [] }: HomeLandingProps) {
   const bf = isBlackFridayActive(phase)
-  const countdownTarget = getCountdownTarget(phase)
-  const endsAtLabel = formatCampaignDate(blackFriday.endsAt)
+  const countdownTarget = getCountdownTarget(campaign, phase)
+  const endsAtLabel = formatCampaignDate(campaign.endsAt)
 
   const fetchedPromos = usePublicPromos(60, initialPromos === undefined)
   const promos = initialPromos ?? fetchedPromos
@@ -319,11 +321,11 @@ export default function HomeLanding({ phase, initialPromos, destinations = [] }:
           <span>
             {phase === 'esquenta'
               ? 'Esquenta Black Friday Donatti: as ofertas abrem em'
-              : `Black Friday Donatti: até 40% OFF em pacotes até ${endsAtLabel} · termina em`}
+              : `Black Friday Donatti: até ${campaign.maxDiscount}% OFF em pacotes até ${endsAtLabel} · termina em`}
           </span>
           <Countdown target={countdownTarget} tone="light" size="sm" />
-          <a href="#ofertas" style={{ color: 'inherit' }}>
-            Ver ofertas
+          <a href="/black-friday" style={{ color: 'inherit' }}>
+            {phase === 'esquenta' ? 'Ver a página da Black' : 'Ver ofertas Black'}
           </a>
         </div>
       )}
