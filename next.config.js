@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // bcrypt é módulo nativo: fica fora do bundle do servidor
-  serverExternalPackages: ["bcrypt"],
+  serverExternalPackages: ["bcrypt", "sharp"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
