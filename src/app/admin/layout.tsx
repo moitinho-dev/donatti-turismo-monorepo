@@ -4,7 +4,8 @@ import { PromoProvider } from "@/providers/PromoProvider"
 import { AuthProvider } from "@/providers/AuthProvider"
 
 export const metadata: Metadata = {
-  title: "Área Administrativa | Donatti Turismo",
+  robots: { index: false, follow: false },
+  title: "Área Administrativa",
   description: "Sistema de gerenciamento administrativo da Donatti Turismo",
 }
 

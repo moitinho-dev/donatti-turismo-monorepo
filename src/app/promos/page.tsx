@@ -5,7 +5,7 @@ import { authOptions } from "../api/auth/[...nextauth]/options"
 import NewPromosDashboard from "@/components/promos/NewPromosDashboard"
 
 export const metadata: Metadata = {
-  title: "Gerenciador de Promocoes | Donatti Turismo",
+  title: "Gerenciador de Promocoes",
   description: "Gerencie as promocoes de viagens e pacotes turisticos da Donatti Turismo.",
 }
 

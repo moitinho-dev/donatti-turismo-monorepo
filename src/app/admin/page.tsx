@@ -6,7 +6,7 @@ import AdminDashboard from "@/components/admin/AdminDashboard"
 import { User } from "@/types/user"
 
 export const metadata: Metadata = {
-  title: "Painel Administrativo | Donatti Turismo",
+  title: "Painel Administrativo",
   description: "Gerencie usuários, promoções e estatísticas da Donatti Turismo.",
 }
 

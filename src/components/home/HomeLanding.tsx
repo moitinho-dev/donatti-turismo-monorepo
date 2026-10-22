@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { trackEvent } from '@/lib/analytics'
-import RealTimePromos, { usePublicPromos } from '@/components/home/RealTimePromos'
+import RealTimePromos, { usePublicPromos, type PublicPromo } from '@/components/home/RealTimePromos'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { destinationHeading } from '@/lib/site'
 import { Countdown } from '@/components/blackfriday/Countdown'
 import {
   blackFriday,
@@ -144,14 +146,19 @@ const emptyLead = { name: '', email: '', phone: '', destination: '', period: '' 
 
 interface HomeLandingProps {
   phase: BlackFridayPhase
+  /** Ofertas carregadas no servidor, para virem no HTML (SEO) */
+  initialPromos?: PublicPromo[]
+  /** Destinos com página própria, para os links internos do rodapé */
+  destinations?: { name: string; slug: string }[]
 }
 
-export default function HomeLanding({ phase }: HomeLandingProps) {
+export default function HomeLanding({ phase, initialPromos, destinations = [] }: HomeLandingProps) {
   const bf = isBlackFridayActive(phase)
   const countdownTarget = getCountdownTarget(phase)
   const endsAtLabel = formatCampaignDate(blackFriday.endsAt)
 
-  const promos = usePublicPromos(60)
+  const fetchedPromos = usePublicPromos(60, initialPromos === undefined)
+  const promos = initialPromos ?? fetchedPromos
   const maxParcelas = useMemo(
     () => (promos || []).reduce((max, p) => Math.max(max, Number(p.PARCELAS) || 0), 0),
     [promos],
@@ -632,6 +639,13 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
         </section>
 
         {/* Dúvidas */}
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+          }}
+        />
         <section id="duvidas" aria-labelledby="faq-title" className="scroll-mt-4 border-t border-gray-200 bg-gray-50 py-16 md:py-20">
           <div className="container mx-auto max-w-3xl px-4">
             <h2 id="faq-title" className="mb-8 text-center text-3xl font-bold text-gray-900 md:text-4xl">
@@ -795,7 +809,7 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
       {/* Rodapé */}
       <footer role="contentinfo" className="relative border-t border-gray-200 bg-gray-50 py-14">
         <div className="container mx-auto px-4">
-          <div className="grid gap-10 md:grid-cols-3">
+          <div className={`grid gap-10 ${destinations.length ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
             <div>
               <img src={LOGO_URL} alt="Donatti Turismo" className="mb-4 h-14 w-auto object-contain" width="56" height="56" />
               <div className="space-y-2 text-sm text-gray-700">
@@ -820,6 +834,21 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
                 <li><a href="#contato" className="transition-colors hover:text-primary">Pedir cotação</a></li>
               </ul>
             </div>
+
+            {destinations.length > 0 && (
+              <div>
+                <h3 className="mb-4 font-semibold text-gray-900">Destinos</h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  {destinations.slice(0, 10).map((d) => (
+                    <li key={d.slug}>
+                      <Link href={`/destinos/${d.slug}`} className="transition-colors hover:text-primary">
+                        {destinationHeading(d.name)}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div>
               <h3 className="mb-4 font-semibold text-gray-900">Contato</h3>
