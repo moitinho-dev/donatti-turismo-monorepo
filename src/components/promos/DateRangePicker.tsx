@@ -80,7 +80,7 @@ export function DateRangePicker({ dateRange, onDateRangeChange, onClearFilters }
               })
             }}
             locale={ptBR}
-            initialFocus
+            autoFocus
           />
         </PopoverContent>
       </Popover>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
+import { isAiConfigured } from "@/lib/ai/config"
+import { extractPromo, type ExtractedPromo } from "@/lib/ai/claude"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -74,6 +76,28 @@ function parseGeminiJson(rawText: string): Record<string, unknown> {
   throw new Error("Nao foi possivel extrair JSON da resposta do Gemini")
 }
 
+/** Converte a extração do Claude para o formato que o formulário antigo espera (VALOR = total do material) */
+function toLegacyFields(e: ExtractedPromo): Record<string, unknown> {
+  const [anoDe, mesDe, diaDe] = (e.DATA_IDA || "").split("-")
+  const [anoAte, mesAte, diaAte] = (e.DATA_VOLTA || "").split("-")
+  return {
+    DESTINO: e.DESTINO,
+    HOTEL: e.HOTEL,
+    DE: diaDe || null,
+    MES_DE: mesDe || null,
+    ATE: diaAte || null,
+    MES_ATE: mesAte || null,
+    ANO: anoAte || anoDe || null,
+    VALOR: e.VALOR_TOTAL != null ? e.VALOR_TOTAL.toFixed(2) : null,
+    PARCELAS: e.PARCELAS != null ? String(e.PARCELAS) : null,
+    NUMERO_DE_NOITES: e.NUMERO_DE_NOITES != null ? String(e.NUMERO_DE_NOITES) : null,
+    regime: e.REGIME,
+    AEREO: e.AEREO ?? false,
+    SP: e.SAIDA_SAO_PAULO ?? false,
+    CG: e.SAIDA_CAMPO_GRANDE ?? false,
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -82,9 +106,9 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
+    if (!apiKey && !isAiConfigured()) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY nao configurada" },
+        { error: "Nenhuma IA configurada (AWS Bedrock ou GEMINI_API_KEY)" },
         { status: 500 },
       )
     }
@@ -106,6 +130,13 @@ export async function POST(request: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString("base64")
+
+    // Com o Bedrock configurado, usa o Claude; o Gemini fica como alternativa
+    if (isAiConfigured()) {
+      const fields = toLegacyFields(await extractPromo({ kind: "pdf", base64 }))
+      const filled = Object.values(fields).filter((v) => v != null && v !== false).length
+      return NextResponse.json({ fields, confidence: filled / 14, warnings: filled ? [] : ["Nenhum campo foi identificado no PDF"] })
+    }
 
     // Send PDF directly to Gemini Vision — handles both text-based and scanned PDFs
     const response = await fetch(

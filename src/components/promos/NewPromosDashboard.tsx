@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
+import dynamic from "next/dynamic"
 import { useSearchParams } from "next/navigation"
 import { usePromo } from "@/hooks/usePromo"
 import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
@@ -10,17 +11,21 @@ import { CheckCircle2, AlertCircle } from "lucide-react"
 import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
 import { PromoListPanel } from "./dashboard/PromoListPanel"
-import { DonatiStudio } from "./DonatiStudio"
 import { StatsPanel } from "./dashboard/StatsPanel"
 import { DeleteConfirmModal } from "./dashboard/DeleteConfirmModal"
 import { BlackFridayPanel } from "./dashboard/BlackFridayPanel"
 import type { PromoData, ActivePanel, UserData } from "./dashboard/types"
-import { slugify } from "./dashboard/types"
-import { suggestSiteSection } from "@/lib/destinations"
+import type { StudioProps } from "@/components/studio/Studio"
 
 interface NewPromosDashboardProps {
   user: UserData
 }
+
+// O editor usa canvas (Konva): carrega só no navegador
+const Studio = dynamic(() => import("@/components/studio/Studio").then((m) => m.Studio), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
+})
 
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
@@ -41,20 +46,6 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     return () => window.clearTimeout(id)
   }, [notice])
 
-  // Image gallery state
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
-  const [galleryImages, setGalleryImages] = useState<Array<{ id: string; urls: { regular: string; small: string } }>>([])
-  const [loadingImages, setLoadingImages] = useState(false)
-
-  // Site card state
-  const [sitePublished, setSitePublished] = useState(false)
-  const [siteSection, setSiteSection] = useState("")
-  const [siteSlug, setSiteSlug] = useState("")
-  const [siteDescription, setSiteDescription] = useState("")
-  const [savingSiteCard, setSavingSiteCard] = useState(false)
-  const [siteCardMessage, setSiteCardMessage] = useState<string | null>(null)
-  const [siteCardError, setSiteCardError] = useState<string | null>(null)
-
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -72,64 +63,6 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     void gbp.refreshGbp()
     void ig.refreshIg()
   }, [gbp.refreshGbp, ig.refreshIg])
-
-  // Sync site card state when promo changes
-  useEffect(() => {
-    if (!selectedPromo) return
-    setSitePublished(!!selectedPromo.SITE_PUBLISHED)
-    setSiteSection(selectedPromo.SITE_SECTION || suggestSiteSection(selectedPromo.DESTINO || "") || "nacionais")
-    setSiteSlug(selectedPromo.SITE_SLUG || slugify(selectedPromo.DESTINO || ""))
-    setSiteDescription(selectedPromo.SITE_DESCRIPTION || selectedPromo.HOTEL || "")
-    setSiteCardMessage(null)
-    setSiteCardError(null)
-    if (selectedPromo.SITE_IMAGE && !backgroundImage) {
-      setBackgroundImage(selectedPromo.SITE_IMAGE)
-    }
-  }, [selectedPromo?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const saveSiteCard = useCallback(async () => {
-    if (!selectedPromo?.id) return
-
-    const imageToSave = backgroundImage || selectedPromo.SITE_IMAGE || ""
-    if (!imageToSave) {
-      setSiteCardError("Selecione uma imagem de fundo para salvar no card.")
-      return
-    }
-
-    const nextSection = (siteSection || "").trim()
-    if (sitePublished && !nextSection) {
-      setSiteCardError("Escolha a seção antes de publicar.")
-      return
-    }
-
-    const nextSlug = (siteSlug || slugify(selectedPromo.DESTINO || "")).trim()
-    if (sitePublished && !nextSlug) {
-      setSiteCardError("Defina o slug antes de publicar.")
-      return
-    }
-
-    setSavingSiteCard(true)
-    setSiteCardError(null)
-    setSiteCardMessage(null)
-    try {
-      const updated = await savePromo({
-        ...selectedPromo,
-        SITE_PUBLISHED: sitePublished,
-        SITE_SECTION: nextSection,
-        SITE_SLUG: nextSlug,
-        SITE_IMAGE: imageToSave,
-        SITE_DESCRIPTION: (siteDescription || selectedPromo.HOTEL || "").trim(),
-      })
-      setSelectedPromo(updated)
-      updatePromoImage(updated.id, updated.SITE_IMAGE || imageToSave)
-      setSiteCardMessage(sitePublished ? "Publicado no site com a imagem selecionada." : "Imagem do card salva (nao publicado).")
-      await fetchPromos()
-    } catch (err) {
-      setSiteCardError(err instanceof Error ? err.message : "Erro ao salvar card do site")
-    } finally {
-      setSavingSiteCard(false)
-    }
-  }, [backgroundImage, fetchPromos, savePromo, selectedPromo, siteDescription, sitePublished, siteSection, siteSlug, updatePromoImage])
 
   const handleEdit = (promo: PromoData) => {
     setSelectedPromo(promo)
@@ -185,36 +118,14 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     )
   }
 
-  const handleGenerateImage = async (promo: PromoData) => {
+  const handleGenerateImage = (promo: PromoData) => {
     setSelectedPromo(promo)
-    setSitePublished(!!promo.SITE_PUBLISHED)
-    setSiteSection(promo.SITE_SECTION || suggestSiteSection(promo.DESTINO || "") || "nacionais")
-    setSiteSlug(promo.SITE_SLUG || slugify(promo.DESTINO || ""))
-    setSiteDescription(promo.SITE_DESCRIPTION || promo.HOTEL || "")
-    setSiteCardMessage(null)
-    setSiteCardError(null)
-    setLoadingImages(true)
-    setBackgroundImage(promo.SITE_IMAGE || null)
-
-    try {
-      const response = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&limit=20`)
-      const data = await response.json()
-      if (data.results?.length > 0) {
-        setGalleryImages(data.results)
-        if (!promo.SITE_IMAGE) {
-          setBackgroundImage(data.results[0].urls.regular)
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching images:", err)
-    } finally {
-      setLoadingImages(false)
-    }
-
     setActivePanel("editor")
   }
 
   const handleFormSuccess = () => {
+    // Dados da extensão já usados: tira da URL para "Nova promo" abrir em branco
+    if (searchParams.get("autofill")) window.history.replaceState(null, "", "/promos")
     setShowFormModal(false)
     setSelectedPromo(null)
     void fetchPromos()
@@ -255,8 +166,6 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const handleCloseEditor = () => {
     setActivePanel("list")
     setSelectedPromo(null)
-    setBackgroundImage(null)
-    setGalleryImages([])
   }
 
   return (
@@ -292,30 +201,19 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         )}
 
         {activePanel === "editor" && selectedPromo && (
-          <DonatiStudio
-            promo={selectedPromo}
-            user={user}
-            backgroundImage={backgroundImage}
-            setBackgroundImage={setBackgroundImage}
-            galleryImages={galleryImages}
-            setGalleryImages={setGalleryImages}
-            loadingImages={loadingImages}
-            setLoadingImages={setLoadingImages}
-            sitePublished={sitePublished}
-            setSitePublished={setSitePublished}
-            siteSection={siteSection}
-            setSiteSection={setSiteSection}
-            siteSlug={siteSlug}
-            setSiteSlug={setSiteSlug}
-            siteDescription={siteDescription}
-            setSiteDescription={setSiteDescription}
-            savingSiteCard={savingSiteCard}
-            siteCardError={siteCardError}
-            siteCardMessage={siteCardMessage}
-            onSaveSiteCard={() => void saveSiteCard()}
-            gbp={gbp}
-            ig={ig}
+          <Studio
+            key={selectedPromo.id}
+            promo={selectedPromo as unknown as StudioProps["promo"]}
+            isAdmin={user.role === "admin"}
             onClose={handleCloseEditor}
+            onSavePromo={async (p) => {
+              const updated = await savePromo(p)
+              setSelectedPromo(updated)
+              if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
+              return updated
+            }}
+            ig={ig}
+            gbp={gbp}
           />
         )}
 
@@ -342,7 +240,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
       )}
 
       <PromoFormModal
-        promo={selectedPromo}
+        promo={showFormModal ? (selectedPromo as unknown as Record<string, unknown> | null) : null}
+        autofill={selectedPromo ? null : searchParams.get("autofill")}
         isOpen={showFormModal}
         onClose={() => { setShowFormModal(false); setSelectedPromo(null) }}
         onSuccess={handleFormSuccess}

@@ -138,45 +138,57 @@ function createTourGerarImagem(onOpenStudio?: () => void) {
         doneBtnText: "Entendi!",
         steps: [
           {
-            element: "[data-tour='studio-gallery']",
+            element: "[data-tour='studio-templates']",
             popover: {
-              title: "1. Galeria de imagens",
-              description: "Aqui voce busca e seleciona a imagem de fundo para a promo. Clique em uma foto para usar como fundo.",
+              title: "1. Modelos",
+              description: "O Studio abre com o template padrao da equipe. Aqui voce troca para outro template ou para os modelos prontos (Destaque, Black Friday, Clean).",
               side: "right" as const,
               align: "start" as const,
             },
           },
           {
-            element: "[data-tour='studio-search']",
+            element: "[data-tour='studio-gallery']",
             popover: {
-              title: "2. Buscar imagens",
-              description: "Digite qualquer termo (ex: 'praia', 'montanha', 'cancun') e pressione Enter para buscar novas fotos.",
+              title: "2. Fotos",
+              description: "Busque fotos do destino, use a biblioteca da equipe ou envie a sua. A foto escolhida entra em todas as artes da promo.",
+              side: "right" as const,
+              align: "start" as const,
+            },
+          },
+          {
+            element: "[data-tour='studio-formats']",
+            popover: {
+              title: "3. Formatos",
+              description: "Story, Feed, Quadrado e Paisagem: cada formato tem a sua arte, ja preenchida com os dados da promo.",
               side: "bottom" as const,
               align: "center" as const,
             },
           },
           {
-            element: "[data-tour='studio-editor']",
+            element: "[data-tour='studio-editor'] canvas",
             popover: {
-              title: "3. Editor visual",
-              description: "Aqui voce ve o preview da imagem gerada. Ajuste layout, cores e textos usando os controles do editor.",
+              title: "4. Edite direto na arte",
+              description: "Clique para selecionar, arraste para mover, use as alcas para redimensionar e girar. Duplo clique num texto edita o texto. Ctrl+Z desfaz.",
               side: "left" as const,
+              align: "center" as const,
+            },
+          },
+          {
+            element: "[data-tour='studio-ai']",
+            popover: {
+              title: "5. IA",
+              description: "Estenda a foto para o formato, remova fundos, edite partes da foto e gere titulos e legenda.",
+              side: "right" as const,
               align: "center" as const,
             },
           },
           {
             element: "[data-tour='studio-site-card']",
             popover: {
-              title: "4. Card do site",
-              description: "Configure a publicacao no site: ative 'Publicar', escolha a secao e clique em 'Salvar card'.",
+              title: "6. Publicar",
+              description: "Baixe um formato ou os 4 em .zip, salve como template da equipe, publique no site, Instagram e Google. As artes sao salvas sozinhas.",
               side: "right" as const,
               align: "center" as const,
-            },
-          },
-          {
-            popover: {
-              title: "5. Baixar imagem",
-              description: "Use o botao 'Baixar' no editor para gerar e salvar o PNG no seu computador. Pronto!",
             },
           },
         ],
@@ -212,8 +224,8 @@ function createTourCompartilhar(onOpenStudio?: () => void) {
           {
             element: "[data-tour='studio-editor']",
             popover: {
-              title: "2. Gere a imagem",
-              description: "Clique em 'Baixar' no editor para gerar o PNG. Isso tambem salva a imagem no sistema.",
+              title: "2. Ajuste a arte",
+              description: "Edite textos e posicoes direto na arte. Os dados da promo (preco, datas, destino) ja vem preenchidos.",
               side: "left" as const,
               align: "center" as const,
             },
@@ -222,22 +234,22 @@ function createTourCompartilhar(onOpenStudio?: () => void) {
             element: "[data-tour='studio-site-card']",
             popover: {
               title: "3. Publique no site",
-              description: "Ative 'Publicar', defina a secao e slug, e clique em 'Salvar card'. A promo aparece na home do site!",
+              description: "Na aba Publicar, clique em 'Publicar' para colocar a promo no site com a foto escolhida.",
               side: "right" as const,
               align: "center" as const,
             },
           },
           {
-            element: "[data-tour='studio-instagram']",
+            element: "[data-tour='studio-site-card']",
             popover: {
               title: "4. Poste no Instagram",
-              description: "Escreva a legenda e clique em 'Feed' ou 'Stories'. A imagem e convertida e postada automaticamente!",
+              description: "Ainda na aba Publicar: escreva a legenda (ou gere com IA) e poste no Feed ou nos Stories.",
               side: "right" as const,
               align: "center" as const,
             },
           },
           {
-            element: "[data-tour='studio-gbp']",
+            element: "[data-tour='studio-site-card']",
             popover: {
               title: "5. Google Business",
               description: "Se conectado, a promo e postada automaticamente no Google ao publicar no site. Tudo em um so lugar!",

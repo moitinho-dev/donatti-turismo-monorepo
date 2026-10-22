@@ -24,10 +24,12 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  promos        Promo[]
-  layouts       Layout[]
-  sessions      Session[]
-  accounts      Account[]
+  promos   Promo[]
+  layouts  Layout[]
+  designs  Design[]
+  assets   Asset[]
+  sessions Session[]
+  accounts Account[]
 
   @@map("users")
 }
@@ -76,107 +78,153 @@ model VerificationToken {
 
 // Promo model
 model Promo {
-  id              String   @id @default(cuid())
-  destino         String
-  hotel           String
-  dataFormatada   String
-  valor           String
-  parcelas        Int      @default(15)
-  comCafe         Boolean  @default(false)
-  semCafe         Boolean  @default(false)
-  meiaPensao      Boolean  @default(false)
-  pensaoCompleta  Boolean  @default(false)
-  allInclusive    Boolean  @default(false)
-  numeroDeNoites  String
-  sp              Boolean  @default(false)
-  cg              Boolean  @default(false)
-  aereo           Boolean  @default(false)
-  sitePublished   Boolean  @default(false)
-  siteSection     String?
-  siteSlug        String?  @unique
-  siteImage       String?
-  siteDescription String?  @db.Text
-  siteInclusions  String[] @default([])
-  siteDepartures  String[] @default([])
-  googleBusinessPostName String? @db.Text
-  instagramPostId String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  destino                String
+  hotel                  String
+  dataFormatada          String
+  valor                  String
+  parcelas               Int      @default(15)
+  comCafe                Boolean  @default(false)
+  semCafe                Boolean  @default(false)
+  meiaPensao             Boolean  @default(false)
+  pensaoCompleta         Boolean  @default(false)
+  allInclusive           Boolean  @default(false)
+  numeroDeNoites         String
+  sp                     Boolean  @default(false)
+  cg                     Boolean  @default(false)
+  aereo                  Boolean  @default(false)
+  sitePublished          Boolean  @default(false)
+  siteSection            String?
+  siteSlug               String?  @unique
+  siteImage              String?
+  siteDescription        String?  @db.Text
+  siteInclusions         String[] @default([])
+  siteDepartures         String[] @default([])
+  googleBusinessPostName String?  @db.Text
+  instagramPostId        String?  @db.Text
+  // Preço "de" (riscado) para ofertas com desconto; `valor` continua sendo o preço "por"
+  valorOriginal          String?
+  // Campanha da oferta, ex.: "black-friday"
+  campaign               String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   // Relations
-  createdById     String
-  createdBy       User     @relation(fields: [createdById], references: [id])
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  designs     Design[]
 
+  @@index([campaign])
   @@map("promos")
 }
 
 model GoogleBusinessConnection {
-  id            String   @id @default(cuid())
-  refreshToken  String   @db.Text
-  accountName   String?  @db.Text
-  locationName  String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  refreshToken String   @db.Text
+  accountName  String?  @db.Text
+  locationName String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("google_business_connections")
 }
 
 model InstagramConnection {
-  id              String    @id @default(cuid())
-  accessToken     String    @db.Text
-  igUserId        String
-  pageName        String?
-  tokenExpiresAt  DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  accessToken    String    @db.Text
+  igUserId       String
+  pageName       String?
+  tokenExpiresAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@map("instagram_connections")
 }
 
 // Lead model for capturing interested customers
 model Lead {
-  id              String   @id @default(cuid())
-  name            String
-  phone           String
-  email           String?
-  source          String   @default("website") // website, popup, footer, whatsapp
-  destino         String?  // Destination they were interested in
-  hotel           String?  // Hotel they were interested in
-  promoDetails    String?  // JSON with promo details
-  status          String   @default("new") // new, contacted, converted, lost
-  notes           String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  phone        String
+  email        String?
+  source       String   @default("website") // website, popup, footer, whatsapp
+  destino      String? // Destination they were interested in
+  hotel        String? // Hotel they were interested in
+  promoDetails String? // JSON with promo details
+  status       String   @default("new") // new, contacted, converted, lost
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("leads")
 }
 
 // Layout/Template model
 model Layout {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   @default("png") // png, svg, custom
-  format      String   @default("story") // story, feed
-  isDefault   Boolean  @default(false)
+  id        String  @id @default(cuid())
+  name      String
+  type      String  @default("png") // png, svg, custom
+  format    String  @default("story") // story, feed
+  isDefault Boolean @default(false)
 
   // Template image URL (local path or external URL)
-  imageUrl    String?
+  imageUrl String?
 
   // Element configurations as JSON (text elements)
-  elements    Json
+  elements Json
 
   // Image areas for photos (JSON array of ImageArea objects)
-  imageAreas  Json?
+  imageAreas Json?
 
   // Color configurations as JSON
-  colors      Json
+  colors Json
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id])
 
   @@map("layouts")
+}
+
+// Documento do Studio: template da equipe (kind = "template") ou arte salva de uma promo (kind = "design")
+model Design {
+  id           String   @id @default(cuid())
+  name         String
+  kind         String   @default("design") // template, design
+  format       String   @default("story") // story, feed, square, landscape
+  // Documento do editor (páginas, camadas, variáveis) em JSON
+  data         Json
+  thumbnailUrl String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  promoId     String?
+  promo       Promo?  @relation(fields: [promoId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+
+  @@index([kind, format])
+  @@index([promoId])
+  @@map("designs")
+}
+
+// Imagem disponível para o Studio: upload, gerada por IA ou foto escolhida de banco de imagens
+model Asset {
+  id        String   @id @default(cuid())
+  url       String   @db.Text
+  source    String   @default("upload") // upload, ai, stock
+  prompt    String?  @db.Text
+  width     Int?
+  height    Int?
+  destino   String?
+  createdAt DateTime @default(now())
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@index([createdAt])
+  @@map("assets")
 }

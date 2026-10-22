@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(layout.imageUrl)
     }
 
-    return new NextResponse(decoded.buffer, {
+    return new NextResponse(new Uint8Array(decoded.buffer), {
       status: 200,
       headers: {
         "Content-Type": decoded.contentType,

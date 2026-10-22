@@ -1,80 +1,44 @@
 import type { MetadataRoute } from "next"
-import prisma from "@/lib/db"
+import { getActivePromos, getDestinations } from "@/lib/publicPromos"
+import { SITE_URL, absoluteUrl, promoImageUrl } from "@/lib/site"
+import { computeSlug } from "@/lib/utils"
 
-export const dynamic = "force-dynamic"
-
-const slugify = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-
-const computeSlug = (promo: { siteSlug: string | null; destino: string; id: string }) =>
-  promo.siteSlug || `${slugify(promo.destino || "destino")}-${promo.id.slice(0, 6)}`
+export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://donattiturismo.com.br"
-
-  // Static routes
+  const now = new Date()
   const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/destinos`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/pacotes`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
+    { url: SITE_URL, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/pacotes`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/destinos`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/saindo-de-campo-grande`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/saindo-de-sao-paulo`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
   ]
 
   try {
-    const promos = await prisma.promo.findMany({
-      where: { sitePublished: true },
-      select: { id: true, destino: true, siteSlug: true, siteSection: true, updatedAt: true },
-    })
+    // Só ofertas ativas: as encerradas ficam com noindex e saem do sitemap
+    const active = await getActivePromos()
+    const destinations = await getDestinations(active)
+    const latest = (dates: Date[]) => new Date(Math.max(...dates.map((d) => d.getTime())))
 
-    const destinoSlugs = new Set<string>()
-    const pacoteUrls: MetadataRoute.Sitemap = []
-
-    for (const promo of promos) {
-      const slug = computeSlug(promo)
-      const section = promo.siteSection || "destino"
-
-      // Add unique destino pages
-      if (!destinoSlugs.has(slug)) {
-        destinoSlugs.add(slug)
-        pacoteUrls.push({
-          url: `${baseUrl}/destinos/${slug}`,
-          lastModified: promo.updatedAt,
-          changeFrequency: "weekly",
-          priority: 0.8,
-        })
-      }
-
-      // Add individual pacote pages
-      pacoteUrls.push({
-        url: `${baseUrl}/pacotes/${slug}`,
-        lastModified: promo.updatedAt,
-        changeFrequency: "weekly",
+    return [
+      ...staticRoutes,
+      ...destinations.map((d) => ({
+        url: `${SITE_URL}/destinos/${d.slug}`,
+        lastModified: latest(d.promos.map((p) => p.updatedAt)),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+        images: [absoluteUrl(d.image)],
+      })),
+      ...active.map((p) => ({
+        url: `${SITE_URL}/pacotes/${computeSlug(p)}`,
+        lastModified: p.updatedAt,
+        changeFrequency: "weekly" as const,
         priority: 0.7,
-      })
-    }
-
-    return [...staticRoutes, ...pacoteUrls]
+        images: [absoluteUrl(promoImageUrl(p))],
+      })),
+    ]
   } catch {
-    // Fallback: return static routes only if DB fails
     return staticRoutes
   }
 }

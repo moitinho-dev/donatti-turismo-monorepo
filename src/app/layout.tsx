@@ -7,6 +7,8 @@ import "@/styles/donatti-ds.css"
 import type { ReactNode } from "react"
 
 import Providers from "./providers"
+import { JsonLd } from "@/components/seo/JsonLd"
+import { LOGO_IMAGE, OG_IMAGE, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site"
 
 // Inter é mais performático e tem melhor legibilidade
 const inter = Inter({
@@ -27,58 +29,34 @@ const montserrat = Montserrat({
 // Componente funcional para o layout principal da aplicação
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://donattiturismo.com.br"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Donatti Turismo — Pacotes de viagem saindo de Campo Grande e São Paulo",
+    default: "Donatti Turismo | Pacotes de viagem saindo de Campo Grande e São Paulo",
     template: "%s | Donatti Turismo",
   },
   description:
     "Pacotes de viagem nacionais e internacionais com aéreo e hotel, saindo de Campo Grande e São Paulo. Parcelamento no cartão e atendimento humano no WhatsApp.",
-  keywords: [
-    "pacotes de viagem",
-    "agência de viagens",
-    "turismo",
-    "viagens nacionais",
-    "viagens internacionais",
-    "cruzeiros",
-    "lua de mel",
-    "Donatti Turismo",
-    "Campo Grande MS",
-  ],
-  authors: [{ name: "Donatti Turismo" }],
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME }],
+  formatDetection: { telephone: false },
   openGraph: {
-    title: "Donatti Turismo — Pacotes de viagem saindo de Campo Grande e São Paulo",
-    description:
-      "Pacotes com aéreo e hotel saindo de Campo Grande e São Paulo, com parcelamento no cartão e atendimento humano no WhatsApp.",
     type: "website",
-    url: "https://donattiturismo.com.br",
-    siteName: "Donatti Turismo",
-    images: [
-      {
-        url: "https://donattiturismo.com.br/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Donatti Turismo",
-      },
-    ],
+    locale: "pt_BR",
+    siteName: SITE_NAME,
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "Donatti Turismo: pacotes de viagem com aéreo e hotel" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Donatti Turismo — Pacotes de viagem saindo de Campo Grande e São Paulo",
-    description: "Pacotes com aéreo e hotel saindo de Campo Grande e São Paulo, com atendimento humano no WhatsApp.",
-    images: ["https://donattiturismo.com.br/twitter-image.jpg"],
-  },
-  icons: {
-    icon: "/favicon.svg",
+    images: [OG_IMAGE],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
 }
 
 export default function RootLayout({
@@ -88,53 +66,51 @@ export default function RootLayout({
 }) {
   // GTM & Analytics Configuration
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P3JPBSRM"
-  const travelAgencySchema = {
-    "@context": "https://schema.org",
-    "@type": "TravelAgency",
-    name: "Donatti Turismo",
-    url: "https://donattiturismo.com.br",
-    logo: "https://donattiturismo.com.br/favicon.svg",
-    telephone: "+55 67 99216-7694",
-    email: "contato@donattiturismo.com.br",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "Avenida Tamandaré, 8 - Vila Planalto",
-      addressLocality: "Campo Grande",
-      addressRegion: "MS",
-      postalCode: "79009-790",
-      addressCountry: "BR",
+  const rdStationId = process.env.NEXT_PUBLIC_RDSTATION_ID
+  const siteSchema = [
+    {
+      "@context": "https://schema.org",
+      "@type": "TravelAgency",
+      "@id": `${SITE_URL}/#agencia`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: absoluteUrl(LOGO_IMAGE),
+      image: absoluteUrl(OG_IMAGE),
+      telephone: "+55-67-99216-7694",
+      email: "contato@donattiturismo.com.br",
+      priceRange: "$$",
+      areaServed: ["Campo Grande", "Mato Grosso do Sul", "São Paulo", "Brasil"],
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Avenida Tamandaré, 8 - Vila Planalto",
+        addressLocality: "Campo Grande",
+        addressRegion: "MS",
+        postalCode: "79009-790",
+        addressCountry: "BR",
+      },
+      sameAs: [
+        "https://www.instagram.com/donattiturismo",
+        "https://www.facebook.com/donattiturismo",
+        "https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8",
+      ],
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "5.0",
-      reviewCount: "200",
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#site`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      inLanguage: "pt-BR",
+      publisher: { "@id": `${SITE_URL}/#agencia` },
     },
-    sameAs: [
-      "https://www.instagram.com/donattiturismo",
-      "https://www.facebook.com/donattiturismo",
-      "https://maps.app.goo.gl/xuzhiYXCPC2VE9Tp8",
-    ],
-  }
+  ]
 
   return (
     <html lang="pt-BR">
       <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
-        {/* RD Station Marketing - Script de Integração */}
-        <Script id="rdstation-script" strategy="afterInteractive">
-          {`
-            (function() {
-              var rdStationId = 'YOUR_RD_STATION_ID';
-              var script = document.createElement('script');
-              script.src = 'https://d335luupugsy2.cloudfront.net/js/loader-scripts/' + rdStationId + '-loader.js';
-              script.async = true;
-              document.head.appendChild(script);
-            })();
-          `}
-        </Script>
+        {rdStationId && (
+          <Script id="rdstation-script" strategy="afterInteractive" src={`https://d335luupugsy2.cloudfront.net/js/loader-scripts/${rdStationId}-loader.js`} />
+        )}
 
         {/* Analytics Event Delegator - Para data-attributes */}
         <Script id="analytics-delegator" strategy="afterInteractive">
@@ -166,13 +142,6 @@ export default function RootLayout({
             })();
           `}
         </Script>
-        <Script
-          id="travel-agency-schema"
-          type="application/ld+json"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(travelAgencySchema) }}
-        />
-
         {/* Google Tag Manager (Next.js third-party) */}
         <GoogleTagManager
           gtmId={gtmId}
@@ -190,6 +159,8 @@ export default function RootLayout({
           />
         </noscript>
 
+        {/* Dados estruturados no HTML do servidor, para o Google ler sem executar JS */}
+        <JsonLd data={siteSchema} />
         <Providers>{children}</Providers>
 
       </body>

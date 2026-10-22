@@ -1,6 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials"
 import type { NextAuthOptions, DefaultSession } from "next-auth"
 import prisma from "@/lib/db"
+import { hashPassword, verifyPassword } from "@/lib/passwords"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -26,17 +27,17 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Initialize database with default users if needed
-          await initializeDatabaseIfNeeded()
-
-          // Find user by email
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+          const email = credentials.email.trim()
+          const user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: "insensitive" } },
           })
 
-          // Verify password (simple comparison for now - consider bcrypt in production)
-          if (user && user.password === credentials.password) {
-            // Return user data for session
+          const { valid, needsRehash } = await verifyPassword(credentials.password, user?.password)
+          if (user && valid) {
+            // Contas antigas tinham a senha em texto puro: regrava com hash no primeiro login
+            if (needsRehash) {
+              await prisma.user.update({ where: { id: user.id }, data: { password: await hashPassword(credentials.password) } })
+            }
             return {
               id: user.id,
               email: user.email,
@@ -83,41 +84,6 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 horas
   },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 }
-
-// Helper function to initialize database with default users if needed
-async function initializeDatabaseIfNeeded() {
-  try {
-    // Check if any users exist
-    const userCount = await prisma.user.count()
-
-    if (userCount === 0) {
-      // Create default admin user
-      await prisma.user.create({
-        data: {
-          email: "admin@donatti.com",
-          name: "Administrador",
-          password: "admin@123",
-          role: "admin",
-        },
-      })
-
-      // Create default agent user
-      await prisma.user.create({
-        data: {
-          email: "agente@donatti.com",
-          name: "Agente de Turismo",
-          password: "agente@123",
-          role: "agent",
-        },
-      })
-
-      console.log("Database initialized with default users")
-    }
-  } catch (error) {
-    console.error("Error initializing database:", error)
-  }
-}
-

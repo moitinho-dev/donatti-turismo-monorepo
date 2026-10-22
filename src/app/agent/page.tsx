@@ -5,7 +5,7 @@ import { authOptions } from "../api/auth/[...nextauth]/options"
 import AgentDashboard from "@/components/agent/AgentDashboard"
 
 export const metadata: Metadata = {
-  title: "Painel do Agente | Donatti Turismo",
+  title: "Painel do Agente",
   description: "Gerencie as promoções de viagens e pacotes turísticos da Donatti Turismo.",
 }
 

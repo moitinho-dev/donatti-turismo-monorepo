@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
-import { promises as fs } from "fs"
-import path from "path"
-import crypto from "crypto"
 import prisma from "@/lib/db"
+import { uploadImage } from "@/lib/storage"
 import type { ElementConfig } from "../route"
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024 // 8MB
@@ -122,27 +120,13 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer())
     console.log("[UPLOAD] Buffer size:", buffer.length)
 
-    // Persist image:
-    // - Prefer writing to /public for self-hosted Node deployments
-    // - Fallback to storing as data URL (works on read-only FS environments, e.g. Vercel)
+    // Grava no armazenamento configurado (S3 / Supabase); sem nenhum, guarda como data URL no banco
     let imageUrl: string
+    const safeMime = (allowedMimeTypes.has(mimeType) && mimeType) || extensionToMime[extension] || "application/octet-stream"
     try {
-      // Save file to public/uploads/layouts
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "layouts")
-      await fs.mkdir(uploadDir, { recursive: true })
-      console.log("[UPLOAD] Upload dir:", uploadDir)
-
-      const randomKey = crypto.randomBytes(6).toString("hex")
-      const filename = `${Date.now()}-${randomKey}.${extension}`
-      const filePath = path.join(uploadDir, filename)
-      await fs.writeFile(filePath, buffer)
-      console.log("[UPLOAD] File saved to:", filePath)
-
-      // URL path for the uploaded file
-      imageUrl = `/uploads/layouts/${filename}`
-    } catch (fsError) {
-      console.warn("[UPLOAD] Filesystem write failed, falling back to data URL:", fsError)
-      const safeMime = (allowedMimeTypes.has(mimeType) && mimeType) || extensionToMime[extension] || "application/octet-stream"
+      imageUrl = await uploadImage(buffer, safeMime, "layouts")
+    } catch (storageError) {
+      console.warn("[UPLOAD] Storage indisponível, salvando como data URL:", storageError)
       imageUrl = `data:${safeMime};base64,${buffer.toString("base64")}`
     }
 

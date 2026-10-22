@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { trackEvent, trackLead } from '@/lib/analytics'
 import { getPriceNumber, getSectionLabel } from '@/lib/utils'
 import {
@@ -16,6 +17,8 @@ import {
   getRegimeLabel,
   type PublicPromo,
 } from '@/components/home/RealTimePromos'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { destinationHeading } from '@/lib/site'
 import { Countdown } from '@/components/blackfriday/Countdown'
 import {
   blackFriday,
@@ -62,7 +65,7 @@ const trust = [
   { icon: 'airplane-take-off', title: 'Saídas CGR e GRU', text: 'Outras cidades sob consulta.' },
 ]
 
-const destinations = [
+const trendingDestinations = [
   { name: 'Nordeste', from: 'Porto de Galinhas, Maceió, Natal', img: '/images/home/porto-de-galinhas.jpg' },
   { name: 'Caribe', from: 'Punta Cana, Cancún, Aruba', img: '/images/home/caribe.jpg' },
   { name: 'Sudeste', from: 'Rio de Janeiro, Búzios, Arraial', img: '/images/home/rio-de-janeiro.jpg' },
@@ -134,14 +137,19 @@ const emptyLead = { name: '', phone: '', destination: '', period: '' }
 
 interface HomeLandingProps {
   phase: BlackFridayPhase
+  /** Ofertas carregadas no servidor, para virem no HTML (SEO) */
+  initialPromos?: PublicPromo[]
+  /** Destinos com página própria, para os links internos do rodapé */
+  destinations?: { name: string; slug: string }[]
 }
 
-export default function HomeLanding({ phase }: HomeLandingProps) {
+export default function HomeLanding({ phase, initialPromos, destinations = [] }: HomeLandingProps) {
   const bf = isBlackFridayActive(phase)
   const countdownTarget = getCountdownTarget(phase)
   const endsAtLabel = formatCampaignDate(blackFriday.endsAt)
 
-  const promos = usePublicPromos(60)
+  const fetchedPromos = usePublicPromos(60, initialPromos === undefined)
+  const promos = initialPromos ?? fetchedPromos
   const list = useMemo(() => promos || [], [promos])
 
   const [isMounted, setIsMounted] = useState(false)
@@ -598,14 +606,14 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
               </h2>
             </div>
             <div className="dt-grid-dest">
-              {destinations.map((d) => (
-                <a key={d.name} className="dt-dest" href="/destinos" onClick={() => trackEvent('cta_click', { label: 'destino_tile', destination: d.name })}>
+              {trendingDestinations.map((d) => (
+                <Link key={d.name} className="dt-dest" href="/destinos" onClick={() => trackEvent('cta_click', { label: 'destino_tile', destination: d.name })}>
                   <img src={d.img} alt="" loading="lazy" />
                   <div className="dt-dest__label">
                     <p className="dt-dest__name">{d.name}</p>
                     <span className="dt-dest__from">{d.from}</span>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           </div>
@@ -788,6 +796,13 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
           </div>
         </section>
 
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+          }}
+        />
         <section id="duvidas" aria-labelledby="faq-title" style={{ padding: '96px 0', scrollMarginTop: 72 }}>
           <div className="dt-wrap" style={{ maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 32 }}>
             <h2 id="faq-title" className="dt-sec-title">
@@ -821,12 +836,18 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, font: '400 14px/1.4 var(--dt-font-sans)' }}>
               <strong style={{ color: '#ffffff' }}>Viagens</strong>
-              <a href="/pacotes" style={{ color: 'inherit' }}>
+              <Link href="/pacotes" style={{ color: 'inherit' }}>
                 Pacotes
-              </a>
-              <a href="/destinos" style={{ color: 'inherit' }}>
+              </Link>
+              <Link href="/destinos" style={{ color: 'inherit' }}>
                 Destinos
-              </a>
+              </Link>
+              <Link href="/saindo-de-campo-grande" style={{ color: 'inherit' }}>
+                Saindo de Campo Grande
+              </Link>
+              <Link href="/saindo-de-sao-paulo" style={{ color: 'inherit' }}>
+                Saindo de São Paulo
+              </Link>
               <a href="#contato" style={{ color: 'inherit' }}>
                 Roteiro sob medida
               </a>
@@ -843,6 +864,16 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
                 Avaliações
               </a>
             </div>
+            {destinations.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, font: '400 14px/1.4 var(--dt-font-sans)' }}>
+                <strong style={{ color: '#ffffff' }}>Destinos</strong>
+                {destinations.slice(0, 10).map((d) => (
+                  <Link key={d.slug} href={`/destinos/${d.slug}`} style={{ color: 'inherit' }}>
+                    {destinationHeading(d.name)}
+                  </Link>
+                ))}
+              </div>
+            )}
             <address style={{ display: 'flex', flexDirection: 'column', gap: 10, font: '400 14px/1.4 var(--dt-font-sans)', fontStyle: 'normal' }}>
               <strong style={{ color: '#ffffff' }}>Atendimento</strong>
               <a href="tel:+5567992167694" style={{ color: 'inherit' }}>

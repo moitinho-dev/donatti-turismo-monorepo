@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error searching images:", error)
-    return NextResponse.json({ error: "Failed to search images" }, { status: 500 })
+    const message = error instanceof Error && error.message.includes("access key") ? "Busca de fotos indisponível: chave do Unsplash não configurada" : "Busca de fotos indisponível no momento"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
