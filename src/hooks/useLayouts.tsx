@@ -85,7 +85,9 @@ export function useLayouts(): UseLayoutsReturn {
   // If a LayoutsProvider is present, use that instance
   const ctx = useContext(LayoutsContext)
   if (ctx) return ctx
-  // Otherwise, create a local instance (backwards compatibility)
+  // Otherwise, create a local instance (backwards compatibility).
+  // A presença do Provider não muda durante a vida do componente, então a ordem dos hooks é estável.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useLayoutsInstance()
 }
 

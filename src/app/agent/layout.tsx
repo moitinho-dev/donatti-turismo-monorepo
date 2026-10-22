@@ -4,7 +4,8 @@ import { PromoProvider } from "@/providers/PromoProvider"
 import { AuthProvider } from "@/providers/AuthProvider"
 
 export const metadata: Metadata = {
-  title: "Área do Agente | Donatti Turismo",
+  robots: { index: false, follow: false },
+  title: "Área do Agente",
   description: "Sistema de gerenciamento de promoções da Donatti Turismo",
 }
 

@@ -4,7 +4,8 @@ import { PromoProvider } from "@/providers/PromoProvider"
 import { AuthProvider } from "@/providers/AuthProvider"
 
 export const metadata: Metadata = {
-  title: "Gerenciador de Promoções | Donatti Turismo",
+  robots: { index: false, follow: false },
+  title: "Gerenciador de Promoções",
   description: "Sistema de gerenciamento de promoções da Donatti Turismo",
 }
 

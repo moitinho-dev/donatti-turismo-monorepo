@@ -7,11 +7,14 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { trackEvent } from '@/lib/analytics'
-import RealTimePromos, { usePublicPromos } from '@/components/home/RealTimePromos'
+import RealTimePromos, { usePublicPromos, type PublicPromo } from '@/components/home/RealTimePromos'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { destinationHeading } from '@/lib/site'
 import { Countdown } from '@/components/blackfriday/Countdown'
 import {
   blackFriday,
@@ -143,14 +146,19 @@ const emptyLead = { name: '', email: '', phone: '', destination: '', period: '' 
 
 interface HomeLandingProps {
   phase: BlackFridayPhase
+  /** Ofertas carregadas no servidor, para virem no HTML (SEO) */
+  initialPromos?: PublicPromo[]
+  /** Destinos com página própria, para os links internos do rodapé */
+  destinations?: { name: string; slug: string }[]
 }
 
-export default function HomeLanding({ phase }: HomeLandingProps) {
+export default function HomeLanding({ phase, initialPromos, destinations = [] }: HomeLandingProps) {
   const bf = isBlackFridayActive(phase)
   const countdownTarget = getCountdownTarget(phase)
   const endsAtLabel = formatCampaignDate(blackFriday.endsAt)
 
-  const promos = usePublicPromos(60)
+  const fetchedPromos = usePublicPromos(60, initialPromos === undefined)
+  const promos = initialPromos ?? fetchedPromos
   const maxParcelas = useMemo(
     () => (promos || []).reduce((max, p) => Math.max(max, Number(p.PARCELAS) || 0), 0),
     [promos],
@@ -519,10 +527,10 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
                   </Button>
                 )}
                 <Button asChild variant="ghost" className="text-gray-700 hover:text-primary">
-                  <a href="/destinos" onClick={() => trackEvent('cta_click', { label: 'ver_destinos' })} className="flex items-center gap-2">
+                  <Link href="/destinos" onClick={() => trackEvent('cta_click', { label: 'ver_destinos' })} className="flex items-center gap-2">
                     Ver todos os destinos
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -631,6 +639,13 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
         </section>
 
         {/* Dúvidas */}
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+          }}
+        />
         <section id="duvidas" aria-labelledby="faq-title" className="scroll-mt-4 border-t border-gray-200 bg-gray-50 py-16 md:py-20">
           <div className="container mx-auto max-w-3xl px-4">
             <h2 id="faq-title" className="mb-8 text-center text-3xl font-bold text-gray-900 md:text-4xl">
@@ -794,7 +809,7 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
       {/* Rodapé */}
       <footer role="contentinfo" className="relative border-t border-gray-200 bg-gray-50 py-14">
         <div className="container mx-auto px-4">
-          <div className="grid gap-10 md:grid-cols-3">
+          <div className={`grid gap-10 ${destinations.length ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
             <div>
               <img src={LOGO_URL} alt="Donatti Turismo" className="mb-4 h-14 w-auto object-contain" width="56" height="56" />
               <div className="space-y-2 text-sm text-gray-700">
@@ -813,12 +828,29 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
               <h3 className="mb-4 font-semibold text-gray-900">Navegue</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li><a href="#ofertas" className="transition-colors hover:text-primary">Ofertas</a></li>
-                <li><a href="/pacotes" className="transition-colors hover:text-primary">Todos os pacotes</a></li>
-                <li><a href="/destinos" className="transition-colors hover:text-primary">Destinos</a></li>
+                <li><Link href="/pacotes" className="transition-colors hover:text-primary">Todos os pacotes</Link></li>
+                <li><Link href="/destinos" className="transition-colors hover:text-primary">Destinos</Link></li>
+                <li><Link href="/saindo-de-campo-grande" className="transition-colors hover:text-primary">Saindo de Campo Grande</Link></li>
+                <li><Link href="/saindo-de-sao-paulo" className="transition-colors hover:text-primary">Saindo de São Paulo</Link></li>
                 <li><a href="#duvidas" className="transition-colors hover:text-primary">Dúvidas frequentes</a></li>
                 <li><a href="#contato" className="transition-colors hover:text-primary">Pedir cotação</a></li>
               </ul>
             </div>
+
+            {destinations.length > 0 && (
+              <div>
+                <h3 className="mb-4 font-semibold text-gray-900">Destinos</h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  {destinations.slice(0, 10).map((d) => (
+                    <li key={d.slug}>
+                      <Link href={`/destinos/${d.slug}`} className="transition-colors hover:text-primary">
+                        {destinationHeading(d.name)}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div>
               <h3 className="mb-4 font-semibold text-gray-900">Contato</h3>

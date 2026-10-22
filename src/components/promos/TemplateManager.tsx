@@ -1190,7 +1190,7 @@ export default function TemplateManager() {
                     ))}
                     {(!currentLayout?.imageAreas || currentLayout.imageAreas.length === 0) && (
                       <p className="text-xs text-gray-500 p-2 text-center">
-                        Clique em "Desenhar Area de Foto" para criar areas
+                        Clique em &quot;Desenhar Área de Foto&quot; para criar áreas
                       </p>
                     )}
                   </div>

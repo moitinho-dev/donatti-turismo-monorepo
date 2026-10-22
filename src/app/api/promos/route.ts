@@ -26,12 +26,14 @@ const promoSchema = z.object({
   CG: z.boolean().optional(),
   AEREO: z.boolean().optional(),
   SITE_PUBLISHED: z.boolean().optional(),
-  SITE_SECTION: z.string().optional(),
-  SITE_SLUG: z.string().optional(),
-  SITE_IMAGE: z.string().optional(),
-  SITE_DESCRIPTION: z.string().optional(),
-  SITE_INCLUSIONS: z.array(z.string()).optional(),
-  SITE_DEPARTURES: z.array(z.string()).optional(),
+  SITE_SECTION: z.string().nullable().optional(),
+  SITE_SLUG: z.string().nullable().optional(),
+  SITE_IMAGE: z.string().nullable().optional(),
+  SITE_DESCRIPTION: z.string().nullable().optional(),
+  SITE_INCLUSIONS: z.array(z.string()).nullable().optional(),
+  SITE_DEPARTURES: z.array(z.string()).nullable().optional(),
+  VALOR_ORIGINAL: z.string().nullable().optional(),
+  CAMPAIGN: z.string().nullable().optional(),
 })
 
 // Convert database promo to API format
@@ -58,6 +60,8 @@ function toApiFormat(promo: {
   siteDescription: string | null
   siteInclusions: string[]
   siteDepartures: string[]
+  valorOriginal: string | null
+  campaign: string | null
   createdAt: Date
   updatedAt: Date
   createdById: string
@@ -86,11 +90,20 @@ function toApiFormat(promo: {
     SITE_DESCRIPTION: promo.siteDescription,
     SITE_INCLUSIONS: promo.siteInclusions,
     SITE_DEPARTURES: promo.siteDepartures,
+    VALOR_ORIGINAL: promo.valorOriginal,
+    CAMPAIGN: promo.campaign,
     createdAt: promo.createdAt.toISOString(),
     updatedAt: promo.updatedAt.toISOString(),
     createdBy: promo.createdById,
     createdByName: promo.createdBy?.name || null,
   }
+}
+
+/** Só guarda o preço "de" quando ele é maior que o preço "por" — senão não há desconto a mostrar */
+function normalizeValorOriginal(original: string | null | undefined, valor: string) {
+  const de = parseFloat(String(original ?? ""))
+  const por = parseFloat(valor)
+  return Number.isFinite(de) && Number.isFinite(por) && de > por ? de.toFixed(2) : null
 }
 
 /** Slug livre: se outro pacote já usa, acrescenta -2, -3... (siteSlug é único no banco) */
@@ -257,6 +270,8 @@ export async function POST(req: NextRequest) {
           siteDescription: data.SITE_DESCRIPTION || null,
           siteInclusions: data.SITE_INCLUSIONS || [],
           siteDepartures: data.SITE_DEPARTURES || [],
+          valorOriginal: normalizeValorOriginal(data.VALOR_ORIGINAL, data.VALOR),
+          campaign: data.CAMPAIGN || null,
         },
         include: { createdBy: { select: { name: true } } },
       })
@@ -291,6 +306,8 @@ export async function POST(req: NextRequest) {
           siteDescription: data.SITE_DESCRIPTION || null,
           siteInclusions: data.SITE_INCLUSIONS || [],
           siteDepartures: data.SITE_DEPARTURES || [],
+          valorOriginal: normalizeValorOriginal(data.VALOR_ORIGINAL, data.VALOR),
+          campaign: data.CAMPAIGN || null,
           createdById: session.user.id,
         },
         include: { createdBy: { select: { name: true } } },

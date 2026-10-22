@@ -24,6 +24,8 @@ interface PromoData {
   SITE_DESCRIPTION?: string | null
   SITE_INCLUSIONS?: string[]
   SITE_DEPARTURES?: string[]
+  VALOR_ORIGINAL?: string | null
+  CAMPAIGN?: string | null
   createdAt: string
   updatedAt: string
   createdBy?: string

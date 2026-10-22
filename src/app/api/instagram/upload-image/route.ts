@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
-import { createClient } from "@supabase/supabase-js"
+import { uploadImage } from "@/lib/storage"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 const MAX_SIZE = 8 * 1024 * 1024 // 8MB
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
-  }
-  return createClient(url, key)
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,26 +30,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Imagem muito grande (max 8MB)" }, { status: 400 })
     }
 
-    const supabase = getSupabaseClient()
-    const safeName = (filename || `promo-${Date.now()}`).replace(/[^a-zA-Z0-9._-]/g, "_")
-    const path = `instagram/${Date.now()}-${safeName}.jpg`
+    const publicUrl = await uploadImage(buffer, "image/jpeg", "instagram", { inline: false })
 
-    const { error: uploadError } = await supabase.storage
-      .from("promo-images")
-      .upload(path, buffer, {
-        contentType: "image/jpeg",
-        upsert: false,
-      })
-
-    if (uploadError) {
-      throw new Error(`Upload falhou: ${uploadError.message}`)
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("promo-images")
-      .getPublicUrl(path)
-
-    return NextResponse.json({ publicUrl: publicUrlData.publicUrl })
+    return NextResponse.json({ publicUrl })
   } catch (error) {
     console.error("Instagram upload error:", error)
     const message = error instanceof Error ? error.message : "Erro ao fazer upload"

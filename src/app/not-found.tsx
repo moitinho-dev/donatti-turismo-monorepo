@@ -2,7 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Página não encontrada | Donatti Turismo",
+  title: "Página não encontrada",
   description: "A página que você procura não foi encontrada.",
   robots: { index: false, follow: false },
 }

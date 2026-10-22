@@ -344,7 +344,7 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       }
     }
 
-    let payload = { ...formData }
+    const payload = { ...formData }
 
     // Se for publicar e não houver imagem, buscar automaticamente
     if (payload.SITE_PUBLISHED && !payload.SITE_IMAGE) {

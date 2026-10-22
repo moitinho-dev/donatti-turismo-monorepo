@@ -5,7 +5,7 @@ import { authOptions } from "../../api/auth/[...nextauth]/options"
 import LeadsDashboard from "@/components/promos/LeadsDashboard"
 
 export const metadata: Metadata = {
-  title: "Leads | Donatti Turismo",
+  title: "Leads",
   description: "Gerencie os leads capturados pelo site da Donatti Turismo.",
 }
 

@@ -5,7 +5,7 @@ import { authOptions } from "../../api/auth/[...nextauth]/options"
 import TemplateManager from "@/components/promos/TemplateManager"
 
 export const metadata: Metadata = {
-  title: "Templates | Donatti Turismo",
+  title: "Templates",
   description: "Gerencie os templates de promoções da Donatti Turismo.",
 }
 

@@ -7,3 +7,7 @@
 /src/generated/prisma
 .DS_Store
 *.tsbuildinfo
+
+/public/uploads/studio
+/public/uploads/ai
+/public/uploads/assets
