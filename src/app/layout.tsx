@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import Script from "next/script"
 import { GoogleTagManager } from "@next/third-parties/google"
-import { Inter } from "next/font/google"
+import { Inter, Montserrat } from "next/font/google"
 import "./globals.css"
+import "@/styles/donatti-ds.css"
 import type { ReactNode } from "react"
 
 import Providers from "./providers"
@@ -13,6 +14,14 @@ const inter = Inter({
   variable: '--font-sans',
   display: 'swap',
   weight: ['400', '500', '600', '700']
+})
+
+// Montserrat é a fonte de títulos e preços do design system (mais próxima do logotipo)
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+  weight: ['700', '800', '900']
 })
 
 // Componente funcional para o layout principal da aplicação
@@ -170,7 +179,7 @@ export default function RootLayout({
           gtmScriptUrl={undefined}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased max-w-[2000px] mx-auto`}>
+      <body className={`${inter.variable} ${montserrat.variable} font-sans antialiased max-w-[2000px] mx-auto`}>
         {/* Google Tag Manager (noscript) - Fallback para usuários sem JS */}
         <noscript>
           <iframe
