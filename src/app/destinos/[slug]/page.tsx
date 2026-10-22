@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = `${destination.destino} | Donatti Turismo`
   const description =
-    destination.siteDescription || `Conheça ${destination.destino} e encontre pacotes com suporte 24/7 e preço garantido.`
+    destination.siteDescription || `Pacotes para ${destination.destino} saindo de Campo Grande e São Paulo, com parcelamento e atendimento humano no WhatsApp.`
   const keywords = Array.from(
     new Set(
       [destination.siteSection, destination.destino, destination.hotel, "destinos", "Donatti Turismo"].filter(Boolean),
@@ -108,15 +108,15 @@ export default async function DestinationPage({ params }: PageProps) {
           <ul className="grid gap-3 sm:grid-cols-2">
             <li className="flex items-start gap-2 text-gray-700">
               <span className="mt-1 h-2 w-2 bg-primary rounded-full" />
-              Atendimento 24/7 antes, durante e depois da viagem
+              Atendimento humano no WhatsApp antes, durante e depois da viagem
             </li>
             <li className="flex items-start gap-2 text-gray-700">
               <span className="mt-1 h-2 w-2 bg-primary rounded-full" />
-              Preço garantido: se baixar, devolvemos a diferença
+              Saídas de Campo Grande e São Paulo
             </li>
             <li className="flex items-start gap-2 text-gray-700">
               <span className="mt-1 h-2 w-2 bg-primary rounded-full" />
-              Cancelamento grátis em ofertas selecionadas
+              Parcelamento no cartão, Pix ou boleto
             </li>
             <li className="flex items-start gap-2 text-gray-700">
               <span className="mt-1 h-2 w-2 bg-primary rounded-full" />
