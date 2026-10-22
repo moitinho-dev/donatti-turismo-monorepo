@@ -20,7 +20,6 @@ import {
   Image as ImgIcon,
   Share2,
   Share,
-  Instagram,
   MessageCircle,
   FileText,
   Download,
@@ -36,6 +35,7 @@ import {
 import { useLayouts, type ElementConfig, type ImageArea } from "@/hooks/useLayouts"
 import { SiteCardForm } from "./dashboard/SiteCardForm"
 import { GoogleBusinessPanel } from "./dashboard/GoogleBusinessPanel"
+import { Instagram } from "@/components/ui/brand-icons"
 import { InstagramPanel } from "./dashboard/InstagramPanel"
 import type { PromoData, UserData } from "./dashboard/types"
 

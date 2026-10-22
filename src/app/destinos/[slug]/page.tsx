@@ -11,7 +11,7 @@ import { categoryLabels, computeSlug, getSectionLabel } from "@/lib/utils"
 export const dynamic = "force-dynamic"
 
 type PageProps = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateStaticParams() {
@@ -19,12 +19,13 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
   let destination = await prisma.promo.findFirst({
-    where: { sitePublished: true, siteSlug: params.slug },
+    where: { sitePublished: true, siteSlug: slug },
   })
   if (!destination) {
     const promos = await prisma.promo.findMany({ where: { sitePublished: true } })
-    destination = promos.find((p) => computeSlug(p) === params.slug) || null
+    destination = promos.find((p) => computeSlug(p) === slug) || null
   }
 
   if (!destination) {
@@ -48,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description,
     keywords,
     alternates: {
-      canonical: `https://donattiturismo.com.br/destinos/${params.slug}`,
+      canonical: `https://donattiturismo.com.br/destinos/${slug}`,
     },
     openGraph: {
       title,
@@ -59,12 +60,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function DestinationPage({ params }: PageProps) {
+  const { slug } = await params
   let destination = await prisma.promo.findFirst({
-    where: { sitePublished: true, siteSlug: params.slug },
+    where: { sitePublished: true, siteSlug: slug },
   })
   if (!destination) {
     const promos = await prisma.promo.findMany({ where: { sitePublished: true } })
-    destination = promos.find((p) => computeSlug(p) === params.slug) || null
+    destination = promos.find((p) => computeSlug(p) === slug) || null
   }
   if (!destination) notFound()
 
@@ -79,7 +81,7 @@ export default async function DestinationPage({ params }: PageProps) {
     name: destination.destino,
     description: destination.siteDescription,
     image: destination.siteImage,
-    url: `https://donattiturismo.com.br/destinos/${params.slug}`,
+    url: `https://donattiturismo.com.br/destinos/${slug}`,
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
@@ -164,7 +166,7 @@ export default async function DestinationPage({ params }: PageProps) {
                       data-analytics-event="select_package"
                       data-analytics-params={JSON.stringify({
                         location: "destination_page",
-                        destination_slug: params.slug,
+                        destination_slug: slug,
                         package_slug: computeSlug(pkg),
                         destination: pkg.destino,
                       })}
@@ -183,7 +185,7 @@ export default async function DestinationPage({ params }: PageProps) {
                       data-analytics-event="whatsapp_click"
                       data-analytics-params={JSON.stringify({
                         location: "destination_page",
-                        destination_slug: params.slug,
+                        destination_slug: slug,
                         package_slug: computeSlug(pkg),
                         destination: pkg.destino,
                       })}

@@ -11,7 +11,7 @@ import { categoryLabels, computeSlug, getPriceNumber, getSectionLabel } from "@/
 export const dynamic = "force-dynamic"
 
 type PageProps = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateStaticParams() {
@@ -19,13 +19,14 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
   let pkg = await prisma.promo.findFirst({
-    where: { sitePublished: true, siteSlug: params.slug },
+    where: { sitePublished: true, siteSlug: slug },
   })
 
   if (!pkg) {
     const promos = await prisma.promo.findMany({ where: { sitePublished: true } })
-    pkg = promos.find((p) => computeSlug(p) === params.slug) || null
+    pkg = promos.find((p) => computeSlug(p) === slug) || null
   }
 
   if (!pkg) {
@@ -48,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description,
     keywords,
     alternates: {
-      canonical: `https://donattiturismo.com.br/pacotes/${params.slug}`,
+      canonical: `https://donattiturismo.com.br/pacotes/${slug}`,
     },
     openGraph: {
       title,
@@ -59,13 +60,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PackagePage({ params }: PageProps) {
+  const { slug } = await params
   let pkg = await prisma.promo.findFirst({
-    where: { sitePublished: true, siteSlug: params.slug },
+    where: { sitePublished: true, siteSlug: slug },
   })
 
   if (!pkg) {
     const promos = await prisma.promo.findMany({ where: { sitePublished: true } })
-    pkg = promos.find((p) => computeSlug(p) === params.slug) || null
+    pkg = promos.find((p) => computeSlug(p) === slug) || null
   }
 
   if (!pkg) notFound()
@@ -123,7 +125,7 @@ export default async function PackagePage({ params }: PageProps) {
       priceCurrency: "BRL",
       price: getPriceNumber(pkg.valor),
       availability: "https://schema.org/InStock",
-      url: `https://donattiturismo.com.br/pacotes/${params.slug}`,
+      url: `https://donattiturismo.com.br/pacotes/${slug}`,
     },
   }
 
@@ -235,7 +237,7 @@ export default async function PackagePage({ params }: PageProps) {
                   data-analytics-event="whatsapp_click"
                   data-analytics-params={JSON.stringify({
                     location: "package_page",
-                    package_slug: params.slug,
+                    package_slug: slug,
                     destination: pkg.destino,
                   })}
                   target="_blank"
@@ -250,7 +252,7 @@ export default async function PackagePage({ params }: PageProps) {
                   data-analytics-event="phone_click"
                   data-analytics-params={JSON.stringify({
                     location: "package_page",
-                    package_slug: params.slug,
+                    package_slug: slug,
                     destination: pkg.destino,
                   })}
                 >
@@ -287,7 +289,7 @@ export default async function PackagePage({ params }: PageProps) {
                 data-analytics-event="select_package"
                 data-analytics-params={JSON.stringify({
                   location: "related_packages",
-                  from_package_slug: params.slug,
+                  from_package_slug: slug,
                   package_slug: computeSlug(item),
                   destination: item.destino,
                 })}

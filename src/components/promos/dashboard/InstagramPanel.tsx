@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Instagram } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Instagram } from "@/components/ui/brand-icons"
 
 interface InstagramPanelProps {
   igConnected: boolean

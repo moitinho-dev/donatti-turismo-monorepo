@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -519,10 +520,10 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
                   </Button>
                 )}
                 <Button asChild variant="ghost" className="text-gray-700 hover:text-primary">
-                  <a href="/destinos" onClick={() => trackEvent('cta_click', { label: 'ver_destinos' })} className="flex items-center gap-2">
+                  <Link href="/destinos" onClick={() => trackEvent('cta_click', { label: 'ver_destinos' })} className="flex items-center gap-2">
                     Ver todos os destinos
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -813,8 +814,8 @@ export default function HomeLanding({ phase }: HomeLandingProps) {
               <h3 className="mb-4 font-semibold text-gray-900">Navegue</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li><a href="#ofertas" className="transition-colors hover:text-primary">Ofertas</a></li>
-                <li><a href="/pacotes" className="transition-colors hover:text-primary">Todos os pacotes</a></li>
-                <li><a href="/destinos" className="transition-colors hover:text-primary">Destinos</a></li>
+                <li><Link href="/pacotes" className="transition-colors hover:text-primary">Todos os pacotes</Link></li>
+                <li><Link href="/destinos" className="transition-colors hover:text-primary">Destinos</Link></li>
                 <li><a href="#duvidas" className="transition-colors hover:text-primary">Dúvidas frequentes</a></li>
                 <li><a href="#contato" className="transition-colors hover:text-primary">Pedir cotação</a></li>
               </ul>

@@ -1372,7 +1372,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
                       <PenTool className="h-8 w-8 mx-auto text-gray-300 mb-2" />
                       <p className="text-sm text-gray-500">Nenhuma área configurada</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Clique em "Desenhar Nova Área" e arraste no preview
+                        Clique em &quot;Desenhar Nova Área&quot; e arraste no preview
                       </p>
                     </div>
                   )}
