@@ -3,13 +3,15 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { z } from "zod"
 import prisma from "@/lib/db"
+import { hashPassword } from "@/lib/passwords"
 
 // Schema for user validation
 const userSchema = z.object({
   id: z.string().optional(),
   email: z.string().email("Email inválido"),
   name: z.string().min(1, "Nome é obrigatório"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  // Obrigatória só na criação; ao editar, vazio mantém a senha atual
+  password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").optional(),
   role: z.enum(["admin", "agent"], {
     errorMap: () => ({ message: "Função deve ser admin ou agent" }),
   }),
@@ -84,6 +86,10 @@ export async function POST(req: NextRequest) {
     const userData = validationResult.data
     const isNewUser = !userData.id
 
+    if (isNewUser && !userData.password) {
+      return NextResponse.json({ error: "Senha é obrigatória para novos usuários" }, { status: 400 })
+    }
+
     if (isNewUser) {
       // Check if email already exists
       const existing = await prisma.user.findUnique({ where: { email: userData.email } })
@@ -95,7 +101,7 @@ export async function POST(req: NextRequest) {
         data: {
           email: userData.email,
           name: userData.name,
-          password: userData.password,
+          password: await hashPassword(userData.password!),
           role: userData.role,
         },
         select: { id: true, email: true, name: true, role: true, createdAt: true },
@@ -116,7 +122,7 @@ export async function POST(req: NextRequest) {
         data: {
           email: userData.email,
           name: userData.name,
-          password: userData.password,
+          ...(userData.password ? { password: await hashPassword(userData.password) } : {}),
           role: userData.role,
         },
         select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },

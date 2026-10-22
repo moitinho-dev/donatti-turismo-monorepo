@@ -10,6 +10,9 @@ export async function POST(req: Request) {
     if (!session) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+    }
 
     // Get data from request body
     const data = await req.json()

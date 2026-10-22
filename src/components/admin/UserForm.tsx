@@ -67,8 +67,8 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
     }
 
     // Validate password length if provided
-    if (formData.password && formData.password.length < 6) {
-      setFormError("A senha deve ter pelo menos 6 caracteres.")
+    if (formData.password && formData.password.length < 8) {
+      setFormError("A senha deve ter pelo menos 8 caracteres.")
       return
     }
 
@@ -191,7 +191,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
                 id="password"
                 value={formData.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                placeholder={user ? "Deixe em branco para manter a senha atual" : "Mínimo de 6 caracteres"}
+                placeholder={user ? "Deixe em branco para manter a senha atual" : "Mínimo de 8 caracteres"}
                 required={!user}
               />
               {user && <p className="text-xs text-gray-500 font-mon">Deixe em branco para manter a senha atual</p>}
