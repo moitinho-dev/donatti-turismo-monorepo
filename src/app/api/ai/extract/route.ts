@@ -7,7 +7,7 @@ import { sniffImageType } from "@/lib/storage"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
-export const maxDuration = 120
+export const maxDuration = 60 // limite do plano Hobby da Vercel
 
 const MAX_FILE = 15 * 1024 * 1024
 

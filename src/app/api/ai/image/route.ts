@@ -10,7 +10,7 @@ import { sniffImageType, uploadImage } from "@/lib/storage"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
-export const maxDuration = 300
+export const maxDuration = 60 // limite do plano Hobby da Vercel
 
 const format = z.enum(["story", "feed", "square", "landscape"])
 
