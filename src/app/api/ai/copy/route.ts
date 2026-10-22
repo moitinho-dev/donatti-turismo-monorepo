@@ -6,7 +6,7 @@ import { AiRefusalError, writePromoCopy } from "@/lib/ai/claude"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
-export const maxDuration = 90
+export const maxDuration = 60 // limite do plano Hobby da Vercel
 
 const PROMO_FIELDS = [
   "DESTINO", "HOTEL", "DATA_FORMATADA", "VALOR", "VALOR_ORIGINAL", "PARCELAS", "NUMERO_DE_NOITES",
