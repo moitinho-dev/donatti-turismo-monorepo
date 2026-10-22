@@ -3,7 +3,14 @@
 import { Loader2, Save } from "lucide-react"
 import { slugify } from "./types"
 
-const SITE_SECTION_SUGGESTIONS = ["nacionais", "internacionais", "cruzeiros", "lua-de-mel", "religioso", "nordeste"]
+const SITE_SECTION_OPTIONS = [
+  { value: "nacionais", label: "Nacional" },
+  { value: "internacionais", label: "Internacional" },
+  { value: "cruzeiros", label: "Cruzeiro" },
+  { value: "lua-de-mel", label: "Lua de mel" },
+  { value: "nordeste", label: "Nordeste" },
+  { value: "religioso", label: "Religioso" },
+]
 
 interface SiteCardFormProps {
   sitePublished: boolean
@@ -41,7 +48,7 @@ export function SiteCardForm({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-white">Card do site</p>
-          <p className="text-[11px] text-gray-400">A foto selecionada aqui e a do card</p>
+          <p className="text-[11px] text-gray-400">A foto selecionada aqui é a do card no site</p>
         </div>
         <label className="flex items-center gap-2 text-xs text-gray-200">
           <input
@@ -55,20 +62,24 @@ export function SiteCardForm({
       </div>
 
       <div className="space-y-2">
-        <label className="text-[11px] text-gray-400">Secao</label>
-        <input
-          type="text"
-          list="site-section-suggestions"
-          value={siteSection}
-          onChange={(e) => setSiteSection(e.target.value)}
-          placeholder="nacionais, internacionais, cruzeiros..."
-          className="w-full rounded-md bg-gray-900 border border-gray-700 px-3 py-2 text-xs text-gray-100 placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
-        />
-        <datalist id="site-section-suggestions">
-          {SITE_SECTION_SUGGESTIONS.map((opt) => (
-            <option key={opt} value={opt} />
+        <label className="text-[11px] text-gray-400">Seção no site</label>
+        <div className="flex flex-wrap gap-1.5">
+          {SITE_SECTION_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setSiteSection(opt.value)}
+              aria-pressed={siteSection === opt.value}
+              className={`rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors ${
+                siteSection === opt.value
+                  ? "bg-amber-500 border-amber-500 text-white"
+                  : "bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500"
+              }`}
+            >
+              {opt.label}
+            </button>
           ))}
-        </datalist>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -92,7 +103,7 @@ export function SiteCardForm({
       </div>
 
       <div className="space-y-2">
-        <label className="text-[11px] text-gray-400">Descricao curta</label>
+        <label className="text-[11px] text-gray-400">Descrição curta</label>
         <input
           type="text"
           value={siteDescription}

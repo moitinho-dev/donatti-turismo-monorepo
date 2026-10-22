@@ -6,7 +6,6 @@ import {
   BarChart2,
   List,
   LogOut,
-  Bell,
   Users,
   Layers,
 } from "lucide-react"
@@ -37,7 +36,7 @@ export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo, 
 
   return (
     <header className="bg-white w-full border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center px-6 py-3.5 gap-3 md:gap-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-[1fr_auto] md:flex md:flex-row justify-between items-center px-3 sm:px-6 py-2.5 sm:py-3.5 gap-x-3 gap-y-2 md:gap-0">
 
         {/* Left: Logo & Brand */}
         <div className="flex items-center gap-3 shrink-0">
@@ -53,7 +52,7 @@ export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo, 
         </div>
 
         {/* Center: Navigation Island */}
-        <div className="flex-1 flex justify-start md:justify-center w-full md:w-auto overflow-x-auto py-1 md:py-0">
+        <div className="col-span-2 row-start-2 md:col-span-1 md:row-start-auto flex-1 flex justify-start md:justify-center w-full md:w-auto overflow-x-auto py-1 md:py-0 [scrollbar-width:none]">
           <div className="bg-gray-50 flex items-center gap-1.5 p-1.5 rounded-[18px] border border-gray-200 shadow-sm">
             {tabs.map((tab) => {
               const isActive = activePanel === tab.id
@@ -94,29 +93,23 @@ export function DashboardHeader({ user, activePanel, onPanelChange, onNewPromo, 
         </div>
 
         {/* Right: Actions & Profile */}
-        <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 justify-self-end shrink-0">
           <TutorialButton onOpenModal={onOpenModal} onOpenStudio={onOpenStudio} />
-          <button
-            title="Notificacoes"
-            className="relative bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-[14px] transition-all border border-gray-200 shadow-sm focus:outline-none"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-gray-50" />
-          </button>
 
-          <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
+          <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-gray-200">
             <div className="hidden sm:flex flex-col items-end">
               <p className="text-gray-900 leading-tight font-bold text-[13px] m-0">{user.name || "Usuario"}</p>
               <p className="text-amber-500 leading-tight text-[11px] font-medium m-0 capitalize">{user.role || "agent"}</p>
             </div>
 
-            <div className="w-10 h-10 bg-gradient-to-tr from-amber-500 to-orange-400 text-white font-black text-[15px] flex justify-center items-center rounded-[14px] shadow-md border-2 border-white ring-2 ring-amber-500/20">
+            <div className="hidden sm:flex w-10 h-10 bg-gradient-to-tr from-amber-500 to-orange-400 text-white font-black text-[15px] justify-center items-center rounded-[14px] shadow-md border-2 border-white ring-2 ring-amber-500/20">
               {user.name?.[0]?.toUpperCase() || "U"}
             </div>
 
             <button
               onClick={() => signOut({ callbackUrl: "/promos/login" })}
               title="Sair"
+              aria-label="Sair"
               className="bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 p-2.5 rounded-[14px] transition-all border border-transparent hover:border-red-200 ml-1"
             >
               <LogOut className="w-4 h-4" />

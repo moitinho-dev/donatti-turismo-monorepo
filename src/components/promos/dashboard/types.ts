@@ -1,3 +1,5 @@
+import { isPromoExpired } from "@/lib/utils"
+
 export interface UserData {
   name?: string | null
   email?: string | null
@@ -47,10 +49,10 @@ export const slugify = (value: string) =>
 
 export function getRegimeLabel(promo: PromoData) {
   if (promo.ALL_INCLUSIVE) return "All Inclusive"
-  if (promo.PENSAO_COMPLETA) return "Pensao Completa"
-  if (promo.MEIA_PENSAO) return "Meia Pensao"
-  if (promo.COM_CAFE) return "Com Cafe"
-  if (promo.SEM_CAFE) return "Sem Cafe"
+  if (promo.PENSAO_COMPLETA) return "Pensão Completa"
+  if (promo.MEIA_PENSAO) return "Meia Pensão"
+  if (promo.COM_CAFE) return "Com Café"
+  if (promo.SEM_CAFE) return "Sem Café"
   return "-"
 }
 
@@ -66,4 +68,12 @@ export function formatPrice(promo: PromoData) {
   const parcelas = parseInt(String(promo.PARCELAS || "15"))
   const installment = value / parcelas
   return installment.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+}
+
+export type PromoStatus = "no-site" | "rascunho" | "vencida"
+
+/** Vencida = data de ida já passou (o site esconde automaticamente, publicada ou não) */
+export function getPromoStatus(promo: PromoData): PromoStatus {
+  if (isPromoExpired(promo.DATA_FORMATADA)) return "vencida"
+  return promo.SITE_PUBLISHED ? "no-site" : "rascunho"
 }
