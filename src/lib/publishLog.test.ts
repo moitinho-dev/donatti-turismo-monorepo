@@ -45,6 +45,11 @@ describe("channelStatus", () => {
     const s = channelStatus([{ channel: "google", status: "published", createdAt: new Date(), offerHash: "old" }], h)
     expect(s.google.stale).toBe(true)
   })
+  it("agendado traz quando o post sai", () => {
+    const when = new Date("2026-11-20T15:00:00.000Z")
+    const s = channelStatus([{ channel: "fb-feed", status: "scheduled", createdAt: new Date(), offerHash: h, scheduledFor: when }], h)
+    expect(s["fb-feed"].scheduledFor).toBe(when.toISOString())
+  })
 })
 
 describe("needsConfirm", () => {

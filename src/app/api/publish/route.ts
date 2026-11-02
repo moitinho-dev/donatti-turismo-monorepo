@@ -223,6 +223,7 @@ export async function GET(req: Request) {
       createdByName: l.createdBy?.name || l.createdBy?.email || null,
       error: l.error,
       offerHash: l.offerHash,
+      scheduledFor: l.scheduledFor,
     })),
     offerHash(promo),
   )

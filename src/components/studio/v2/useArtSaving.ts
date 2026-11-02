@@ -44,9 +44,9 @@ export function useArtSaving({ set, vars, format, promo, isDemo, loading, rev, d
   const inflight = useRef<Promise<void> | null>(null)
 
   const getDataUrl = useCallback(
-    async (f: ArtFormat, mime: "image/png" | "image/jpeg" = "image/png") => {
+    async (f: ArtFormat, mime: "image/png" | "image/jpeg" = "image/png", quality?: number) => {
       if (!set) throw new Error("Arte ainda carregando")
-      return renderDoc(set.docs[f], vars, { mime })
+      return renderDoc(set.docs[f], vars, { mime, quality })
     },
     [set, vars],
   )

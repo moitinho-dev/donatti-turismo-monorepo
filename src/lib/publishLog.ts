@@ -2,18 +2,11 @@ import { createHash } from "node:crypto"
 import type { Prisma } from "@prisma/client"
 import prisma from "./db"
 import { CHANNELS, type Channel } from "./channels"
+import type { ChannelState, PublishState } from "./publishState"
 
 export type PublishLogCreate = Prisma.PublishLogUncheckedCreateInput
 
-export type PublishState = "none" | "published" | "scheduled" | "shared" | "simulated" | "error"
-
-export interface ChannelState {
-  state: PublishState
-  at: string | null
-  by: string | null
-  error: string | null
-  stale: boolean
-}
+export { needsConfirm, type ChannelState, type PublishState } from "./publishState"
 
 export interface OfferFields {
   destino: string
@@ -36,6 +29,7 @@ export interface ChannelLogInput {
   createdByName?: string | null
   error?: string | null
   offerHash: string
+  scheduledFor?: Date | null
 }
 
 const NONE: ChannelState = { state: "none", at: null, by: null, error: null, stale: false }
@@ -60,18 +54,10 @@ export function channelStatus(logs: ChannelLogInput[], currentHash: string): Rec
       by: log.createdByName ?? null,
       error: log.error ?? null,
       stale: state !== "none" && state !== "error" && log.offerHash !== currentHash,
+      ...(state === "scheduled" && log.scheduledFor ? { scheduledFor: log.scheduledFor.toISOString() } : {}),
     }
   }
   return out
-}
-
-export function needsConfirm(state: ChannelState): boolean {
-  return (
-    state.state === "published" ||
-    state.state === "scheduled" ||
-    state.state === "shared" ||
-    state.state === "simulated"
-  )
 }
 
 /** Mesma regra das promos: admin publica qualquer uma; agente só as que criou */

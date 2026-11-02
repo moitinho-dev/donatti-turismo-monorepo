@@ -263,7 +263,6 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
             isAdmin={user.role === "admin"}
             onClose={handleCloseEditor}
             onSavePromo={handleStudioSavePromo}
-            meta={meta}
           />
         ) : (
           <Studio

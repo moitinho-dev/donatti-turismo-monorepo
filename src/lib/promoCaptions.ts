@@ -1,6 +1,7 @@
 import { SITE_URL, PHONE_DISPLAY } from "@/lib/site"
 import { getPriceNumber } from "@/lib/utils"
 import { findDestination } from "@/lib/destinations"
+import type { Captions } from "@/components/studio/artSet"
 
 /** Campos da promo usados nas legendas (formato da API: DESTINO, HOTEL...) */
 export interface CaptionPromo {
@@ -112,4 +113,13 @@ export function carouselCaption(promos: CaptionPromo[], opts: { campaign?: strin
   })
   const tags = [opts.campaign && hashtag(opts.campaign), "#DonattiTurismo", "#PacoteDeViagem", "#SaindoDeCampoGrande"].filter(Boolean)
   return `${head}\n${lines.join("\n")}\n\n👉 Garanta no WhatsApp ${PHONE_DISPLAY} ou pelo link na bio.\nValores por pessoa, tarifas por lote.\n\n${tags.join(" ")}`
+}
+
+/** As três legendas de uma oferta, prontas para o Publicar (Instagram com "link na bio", Facebook com o link da oferta) */
+export function captionsFor(p: CaptionPromo, campaign: string | null): Captions {
+  return {
+    instagram: captionFor(p, { campaign, network: "instagram" }),
+    facebook: captionFor(p, { campaign, network: "facebook" }),
+    whatsapp: whatsappChannelMessage([p], { campaign }),
+  }
 }

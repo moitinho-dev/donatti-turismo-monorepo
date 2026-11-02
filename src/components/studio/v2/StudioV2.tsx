@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { SlidersHorizontal } from "lucide-react"
 import type Konva from "konva"
 import { useAiStatus } from "@/hooks/useAiStatus"
-import type { useMeta } from "@/hooks/useMeta"
 import type { StudioProps } from "../Studio"
 import { StudioCanvas } from "../StudioCanvas"
 import { ensureFontsLinked, preloadAllFonts } from "../render"
@@ -39,9 +38,7 @@ import { MobileTabs, PanelHeader, PropagateBar, ToolRail, TopBar, ZoomControls, 
 import { useArtSaving } from "./useArtSaving"
 import { useArtSetHistory } from "./useArtSetHistory"
 
-export interface StudioV2Props extends Omit<StudioProps, "ig" | "gbp"> {
-  meta: ReturnType<typeof useMeta>
-}
+export type StudioV2Props = Omit<StudioProps, "ig" | "gbp">
 
 type Promo = StudioProps["promo"]
 const MOVE_KEYS = ["x", "y", "width", "height", "rotation"]
@@ -60,7 +57,7 @@ const formatList = (fs: ArtFormat[]) => {
 
 const reId = (d: StudioDoc): StudioDoc => ({ ...d, layers: d.layers.map((l) => ({ ...l, id: newId() })) })
 
-export function StudioV2({ promo: initialPromo, isAdmin, onClose, onSavePromo, meta }: StudioV2Props) {
+export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2Props) {
   const isDemo = initialPromo.id === "demo-tutorial"
   const defaultFamily = initialPromo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
   const [promo, setPromo] = useState<Promo>(initialPromo)
@@ -385,7 +382,8 @@ export function StudioV2({ promo: initialPromo, isAdmin, onClose, onSavePromo, m
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTyping(e.target)) return
+      // Com o Publicar aberto, os atalhos não mexem na arte por baixo
+      if (publishOpen || isTyping(e.target)) return
       const mod = e.metaKey || e.ctrlKey
       const key = e.key.toLowerCase()
       if (mod && key === "z") {
@@ -589,7 +587,16 @@ export function StudioV2({ promo: initialPromo, isAdmin, onClose, onSavePromo, m
       {!isWide && <MobileTabs tab={tab} onTab={setTab} withEdit={!!selected} />}
 
       {publishOpen && set && (
-        <PublishSheet set={set} promo={promo} getDataUrl={getDataUrl} setCaptions={setCaptions} meta={meta} isAdmin={isAdmin} onClose={() => setPublishOpen(false)} />
+        <PublishSheet
+          set={set}
+          promo={promo}
+          getDataUrl={getDataUrl}
+          setCaptions={setCaptions}
+          format={format}
+          onDownload={(which, mime) => void download(which, mime)}
+          onClose={() => setPublishOpen(false)}
+          onDone={() => void close()}
+        />
       )}
 
       {toast && (
