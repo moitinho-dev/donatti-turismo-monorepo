@@ -2,6 +2,7 @@
 
 import Konva from "konva"
 import { resolveText } from "./variables"
+import { ImageLoadError, loadImage } from "./images"
 import { FONTS, GOOGLE_FONTS_URL, type ImageLayer, type Layer, type ShapeLayer, type StudioDoc, type TextLayer } from "./types"
 
 // ---------------------------------------------------------------------------
@@ -40,80 +41,7 @@ export async function loadDocFonts(doc: StudioDoc) {
   await Promise.all(Array.from(wanted).map((f) => document.fonts.load(f).catch(() => undefined)))
 }
 
-const imageCache = new Map<string, Promise<HTMLImageElement | null>>()
-
-const looksSvg = (src: string) => src.startsWith("data:image/svg+xml") || /\.svg(\?|#|$)/i.test(src)
-
-/**
- * SVG sem width/height (só viewBox) não tem tamanho próprio como imagem e o canvas não sabe desenhar.
- * Aqui o tamanho vem do viewBox, como o navegador fazia no Studio antigo.
- */
-function svgWithSize(svgText: string): string {
-  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml")
-  const root = doc.documentElement
-  if (root.nodeName.toLowerCase() !== "svg") return svgText
-  const vb = (root.getAttribute("viewBox") || "").split(/[\s,]+/).map(Number)
-  if (!root.getAttribute("width") && vb.length === 4 && vb[2] > 0) root.setAttribute("width", String(vb[2]))
-  if (!root.getAttribute("height") && vb.length === 4 && vb[3] > 0) root.setAttribute("height", String(vb[3]))
-  return new XMLSerializer().serializeToString(root)
-}
-
-function imageFromUrl(src: string, crossOrigin: boolean): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const img = new window.Image()
-    // Necessário para exportar o canvas (a origem precisa liberar CORS)
-    if (crossOrigin) img.crossOrigin = "anonymous"
-    img.onload = () => resolve(img)
-    img.onerror = () => resolve(null)
-    img.src = src
-  })
-}
-
-async function svgImage(svgText: string) {
-  const url = URL.createObjectURL(new Blob([svgWithSize(svgText)], { type: "image/svg+xml" }))
-  return imageFromUrl(url, false)
-}
-
-async function loadImageUncached(src: string): Promise<HTMLImageElement | null> {
-  try {
-    if (src.startsWith("data:image/svg+xml")) {
-      const comma = src.indexOf(",")
-      const meta = src.slice(0, comma)
-      const body = src.slice(comma + 1)
-      return svgImage(meta.includes(";base64") ? new TextDecoder().decode(Uint8Array.from(atob(body), (c) => c.charCodeAt(0))) : decodeURIComponent(body))
-    }
-    if (src.startsWith("data:")) return imageFromUrl(src, false)
-
-    // Mesmo site (templates em /api/layouts/image, /assets, /uploads): descobre se é SVG pelo tipo do arquivo
-    if (src.startsWith("/")) {
-      const res = await fetch(src)
-      if (!res.ok) return null
-      if ((res.headers.get("content-type") || "").includes("svg") || looksSvg(src)) return svgImage(await res.text())
-      return imageFromUrl(URL.createObjectURL(await res.blob()), false)
-    }
-
-    if (looksSvg(src)) {
-      const res = await fetch(src)
-      return res.ok ? svgImage(await res.text()) : null
-    }
-    return imageFromUrl(src, true)
-  } catch {
-    return null
-  }
-}
-
-export function loadImage(src: string): Promise<HTMLImageElement | null> {
-  if (!src) return Promise.resolve(null)
-  let p = imageCache.get(src)
-  if (!p) {
-    p = loadImageUncached(src).then((img) => {
-      if (!img) imageCache.delete(src)
-      return img
-    })
-    imageCache.set(src, p)
-  }
-  return p
-}
+export { ImageLoadError, loadImage }
 
 // ---------------------------------------------------------------------------
 // Atributos de cada camada (usados pelo editor e pela exportação)
@@ -240,10 +168,14 @@ export function clipFuncFor(points: { x: number; y: number }[]) {
 // Exportação: desenha o documento fora da tela e devolve a imagem
 // ---------------------------------------------------------------------------
 
+/**
+ * `strict`: se alguma imagem visível da arte não carregar, lança `ImageLoadError` em vez de desenhar sem ela
+ * (o padrão continua pulando a camada, como no editor).
+ */
 export async function renderDoc(
   doc: StudioDoc,
   vars: Record<string, string>,
-  opts: { mime?: "image/png" | "image/jpeg"; quality?: number; maxWidth?: number } = {},
+  opts: { mime?: "image/png" | "image/jpeg"; quality?: number; maxWidth?: number; strict?: boolean } = {},
 ): Promise<string> {
   await loadDocFonts(doc)
   const images = new Map<string, HTMLImageElement | null>()
@@ -252,6 +184,10 @@ export async function renderDoc(
       .filter((l): l is ImageLayer => l.type === "image" && !!l.src)
       .map(async (l) => images.set(l.src, await loadImage(l.src))),
   )
+  if (opts.strict) {
+    const failed = doc.layers.filter((l): l is ImageLayer => l.type === "image" && !!l.src && isLayerVisible(l, vars) && !images.get(l.src))
+    if (failed.length) throw new ImageLoadError(Array.from(new Set(failed.map((l) => l.src))))
+  }
 
   const container = document.createElement("div")
   container.style.cssText = "position:fixed;left:-99999px;top:0;pointer-events:none"

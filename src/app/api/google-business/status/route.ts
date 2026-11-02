@@ -13,5 +13,10 @@ export async function GET() {
 
   const conn = await getBusinessConnection()
   const connected = Boolean(conn?.refreshToken)
-  return NextResponse.json({ connected, ready: connected && Boolean(conn?.accountName && conn?.locationName) })
+  return NextResponse.json({
+    connected,
+    ready: connected && Boolean(conn?.accountName && conn?.locationName),
+    // Simulação: o Publicar não chama o Google, então dá para "postar" sem conexão
+    simulate: process.env.PUBLISH_SIMULATE === "on",
+  })
 }

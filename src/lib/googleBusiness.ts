@@ -261,11 +261,8 @@ export const publishPromoPost = async (
     payload.media = [{ mediaFormat: "PHOTO", sourceUrl: promo.siteImage }]
   }
 
-  if (opts.replace && promo.googleBusinessPostName) {
-    await deleteLocalPost(token, promo.googleBusinessPostName)
-    // Se a criação abaixo falhar, a promo não fica apontando para um post que não existe mais
-    await prisma.promo.update({ where: { id: promo.id }, data: { googleBusinessPostName: null } })
-  }
+  // Substituir: cria o novo primeiro; o antigo só sai depois (se a criação falhar, o post antigo continua no ar)
+  const previous = opts.replace ? promo.googleBusinessPostName : null
 
   const created = await fetchJson<{ name?: string }>(endpoint, {
     method: "POST",
@@ -281,6 +278,15 @@ export const publishPromoPost = async (
     where: { id: promo.id },
     data: { googleBusinessPostName: created.name },
   })
+
+  if (previous && previous !== created.name) {
+    try {
+      await deleteLocalPost(token, previous)
+    } catch (err) {
+      // O post novo já está no ar e salvo na promo: o antigo fica sobrando, mas a publicação deu certo
+      console.error("Google: não deu para apagar o post anterior", previous, err)
+    }
+  }
 
   return { name: created.name }
 }

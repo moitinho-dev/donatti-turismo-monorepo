@@ -28,7 +28,6 @@ import {
   PenTool,
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
-import { postGoogleAfterSite, googleError } from "@/lib/client/postGoogle"
 import type { PromoData } from "@/components/promos/dashboard/types"
 import { useLayouts, type ImageArea, type ElementConfig } from "@/hooks/useLayouts"
 
@@ -368,7 +367,10 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     if (!publishFlag || wasPublished) return
     const saved = (await res.json().catch(() => null)) as PromoData | null
     if (!saved?.id) return
-    const failed = googleError(await postGoogleAfterSite(saved))
+    // Carrega o desenho da arte (Konva) só agora, fora do pacote do gerador antigo
+    const failed = await import("@/lib/client/postGoogle")
+      .then(async ({ postGoogleAfterSite, googleError }) => googleError(await postGoogleAfterSite(saved)))
+      .catch(() => "Não foi possível publicar no Google. Tente de novo em alguns minutos.")
     if (failed) {
       setSiteMessage(null)
       setSiteError(`Publicado no site; o Google falhou: ${failed}`)

@@ -7,6 +7,7 @@ import {
   equivalentLayers,
   markEdited,
   propagate,
+  savedDocsOnly,
   setPhotoAll,
 } from "./artSet"
 import type { ImageLayer } from "./types"
@@ -33,6 +34,16 @@ describe("artSet", () => {
     expect(set.generated).toEqual(["feed", "square", "landscape"])
     expect(Object.keys(set.docs)).toHaveLength(4)
     expect(completeArtSet({ formats: {}, family: null, photo: null }, "clean").family).toBe("clean")
+  })
+
+  it("savedDocsOnly devolve só os formatos salvos (arte da equipe não vira Destaque no Studio atual)", () => {
+    const docStory = buildArtSet("clean", "p.jpg").docs.story
+    const set = completeArtSet({ formats: { story: docStory }, family: "legacy", photo: "p.jpg" }, "destaque")
+    const docs = savedDocsOnly(set)
+    expect(Object.keys(docs)).toEqual(["story"])
+    expect(docs.story).toBe(set.docs.story)
+    const full = buildArtSet("clean", null)
+    expect(savedDocsOnly(full)).toEqual(full.docs)
   })
 
   it("completeArtSet sem foto não inventa foto", () => {

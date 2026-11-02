@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { PARCELAS_OPTIONS, REGIMES, type Regime } from "@/lib/promoForm"
 import { getPriceNumber } from "@/lib/utils"
 import { Section, Spinner } from "../panels/ui"
+import { offerOnly } from "./publishView"
 
 type Promo = Record<string, unknown> & { id: string; DESTINO: string }
 
@@ -64,7 +65,8 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
           } else {
             setStatus({ kind: "saving" })
             try {
-              const updated = await onSavePromo(current)
+              // Nunca manda SITE_PUBLISHED: salvar a oferta não muda a promo no site (o Publicar é quem muda)
+              const updated = await onSavePromo(offerOnly(current))
               onSaved(updated, current)
               setStatus({ kind: "saved" })
             } catch (err) {

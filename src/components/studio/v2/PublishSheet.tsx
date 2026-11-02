@@ -24,6 +24,7 @@ import {
   publishOrder,
   scheduleError,
   toggleChannel,
+  withSiteState,
   type Device,
 } from "./publishView"
 
@@ -41,6 +42,8 @@ export interface PublishSheetProps {
   /** Formato aberto no Studio (para o "Baixar") */
   format: ArtFormat
   onDownload: (which: ArtFormat | "all", mime: "image/png" | "image/jpeg") => void
+  /** Site publicado de verdade (não simulado): campos do site como ficaram no servidor */
+  onSitePublished?: (fields: Record<string, unknown>) => void
 }
 
 /** Antes de saber a situação dos canais (e na promo não salva) */
@@ -49,9 +52,15 @@ const label = (c: Channel) => CHANNELS.find((x) => x.id === c)!.label
 const formatOf = (c: Channel) => CHANNELS.find((x) => x.id === c)!.format
 
 /** Painel Publicar: canais, legenda por rede, prévia e situação de cada canal */
-export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onClose, format, onDownload }: PublishSheetProps) {
+export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onClose, format, onDownload, onSitePublished }: PublishSheetProps) {
   const canPublish = !!promo.id && promo.id !== "demo-tutorial"
-  const { status, initialStatus, load, refresh, publish, markShared } = usePublish(canPublish ? promo.id : null)
+  const { status: logStatus, initialStatus: logInitial, load, refresh, publish, markShared } = usePublish(canPublish ? promo.id : null)
+  // O Site segue a promo (como na lista), não só o último registro
+  const onSite = promo.SITE_PUBLISHED === true
+  const status = useMemo(() => logStatus && withSiteState(logStatus, onSite), [logStatus, onSite])
+  // O que vem marcado é decidido uma vez: com a promo como estava ao abrir o painel
+  const [onSiteAtOpen] = useState(onSite)
+  const initialStatus = useMemo(() => logInitial && withSiteState(logInitial, onSiteAtOpen), [logInitial, onSiteAtOpen])
 
   // Marcados ao abrir: seguem a primeira situação lida (uma vez); depois disso valem os cliques da pessoa
   const [picked, setPicked] = useState<Set<Channel> | null>(null)
@@ -159,6 +168,8 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
     const scheduledAt = c === "fb-feed" && scheduling ? new Date(scheduleAt).toISOString() : undefined
     const res = await publish(c, { images, caption, scheduledAt })
     setRun((r) => ({ ...r, [c]: res.ok ? { phase: "done" } : { phase: "error", error: res.error } }))
+    // A promo aberta passa a estar no site (um salvamento da oferta depois não a tira de lá)
+    if (c === "site" && res.ok && res.status !== "simulated") onSitePublished?.({ SITE_PUBLISHED: true, ...res.promo })
     return res.ok
   }
 

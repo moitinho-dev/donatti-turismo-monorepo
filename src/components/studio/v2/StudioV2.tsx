@@ -372,6 +372,11 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
     setPromo((cur) => (cur === sent ? ({ ...sent, ...updated } as Promo) : cur))
   }, [])
 
+  /** Publicar → Site deu certo: a promo aberta fica no site (com seção, slug e foto que o servidor completou) */
+  const onSitePublished = useCallback((fields: Record<string, unknown>) => {
+    setPromo((cur) => ({ ...cur, ...fields, SITE_PUBLISHED: true }) as Promo)
+  }, [])
+
   const close = async () => {
     if (dirty && !isDemo) await saveDesign(true)
     onClose()
@@ -596,6 +601,7 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
           onDownload={(which, mime) => void download(which, mime)}
           onClose={() => setPublishOpen(false)}
           onDone={() => void close()}
+          onSitePublished={onSitePublished}
         />
       )}
 

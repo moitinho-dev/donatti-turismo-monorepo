@@ -25,10 +25,12 @@ interface PublishPanelProps {
   getDataUrl: (format: ArtFormat) => Promise<string>
   ig: ReturnType<typeof useInstagram>
   gbp: ReturnType<typeof useGoogleBusiness>
+  /** Post automático no Google (ao publicar no site) em andamento: o botão espera ele terminar */
+  googlePosting?: boolean
 }
 
 export function PublishPanel(props: PublishPanelProps) {
-  const { promo, format, isAdmin, photoUrl, caption, setCaption, saving, savedAt, ig, gbp } = props
+  const { promo, format, isAdmin, photoUrl, caption, setCaption, saving, savedAt, ig, gbp, googlePosting } = props
   const [mime, setMime] = useState<"image/png" | "image/jpeg">("image/png")
   const [downloading, setDownloading] = useState<string | null>(null)
   const [templateName, setTemplateName] = useState("")
@@ -180,10 +182,10 @@ export function PublishPanel(props: PublishPanelProps) {
       <Section title="Google (Perfil da Empresa)">
         <Btn
           className="w-full"
-          disabled={!gbp.gbpReady || gbp.gbpBusy || !promo.id}
-          onClick={() => promo.id && void gbp.postPromoToGbp(String(promo.id))}
+          disabled={!gbp.gbpReady || gbp.gbpBusy || googlePosting || !promo.id}
+          onClick={() => promo.id && !googlePosting && void gbp.postPromoToGbp(String(promo.id))}
         >
-          {gbp.gbpBusy ? <Spinner /> : <Send className="h-4 w-4" />}
+          {gbp.gbpBusy || googlePosting ? <Spinner /> : <Send className="h-4 w-4" />}
           Postar oferta no Google
         </Btn>
         {gbp.gbpMessage && <p className="text-[12px] text-green-700">{gbp.gbpMessage}</p>}
@@ -212,7 +214,7 @@ export function PublishPanel(props: PublishPanelProps) {
                   onLoadLocations={gbp.loadGbpLocations}
                   onSaveTarget={gbp.saveGbpTarget}
                   onSync={gbp.syncGbpPosts}
-                  onPostSelected={() => promo.id && void gbp.postPromoToGbp(String(promo.id))}
+                  onPostSelected={() => promo.id && !googlePosting && void gbp.postPromoToGbp(String(promo.id))}
                   hasSelectedPromo={!!promo.id}
                 />
               </div>

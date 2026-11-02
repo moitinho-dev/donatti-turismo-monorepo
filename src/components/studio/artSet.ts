@@ -52,6 +52,14 @@ export function completeArtSet(saved: SavedDesignData, fallbackFamily: string): 
   }
 }
 
+/**
+ * Só os formatos que estavam salvos (sem os completados agora). O Studio atual monta os que faltam
+ * com o modelo dele (inclusive o template da equipe), como o gerador em lote.
+ */
+export function savedDocsOnly(set: Pick<ArtSet, "docs" | "generated">): Partial<Record<ArtFormat, StudioDoc>> {
+  return Object.fromEntries(FORMAT_ORDER.filter((f) => !set.generated.includes(f)).map((f) => [f, set.docs[f]]))
+}
+
 /** Refaz os 4 formatos com o modelo; zera os ajustes manuais */
 export function applyFamily(set: ArtSet, familyId: string): ArtSet {
   return { ...set, docs: buildAll(familyId, set.photo), family: familyId, edited: [], generated: [] }

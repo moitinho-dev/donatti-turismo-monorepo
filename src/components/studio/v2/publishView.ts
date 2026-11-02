@@ -54,6 +54,24 @@ export function friendlyError(error: string | null | undefined, channelLabel: st
 export const isUploadedUrl = (url: string) => /^https?:\/\//i.test(url)
 
 /**
+ * O Site segue a promo, como na lista: no site conta como publicado (a lista publica sem registro);
+ * fora do site, um "publicado" antigo vira "—" (e o Site vem marcado). Simulação e erro continuam aparecendo.
+ */
+export function withSiteState(status: Record<Channel, ChannelState>, sitePublished: boolean): Record<Channel, ChannelState> {
+  const site = status.site
+  if (sitePublished) {
+    if (site && site.state === "published") return status
+    return { ...status, site: { state: "published", at: null, by: null, error: null, stale: false } }
+  }
+  if (site && (site.state === "simulated" || site.state === "error" || site.state === "none")) return status
+  return { ...status, site: { state: "none", at: null, by: null, error: null, stale: false } }
+}
+
+/** A promo sem SITE_PUBLISHED: salvar a oferta no Studio não muda a promo no site (o servidor mantém a situação) */
+export const offerOnly = (p: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(p).filter(([k]) => k !== "SITE_PUBLISHED"))
+
+/**
  * Canais que já vêm marcados ao abrir: sem post, com erro, só simulado ou com a oferta alterada depois do post.
  * Publicado, agendado ou compartilhado (e em dia) vem desmarcado. Site marcado leva o Google junto.
  */
@@ -73,7 +91,7 @@ export function stateLabel(s: ChannelState | undefined, channelLabel = "canal"):
     case "none":
       return "—"
     case "published":
-      return `✓ publicado ${shortDate(s.at)}${s.by ? ` por ${s.by}` : ""}`
+      return `✓ publicado${s.at ? ` ${shortDate(s.at)}` : ""}${s.by ? ` por ${s.by}` : ""}`
     case "scheduled":
       return `Agendado para ${shortDate(s.scheduledFor || s.at)}`
     case "shared":

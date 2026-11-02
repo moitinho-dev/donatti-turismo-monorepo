@@ -60,28 +60,41 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe("publishPromoPost com replace", () => {
-  it("DELETE com 404 é ignorado e cria o post novo com a arte", async () => {
-    const calls = mockGoogle(404, 200)
+  const isCreate = (c: { url: string; method: string }) => c.method === "POST" && c.url.includes("/localPosts")
+
+  it("cria o post novo com a arte, grava o nome e só depois apaga o antigo", async () => {
+    const calls = mockGoogle(200, 200)
     expect(await publishPromoPost("p1", { imageUrl: ART, replace: true })).toEqual({ name: NEW })
-    const del = calls.find((c) => c.method === "DELETE")
-    expect(del?.url).toBe(`https://mybusiness.googleapis.com/v4/${OLD}`)
-    const create = calls.find((c) => c.method === "POST" && c.url.includes("/localPosts"))
-    expect(JSON.parse(create!.body!).media).toEqual([{ mediaFormat: "PHOTO", sourceUrl: ART }])
-    expect(db.promo.update).toHaveBeenLastCalledWith({ where: { id: "p1" }, data: { googleBusinessPostName: NEW } })
-  })
-
-  it("DELETE com 403 lança erro e mantém o nome do post", async () => {
-    const calls = mockGoogle(403, 200)
-    await expect(publishPromoPost("p1", { imageUrl: ART, replace: true })).rejects.toThrow(/403/)
-    expect(calls.some((c) => c.method === "POST" && c.url.includes("/localPosts"))).toBe(false)
-    expect(db.promo.update).not.toHaveBeenCalled()
-  })
-
-  it("criação falhando depois do DELETE zera o nome e lança erro", async () => {
-    mockGoogle(200, 500)
-    await expect(publishPromoPost("p1", { imageUrl: ART, replace: true })).rejects.toThrow(/500/)
+    const createAt = calls.findIndex(isCreate)
+    const delAt = calls.findIndex((c) => c.method === "DELETE")
+    expect(createAt).toBeGreaterThan(-1)
+    expect(delAt).toBeGreaterThan(createAt)
+    expect(calls[delAt].url).toBe(`https://mybusiness.googleapis.com/v4/${OLD}`)
+    expect(JSON.parse(calls[createAt].body!).media).toEqual([{ mediaFormat: "PHOTO", sourceUrl: ART }])
     expect(db.promo.update).toHaveBeenCalledTimes(1)
-    expect(db.promo.update).toHaveBeenCalledWith({ where: { id: "p1" }, data: { googleBusinessPostName: null } })
+    expect(db.promo.update).toHaveBeenCalledWith({ where: { id: "p1" }, data: { googleBusinessPostName: NEW } })
+  })
+
+  it("DELETE do antigo com 404 é ignorado", async () => {
+    mockGoogle(404, 200)
+    expect(await publishPromoPost("p1", { imageUrl: ART, replace: true })).toEqual({ name: NEW })
+    expect(db.promo.update).toHaveBeenCalledWith({ where: { id: "p1" }, data: { googleBusinessPostName: NEW } })
+  })
+
+  it("DELETE do antigo falhando registra o erro mas a publicação dá certo", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    mockGoogle(403, 200)
+    expect(await publishPromoPost("p1", { imageUrl: ART, replace: true })).toEqual({ name: NEW })
+    expect(db.promo.update).toHaveBeenCalledWith({ where: { id: "p1" }, data: { googleBusinessPostName: NEW } })
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  it("criação falhando não apaga o antigo nem mexe na promo", async () => {
+    const calls = mockGoogle(200, 500)
+    await expect(publishPromoPost("p1", { imageUrl: ART, replace: true })).rejects.toThrow(/500/)
+    expect(calls.some((c) => c.method === "DELETE")).toBe(false)
+    expect(db.promo.update).not.toHaveBeenCalled()
   })
 
   it("sem replace e já postado, não chama o Google", async () => {

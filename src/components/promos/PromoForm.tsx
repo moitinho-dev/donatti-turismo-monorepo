@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation"
 import type React from "react"
 
 import { usePromo } from "@/hooks/usePromo"
-import { postGoogleAfterSite, googleError } from "@/lib/client/postGoogle"
 import { MapPin, Hotel, Calendar, DollarSign, Users, Utensils, Plane, Loader2, Save, X, CreditCard, FileUp, CheckCircle2, AlertCircle } from "lucide-react"
 
 interface PromoFormProps {
@@ -370,7 +369,10 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
       const enteredSite = !!saved?.SITE_PUBLISHED && (!formData.id || !promo?.SITE_PUBLISHED)
       let googleFailed: string | null = null
       if (enteredSite) {
-        googleFailed = googleError(await postGoogleAfterSite(saved))
+        // Carrega o desenho da arte (Konva) só agora, fora do pacote do formulário
+        googleFailed = await import("@/lib/client/postGoogle")
+          .then(async ({ postGoogleAfterSite, googleError }) => googleError(await postGoogleAfterSite(saved)))
+          .catch(() => "Não foi possível publicar no Google. Tente de novo em alguns minutos.")
         if (googleFailed) {
           setFormSuccess(null)
           setFormError(`Publicado no site; o Google falhou: ${googleFailed}`)

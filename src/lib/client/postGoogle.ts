@@ -3,6 +3,7 @@
 import { loadSavedArt } from "@/components/studio/savedArt"
 import { buildArtSet } from "@/components/studio/artSet"
 import { renderDoc } from "@/components/studio/render"
+import { ImageLoadError } from "@/components/studio/images"
 import { promoVariables, type PromoLike } from "@/components/studio/variables"
 import { IMAGE_ERROR, NETWORK_ERROR, UPLOAD_ERROR, friendlyError } from "@/components/studio/v2/publishView"
 import { uploadImage } from "@/hooks/usePublish"
@@ -18,22 +19,44 @@ export const googleError = (r: PostGoogleResult): string | null => ("error" in r
 export const defaultFamilyOf = (promo: Pick<PromoData, "CAMPAIGN">) =>
   promo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
 
+export const GOOGLE_NOT_CONNECTED = "Google não está conectado. Peça para um administrador conectar em Configurações."
+export const PHOTO_BLOCKED = "A foto desta promoção não permite gerar a arte. Troque a foto da promo e tente de novo."
+
+/** Post em andamento por promo: o botão manual e o post automático não postam duas vezes ao mesmo tempo */
+const inFlight = new Map<string, Promise<PostGoogleResult>>()
+
 /**
  * Posta a promo (já no site) no Google com a arte paisagem: a salva no Studio ou, sem arte,
  * o modelo padrão com a foto da promo. Substitui o post anterior. Nunca lança: devolve o erro pronto para a tela.
  * `photo`: foto de reserva quando a promo não tem SITE_IMAGE (a que a lista mostra).
+ * Chamadas ao mesmo tempo para a mesma promo recebem o mesmo resultado (um post só).
  */
-export async function postGoogleAfterSite(promo: PromoData, opts: { photo?: string | null } = {}): Promise<PostGoogleResult> {
+export function postGoogleAfterSite(promo: PromoData, opts: { photo?: string | null } = {}): Promise<PostGoogleResult> {
+  const running = inFlight.get(promo.id)
+  if (running) return running
+  const p = postNow(promo, opts).finally(() => inFlight.delete(promo.id))
+  inFlight.set(promo.id, p)
+  return p
+}
+
+async function postNow(promo: PromoData, opts: { photo?: string | null }): Promise<PostGoogleResult> {
   try {
+    // Antes de desenhar e enviar a arte: o Google precisa estar conectado (na simulação não precisa)
+    const statusRes = await fetch("/api/google-business/status", { cache: "no-store" })
+    if (!statusRes.ok) return { ok: false, error: friendlyError(null, "Google") }
+    const status = (await statusRes.json().catch(() => null)) as { ready?: boolean; simulate?: boolean } | null
+    if (!status?.ready && !status?.simulate) return { ok: false, error: GOOGLE_NOT_CONNECTED }
+
     const family = defaultFamilyOf(promo)
     const saved = await loadSavedArt(promo, family)
     const doc = (saved ?? buildArtSet(family, promo.SITE_IMAGE || opts.photo || null)).docs.landscape
 
     let dataUrl: string
     try {
-      dataUrl = await renderDoc(doc, promoVariables(promo as unknown as PromoLike), { mime: "image/jpeg", quality: 0.9 })
-    } catch {
-      return { ok: false, error: IMAGE_ERROR }
+      // Estrito: sem a foto do destino (site que não libera CORS) não posta arte incompleta
+      dataUrl = await renderDoc(doc, promoVariables(promo as unknown as PromoLike), { mime: "image/jpeg", quality: 0.9, strict: true })
+    } catch (err) {
+      return { ok: false, error: err instanceof ImageLoadError ? PHOTO_BLOCKED : IMAGE_ERROR }
     }
 
     let url: string

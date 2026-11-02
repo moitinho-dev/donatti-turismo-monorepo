@@ -10,6 +10,8 @@ export interface PublishResult {
   ok: boolean
   status?: PublishState
   error?: string
+  /** Só no Site publicado de verdade: campos do site como ficaram no servidor (SITE_PUBLISHED, seção, slug, foto) */
+  promo?: Record<string, unknown>
 }
 
 export interface PublishOptions {
@@ -106,8 +108,8 @@ export function usePublish(promoId: string | null) {
           }),
         })
         if (!res.ok) return { ok: false, error: await errorOf(res, "Erro ao publicar") }
-        const data = (await res.json()) as { status?: PublishState }
-        return { ok: true, status: data.status ?? "published" }
+        const data = (await res.json()) as { status?: PublishState; promo?: Record<string, unknown> }
+        return { ok: true, status: data.status ?? "published", ...(data.promo ? { promo: data.promo } : {}) }
       } catch (err) {
         // Falha de rede ("Failed to fetch", "Load failed") nunca aparece crua
         if (err instanceof PublishError && err.message) return { ok: false, error: err.message }

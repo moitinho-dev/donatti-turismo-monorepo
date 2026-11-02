@@ -7,6 +7,7 @@ import { getBusinessConnection, publishPromoPost } from "@/lib/googleBusiness"
 import { CHANNELS, isMetaChannel, publishKind, type Channel } from "@/lib/channels"
 import { canPublish, channelStatus, offerHash, recordPublish, type PublishState } from "@/lib/publishLog"
 import { computeSlug } from "@/lib/utils"
+import { resolveSiteFields } from "@/lib/siteFields"
 import { isOwnMediaUrl } from "@/lib/mediaHosts"
 import { CAMPAIGN_PATH } from "@/config/blackFriday"
 import { metaSession } from "../meta/session"
@@ -40,7 +41,9 @@ type PromoRow = {
   parcelas: number
   numeroDeNoites: string
   sitePublished: boolean
+  siteSection: string | null
   siteSlug: string | null
+  siteImage: string | null
   createdById: string
 }
 
@@ -140,12 +143,27 @@ export async function POST(req: Request) {
 
   try {
     if (channel === "site") {
-      await prisma.promo.update({ where: { id: main.id }, data: { sitePublished: true } })
+      // Igual à lista (/api/promos): completa seção, foto do destino e slug único antes de ir ao ar
+      const site = await resolveSiteFields({
+        id: main.id,
+        DESTINO: main.destino,
+        SITE_PUBLISHED: true,
+        SITE_SECTION: main.siteSection,
+        SITE_SLUG: main.siteSlug,
+        SITE_IMAGE: main.siteImage,
+      })
+      await prisma.promo.update({ where: { id: main.id }, data: site })
       revalidatePath("/")
-      revalidatePath("/pacotes/" + computeSlug(main))
+      revalidatePath("/pacotes/" + computeSlug({ ...main, siteSlug: site.siteSlug }))
       revalidatePath(CAMPAIGN_PATH)
       await record("published")
-      return NextResponse.json({ ok: true, status: "published", externalId: null })
+      return NextResponse.json({
+        ok: true,
+        status: "published",
+        externalId: null,
+        // Campos do site como ficaram (o Studio atualiza a promo aberta com eles)
+        promo: { SITE_PUBLISHED: site.sitePublished, SITE_SECTION: site.siteSection, SITE_SLUG: site.siteSlug, SITE_IMAGE: site.siteImage },
+      })
     }
 
     if (channel === "google") {

@@ -7,10 +7,12 @@ import {
   friendlyError,
   initialSelection,
   isUploadedUrl,
+  offerOnly,
   publishOrder,
   scheduleError,
   stateLabel,
   toggleChannel,
+  withSiteState,
 } from "./publishView"
 
 const base = { at: "2026-11-02T17:30:00.000Z", by: "Ana", error: null, stale: false }
@@ -119,5 +121,52 @@ describe("isUploadedUrl", () => {
     expect(isUploadedUrl("https://bucket.s3.amazonaws.com/social/a.jpg")).toBe(true)
     expect(isUploadedUrl("http://localhost:3100/api/media/abc")).toBe(true)
     expect(isUploadedUrl("data:image/jpeg;base64,AAAA")).toBe(false)
+  })
+})
+
+describe("withSiteState", () => {
+  const CH: Channel[] = ["site", "google", "ig-feed", "ig-story", "fb-feed", "fb-story", "wa-channel", "wa-status"]
+  const statusWith = (site: PublishState) =>
+    Object.fromEntries(CH.map((c) => [c, { ...base, state: c === "site" ? site : "published" }])) as Record<Channel, ChannelState>
+
+  it("promo fora do site: registro antigo de publicado vira — e o Site vem marcado (com o Google)", () => {
+    const out = withSiteState(statusWith("published"), false)
+    expect(out.site.state).toBe("none")
+    expect(stateLabel(out.site)).toBe("—")
+    const sel = initialSelection(out)
+    expect(sel.has("site")).toBe(true)
+    expect(sel.has("google")).toBe(true)
+  })
+
+  it("promo fora do site: simulação e erro continuam aparecendo", () => {
+    expect(withSiteState(statusWith("simulated"), false).site.state).toBe("simulated")
+    expect(withSiteState(statusWith("error"), false).site.state).toBe("error")
+  })
+
+  it("promo no site sem registro (publicada pela lista) conta como publicada e vem desmarcada", () => {
+    const out = withSiteState(statusWith("none"), true)
+    expect(out.site.state).toBe("published")
+    expect(stateLabel(out.site)).toBe("✓ publicado")
+    expect(initialSelection(out).has("site")).toBe(false)
+  })
+
+  it("promo no site com registro publicado mantém data e autor", () => {
+    const status = statusWith("published")
+    expect(withSiteState(status, true)).toBe(status)
+  })
+
+  it("não mexe nos outros canais", () => {
+    const out = withSiteState(statusWith("published"), false)
+    for (const c of CH.filter((x) => x !== "site")) expect(out[c].state).toBe("published")
+  })
+})
+
+describe("offerOnly", () => {
+  it("tira SITE_PUBLISHED e mantém o resto da promo", () => {
+    expect(offerOnly({ id: "p1", DESTINO: "Maceió", SITE_PUBLISHED: false, SITE_SLUG: "maceio" })).toEqual({
+      id: "p1",
+      DESTINO: "Maceió",
+      SITE_SLUG: "maceio",
+    })
   })
 })

@@ -8,7 +8,6 @@ import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
 import { useInstagram } from "@/hooks/useInstagram"
 import { usePromoImages } from "@/hooks/usePromoImages"
 import { usePublishSummary } from "@/hooks/usePublishSummary"
-import { googleError, googleNeedsPost, postGoogleAfterSite } from "@/lib/client/postGoogle"
 import { CheckCircle2, AlertCircle, Layers } from "lucide-react"
 import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
@@ -119,11 +118,21 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
       return next
     })
 
-  /** Toda promo que entra no site vai para o Google com a arte paisagem (a do Studio ou o modelo padrão) */
-  const postGoogle = async (promo: PromoData) => {
-    const res = await postGoogleAfterSite(promo, { photo: promoImages[promo.id] })
+  /**
+   * Toda promo que entra no site vai para o Google com a arte paisagem (a do Studio ou o modelo padrão).
+   * Devolve o erro pronto para a tela, ou null se deu certo. O desenho da arte (Konva) só carrega aqui,
+   * fora do pacote da lista.
+   */
+  const postGoogle = async (promo: PromoData): Promise<string | null> => {
+    let failed: string | null
+    try {
+      const { postGoogleAfterSite, googleError } = await import("@/lib/client/postGoogle")
+      failed = googleError(await postGoogleAfterSite(promo, { photo: promoImages[promo.id] }))
+    } catch {
+      failed = "Não foi possível publicar no Google. Tente de novo em alguns minutos."
+    }
     void refreshSummary()
-    return res
+    return failed
   }
 
   // Publicar sem foto/seção funciona: o servidor completa com foto do destino e seção sugerida
@@ -138,7 +147,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         setNotice({ type: "success", text: `${promo.DESTINO} saiu do site.` })
         return
       }
-      const failed = googleError(await postGoogle(updated))
+      const failed = await postGoogle(updated)
       setNotice(
         failed
           ? { type: "error", text: `Publicado no site; o Google falhou: ${failed}` }
@@ -186,10 +195,12 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   }
 
   const syncGoogleAfterSave = async (promo: PromoData, created: boolean) => {
-    if (!(await googleNeedsPost(promo.id))) return
+    // Sem conseguir carregar a verificação, segue para o post (o post novo substitui o anterior)
+    const needsPost = await import("@/lib/client/postGoogle").then(({ googleNeedsPost }) => googleNeedsPost(promo.id)).catch(() => true)
+    if (!needsPost) return
     setPublishing([promo.id], true)
     try {
-      const failed = googleError(await postGoogle(promo))
+      const failed = await postGoogle(promo)
       setNotice(
         failed
           ? { type: "error", text: `${created ? "Publicado no site" : "Promo salva"}; o Google falhou: ${failed}` }
@@ -238,10 +249,13 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
     // Studio atual: "Publicar no site" passa por aqui, então o Google vai junto (o Studio novo publica o Google sozinho)
     if (!STUDIO_V2 && !wasOnSite && updated?.SITE_PUBLISHED) {
-      void postGoogle(updated).then((google) => {
-        const failed = googleError(google)
-        if (failed) setNotice({ type: "error", text: `Publicado no site; o Google falhou: ${failed}` })
-      })
+      // Enquanto posta, o botão "Postar oferta no Google" do Studio fica travado (não posta duas vezes)
+      setPublishing([updated.id], true)
+      void postGoogle(updated)
+        .then((failed) => {
+          if (failed) setNotice({ type: "error", text: `Publicado no site; o Google falhou: ${failed}` })
+        })
+        .finally(() => setPublishing([updated.id], false))
     }
     return updated
   }
@@ -323,6 +337,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
             onSavePromo={handleStudioSavePromo}
             ig={ig}
             gbp={gbp}
+            googlePosting={!!publishingIds[selectedPromo.id]}
           />
         ))}
 

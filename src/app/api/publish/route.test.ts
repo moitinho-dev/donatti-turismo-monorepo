@@ -13,6 +13,7 @@ vi.mock("@/lib/meta", () => {
 vi.mock("@/lib/googleBusiness", () => ({ publishPromoPost: vi.fn(), getBusinessConnection: vi.fn() }))
 vi.mock("../meta/session", () => ({ metaSession: vi.fn() }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
+vi.mock("@/lib/siteFields", () => ({ resolveSiteFields: vi.fn() }))
 vi.mock("@/lib/publishLog", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/publishLog")>()
   return { ...actual, recordPublish: vi.fn() }
@@ -23,6 +24,7 @@ import { MetaError, getMetaConnection, publishMeta } from "@/lib/meta"
 import { getBusinessConnection, publishPromoPost } from "@/lib/googleBusiness"
 import { recordPublish } from "@/lib/publishLog"
 import { revalidatePath } from "next/cache"
+import { resolveSiteFields } from "@/lib/siteFields"
 import { metaSession } from "../meta/session"
 import { GET, POST } from "./route"
 import { POST as SHARED } from "./shared/route"
@@ -83,6 +85,7 @@ describe("POST /api/publish", () => {
     expect(publishMeta).not.toHaveBeenCalled()
     expect(publishPromoPost).not.toHaveBeenCalled()
     expect(db.promo.update).not.toHaveBeenCalled()
+    expect(resolveSiteFields).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
     expect(recordPublish).toHaveBeenCalledTimes(3)
     for (const [arg] of vi.mocked(recordPublish).mock.calls) expect(arg).toMatchObject({ status: "simulated", promoId: "a", createdById: "u1" })
@@ -200,13 +203,29 @@ describe("POST /api/publish", () => {
     expect(publishMeta).not.toHaveBeenCalled()
   })
 
-  it("site marca a promo no site, revalida e grava kind site", async () => {
-    db.promo.findMany.mockResolvedValue([promo("abcdef123", { sitePublished: false, siteSlug: "porto" })])
+  it("site completa os campos como a lista, marca a promo no site, revalida e grava kind site", async () => {
+    db.promo.findMany.mockResolvedValue([promo("abcdef123", { sitePublished: false, siteSlug: null, siteSection: null, siteImage: null })])
+    const fields = { sitePublished: true, siteSection: "nordeste", siteSlug: "porto-seguro", siteImage: "https://img.example/porto.jpg" }
+    vi.mocked(resolveSiteFields).mockResolvedValue(fields)
     const res = await POST(req({ promoId: "abcdef123", channel: "site", images: [] }))
     expect(res.status).toBe(200)
-    expect(db.promo.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "abcdef123" }, data: { sitePublished: true } }))
+    expect(resolveSiteFields).toHaveBeenCalledWith({
+      id: "abcdef123",
+      DESTINO: "Porto Seguro",
+      SITE_PUBLISHED: true,
+      SITE_SECTION: null,
+      SITE_SLUG: null,
+      SITE_IMAGE: null,
+    })
+    expect(db.promo.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "abcdef123" }, data: fields }))
+    expect(await res.json()).toEqual({
+      ok: true,
+      status: "published",
+      externalId: null,
+      promo: { SITE_PUBLISHED: true, SITE_SECTION: "nordeste", SITE_SLUG: "porto-seguro", SITE_IMAGE: "https://img.example/porto.jpg" },
+    })
     expect(revalidatePath).toHaveBeenCalledWith("/")
-    expect(revalidatePath).toHaveBeenCalledWith("/pacotes/porto")
+    expect(revalidatePath).toHaveBeenCalledWith("/pacotes/porto-seguro")
     expect(revalidatePath).toHaveBeenCalledWith("/black-november")
     expect(recordPublish).toHaveBeenCalledWith(expect.objectContaining({ channel: "site", kind: "site", status: "published" }))
   })
