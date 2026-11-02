@@ -1,7 +1,8 @@
 'use client'
 
 /**
- * DONATTI TURISMO - Página Black November (/black-november), a Black Friday da Donatti.
+ * DONATTI TURISMO - Página Black November, a Black Friday da Donatti. Ocupa a raiz do site ("/")
+ * enquanto a campanha está ligada; a equipe revisa em /black-november/preview.
  * Ligada, datas e desconto do título vêm do painel de promos (BlackFridayPanel).
  * Identidade: manual da campanha (preto, amarelo #FED400, logo com avião no A e pin no O).
  */
@@ -539,7 +540,6 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
             <img src="/images/black-november/donatti-negativo-black.svg" alt="Donatti Turismo" width={160} height={46} style={{ height: 46, width: 'auto' }} />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, font: '500 14px/1.4 var(--dt-font-sans)' }}>
-              <Link href="/">Site Donatti</Link>
               <Link href="/pacotes">Todos os pacotes</Link>
               <Link href="/destinos">Destinos</Link>
               <a href="tel:+5567992167694">WhatsApp (67) 99216-7694</a>

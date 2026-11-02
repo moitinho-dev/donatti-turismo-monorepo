@@ -19,7 +19,7 @@ export const googleError = (r: PostGoogleResult): string | null => ("error" in r
 export const defaultFamilyOf = (promo: Pick<PromoData, "CAMPAIGN">) =>
   promo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
 
-export const GOOGLE_NOT_CONNECTED = "Google não está conectado. Peça para um administrador conectar em Configurações."
+export const GOOGLE_NOT_CONNECTED = "Google não está conectado. Peça para um administrador conectar o Google no painel de promoções."
 export const PHOTO_BLOCKED = "A foto desta promoção não permite gerar a arte. Troque a foto da promo e tente de novo."
 
 /** Post em andamento por promo: o botão manual e o post automático não postam duas vezes ao mesmo tempo */

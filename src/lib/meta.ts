@@ -27,7 +27,12 @@ export const isMetaConfigured = () => !!(process.env.META_APP_ID && process.env.
 // OAuth: state assinado e preso ao navegador por um cookie (evita que outra pessoa conecte a conta dela)
 // ---------------------------------------------------------------------------
 
-const stateSecret = () => process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.META_APP_SECRET || ""
+const stateSecret = () => {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.META_APP_SECRET || ""
+  // Sem segredo a assinatura do state não protege nada: melhor falhar do que aceitar qualquer um
+  if (!secret) throw new Error("Segredo de sessão ausente")
+  return secret
+}
 
 export const META_NONCE_COOKIE = "meta_oauth_nonce"
 export const newNonce = () => randomBytes(16).toString("hex")
@@ -40,11 +45,12 @@ export function signState(userEmail: string, nonce: string) {
 
 /** Valida o state (assinatura, validade de 15 min e nonce igual ao do cookie) e devolve o e-mail de quem iniciou */
 export function verifyState(state: string | null, cookieNonce: string | null | undefined): string | null {
+  const secret = stateSecret()
   if (!state) return null
   const i = state.lastIndexOf(".")
   const payload = state.slice(0, i)
   const sig = Buffer.from(state.slice(i + 1))
-  const expected = Buffer.from(createHmac("sha256", stateSecret()).update(payload).digest("base64url"))
+  const expected = Buffer.from(createHmac("sha256", secret).update(payload).digest("base64url"))
   if (sig.length !== expected.length || !timingSafeEqual(sig, expected)) return null
   const [ts, nonce, email] = payload.split(".")
   if (Date.now() - Number(ts) > 15 * 60_000) return null
@@ -148,14 +154,24 @@ export async function selectPage(pageId: string) {
 // ---------------------------------------------------------------------------
 
 /** Sobe a imagem (data URL ou URL) e devolve uma URL pública que a Meta consegue baixar */
+const withTimeout = <T>(p: Promise<T>, ms: number) =>
+  Promise.race([p, new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Tempo esgotado (${ms} ms)`)), ms))])
+
 export async function publicImageUrl(image: string): Promise<string> {
   if (/^https:\/\//.test(image)) return image
   const match = /^data:(image\/(?:jpeg|png));base64,(.+)$/.exec(image)
   if (!match) throw new MetaError("Imagem inválida")
   const buffer = Buffer.from(match[2], "base64")
   const driver = storageDriver()
-  if (driver === "s3" || driver === "supabase") return uploadImage(buffer, match[1], "social", { inline: false })
-  // Sem S3/Supabase: guarda no banco e serve por /api/media/[id]
+  // MEDIA_STORAGE=db força o banco (o Supabase de produção chegou a levar 60 s por arquivo)
+  if ((driver === "s3" || driver === "supabase") && process.env.MEDIA_STORAGE !== "db") {
+    try {
+      return await withTimeout(uploadImage(buffer, match[1], "social", { inline: false }), 12_000)
+    } catch (error) {
+      console.error("Mídia: armazenamento falhou, guardando no banco", error)
+    }
+  }
+  // Sem S3/Supabase (ou se falharem): guarda no banco e serve por /api/media/[id]
   const media = await prisma.publishedMedia.create({ data: { contentType: match[1], data: buffer } })
   // Limpa o que a Meta já baixou há mais de uma semana
   void prisma.publishedMedia.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 7 * 86_400_000) } } }).catch(() => undefined)

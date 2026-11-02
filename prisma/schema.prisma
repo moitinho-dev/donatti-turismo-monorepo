@@ -121,12 +121,14 @@ model Promo {
 }
 
 model GoogleBusinessConnection {
-  id           String   @id @default(cuid())
-  refreshToken String   @db.Text
-  accountName  String?  @db.Text
-  locationName String?  @db.Text
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  refreshToken  String   @db.Text
+  accountName   String?  @db.Text
+  locationName  String?  @db.Text
+  /// Nome do local para mostrar no painel ("Postando em ...")
+  locationTitle String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("google_business_connections")
 }

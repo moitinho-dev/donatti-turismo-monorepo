@@ -43,10 +43,7 @@ export function AiPanel({ enabled, promo, format, photoUrl, selected, onSetPhoto
     return (
       <div className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-[13px] text-violet-900">
         <p className="font-bold">IA ainda não configurada</p>
-        <p>
-          Para gerar imagens e textos, configure as credenciais da AWS Bedrock no servidor (variáveis <code>AWS_BEARER_TOKEN_BEDROCK</code> ou{" "}
-          <code>AWS_ACCESS_KEY_ID</code>/<code>AWS_SECRET_ACCESS_KEY</code>).
-        </p>
+        <p>Para gerar imagens e textos com a IA, peça ao administrador do sistema para ativar.</p>
       </div>
     )
   }
@@ -60,7 +57,7 @@ export function AiPanel({ enabled, promo, format, photoUrl, selected, onSetPhoto
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, destino }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ error: "Demorou demais. Tente de novo." }))
       if (!res.ok) throw new Error(data.error || "A IA não conseguiu agora")
       onLibraryChanged()
       return (data.assets as { url: string }[]).map((a) => a.url)
@@ -83,7 +80,7 @@ export function AiPanel({ enabled, promo, format, photoUrl, selected, onSetPhoto
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ promo, tone: tone || undefined }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ error: "Demorou demais. Tente de novo." }))
       if (!res.ok) throw new Error(data.error || "Erro ao gerar texto")
       setCopy(data)
       onCaption(`${data.caption}\n\n${(data.hashtags || []).map((h: string) => `#${h.replace(/^#/, "")}`).join(" ")}`)

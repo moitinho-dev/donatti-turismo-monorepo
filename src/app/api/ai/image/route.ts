@@ -3,9 +3,9 @@ import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { authOptions } from "../../auth/[...nextauth]/options"
 import prisma from "@/lib/db"
-import { describeAiError } from "@/lib/ai/config"
+import { AI_MESSAGES, describeAiError } from "@/lib/ai/config"
 import { loadImage } from "@/lib/ai/fetchImage"
-import { editArea, extendToFormat, generateImage, removeBackground } from "@/lib/ai/novaCanvas"
+import { editArea, extendToFormat, generateImage, removeBackground } from "@/lib/ai/stabilityImage"
 import { sniffImageType, uploadImage } from "@/lib/storage"
 
 export const runtime = "nodejs"
@@ -21,7 +21,7 @@ const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("edit"), image: z.string().min(1), target: z.string().min(2).max(300), prompt: z.string().max(1000).optional() }),
 ])
 
-/** Gera ou edita imagens com Nova Canvas; o resultado vai para a biblioteca de imagens da equipe */
+/** Gera ou edita imagens com os modelos da Stability AI no Bedrock; o resultado vai para a biblioteca de imagens da equipe */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ assets })
   } catch (error) {
     console.error("AI image error:", error)
-    const { message, status } = describeAiError(error, error instanceof Error ? error.message : "Erro ao gerar imagem")
+    const { message, status } = describeAiError(error, AI_MESSAGES.imageFailed)
     return NextResponse.json({ error: message }, { status })
   }
 }

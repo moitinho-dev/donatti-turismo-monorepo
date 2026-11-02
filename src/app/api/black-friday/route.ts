@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { CAMPAIGN_PATH, getBlackFridayPhase, type BlackFridaySettings } from "@/config/blackFriday"
+import { getBlackFridayPhase, type BlackFridaySettings } from "@/config/blackFriday"
 import { blackFridaySettingsSchema, getBlackFridaySettings, saveBlackFridaySettings } from "@/lib/blackFridaySettings"
 
 export const dynamic = "force-dynamic"
@@ -25,9 +25,8 @@ export async function PUT(req: NextRequest) {
 
   try {
     const settings = await saveBlackFridaySettings(parsed.data as BlackFridaySettings)
-    // Home e página da campanha mudam na próxima visita, sem esperar o revalidate de 5 min
+    // A raiz vira (ou desvira) a página da campanha na próxima visita, sem esperar o revalidate de 5 min
     revalidatePath("/")
-    revalidatePath(CAMPAIGN_PATH)
     return NextResponse.json({ settings, phase: getBlackFridayPhase(settings) })
   } catch (error) {
     console.error("Black Friday: erro ao salvar", error)

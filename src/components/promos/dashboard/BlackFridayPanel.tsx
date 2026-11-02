@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ExternalLink, Eye, Loader2, Zap } from "lucide-react"
 import { Countdown } from "@/components/blackfriday/Countdown"
 import {
+  CAMPAIGN_PATH,
   formatCampaignDate,
   getBlackFridayPhase,
   getCountdownTarget,
@@ -31,7 +32,7 @@ const toLocalInput = (iso: string) => {
 const fromLocalInput = (value: string) => new Date(value).toISOString()
 
 /**
- * Controle da campanha na central de promos: liga a página /black-november,
+ * Controle da campanha na central de promos: liga a página da campanha na raiz do site ("/"),
  * ajusta início e fim da contagem (antecipar, estender, encerrar) e o desconto do título.
  */
 export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
@@ -240,13 +241,13 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <a href="/black-november/preview" target="_blank" rel="noopener noreferrer" className={ghost}>
+            <a href={`${CAMPAIGN_PATH}/preview`} target="_blank" rel="noopener noreferrer" className={ghost}>
               <Eye className="h-4 w-4" />
               Pré-visualizar
             </a>
             {(phase === "esquenta" || phase === "ao-vivo") && (
               <a
-                href="/black-november"
+                href="/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-white px-3 py-2 text-sm font-bold text-black hover:bg-white/90"

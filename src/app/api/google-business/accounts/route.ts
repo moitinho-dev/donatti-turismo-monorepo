@@ -11,6 +11,17 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   if (session.user.role !== "admin") return NextResponse.json({ error: "Apenas admin" }, { status: 403 })
 
-  const accounts = await listAccounts()
-  return NextResponse.json(accounts)
+  try {
+    return NextResponse.json(await listAccounts())
+  } catch (error) {
+    console.error("Google: erro ao listar contas", error)
+    // Cota zero = o Google ainda não aprovou o projeto para as APIs do Perfil da Empresa
+    if (error instanceof Error && /\b429\b/.test(error.message) && /quota/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "O Google ainda não liberou o acesso da Donatti a esta função (cota zero). Assim que liberar, funciona sozinho." },
+        { status: 503 },
+      )
+    }
+    return NextResponse.json({ error: "Não foi possível carregar as contas do Google. Tente reconectar." }, { status: 502 })
+  }
 }
