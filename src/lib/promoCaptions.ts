@@ -102,3 +102,14 @@ export function whatsappChannelMessage(promos: CaptionPromo[], opts: { campaign?
   })
   return [title, ...items, `Fale com a especialista: ${PHONE_DISPLAY}\nTarifas por lote, sujeitas a disponibilidade.`].join("\n\n")
 }
+
+/** Legenda do carrossel do Instagram: uma linha por oferta, na ordem das imagens */
+export function carouselCaption(promos: CaptionPromo[], opts: { campaign?: string | null } = {}): string {
+  const head = opts.campaign ? `${opts.campaign.toUpperCase()} DONATTI 🖤💛\nArraste para ver as ofertas 👉\n` : "Arraste para ver as ofertas 👉\n"
+  const lines = promos.map((p, i) => {
+    const x = parts(p)
+    return `${i + 1}. ${x.destino}${x.off ? ` (-${x.off}%)` : ""}: ${x.parcela ? `${x.parcelas}x de R$ ${x.parcela}` : ""}${x.noites ? ` · ${x.noites}` : ""}`
+  })
+  const tags = [opts.campaign && hashtag(opts.campaign), "#DonattiTurismo", "#PacoteDeViagem", "#SaindoDeCampoGrande"].filter(Boolean)
+  return `${head}\n${lines.join("\n")}\n\n👉 Garanta no WhatsApp ${PHONE_DISPLAY} ou pelo link na bio.\nValores por pessoa, tarifas por lote.\n\n${tags.join(" ")}`
+}

@@ -1,8 +1,8 @@
 import { findDestination } from "./destinations"
 import { slugify } from "./utils"
 
-/** Domínio canônico do site. Mude com NEXT_PUBLIC_SITE_URL se a versão oficial for a com www. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://donattiturismo.com.br").replace(/\/$/, "")
+/** Domínio canônico do site (sem www). O .com.br só tem e-mail, não tem site. */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://donattiturismo.com").replace(/\/$/, "")
 export const SITE_NAME = "Donatti Turismo"
 export const WHATSAPP_NUMBER = "5567992167694"
 export const PHONE_DISPLAY = "(67) 99216-7694"

@@ -11,12 +11,13 @@
  */
 
 import { useMemo, useRef, useState } from "react"
-import { Check, Copy, Download, Loader2, Share2, Sparkles, X } from "lucide-react"
+import { Check, Copy, Download, Loader2, Send, Share2, Sparkles, X } from "lucide-react"
 import { TEMPLATE_FAMILIES, withPhoto } from "@/components/studio/templates"
 import { promoVariables, type PromoLike } from "@/components/studio/variables"
 import { renderDoc } from "@/components/studio/render"
 import { FORMATS, type ArtFormat } from "@/components/studio/types"
-import { captionFor, whatsappChannelMessage } from "@/lib/promoCaptions"
+import { captionFor, carouselCaption, whatsappChannelMessage } from "@/lib/promoCaptions"
+import type { useMeta } from "@/hooks/useMeta"
 import { getPromoStatus, slugify, type PromoData } from "./dashboard/types"
 
 type ChannelId = "ig-feed" | "stories" | "facebook" | "wa-channel"
@@ -42,6 +43,8 @@ interface BatchGeneratorProps {
   /** Fotos carregadas pelo painel para promos sem SITE_IMAGE */
   promoImages?: Record<string, string>
   campaign?: { name: string; maxDiscount?: number } | null
+  /** Conexão com a Meta: com ela os canais ganham "Publicar" (Instagram e Facebook) */
+  meta?: ReturnType<typeof useMeta> | null
   onClose: () => void
 }
 
@@ -50,7 +53,7 @@ const dataUrlToFile = async (dataUrl: string, filename: string) => {
   return new File([blob], filename, { type: blob.type })
 }
 
-export function BatchGenerator({ promos, promoImages = {}, campaign = null, onClose }: BatchGeneratorProps) {
+export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta = null, onClose }: BatchGeneratorProps) {
   const [scope, setScope] = useState<Scope>(campaign ? "campanha" : "no-site")
   const candidates = useMemo(
     () =>
@@ -71,6 +74,27 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, onCl
   const [failures, setFailures] = useState<string[]>([])
   const [copied, setCopied] = useState<string | null>(null)
   const cancelRef = useRef(false)
+
+  // Publicação direta (Meta): estado por chave ("ig-feed:all", "facebook:arquivo.jpg"...)
+  const metaReady = !!meta?.status?.connected
+  const igReady = metaReady && !!meta?.status?.hasInstagram
+  const [pub, setPub] = useState<Record<string, { state: "sending" | "done" | "error"; text?: string }>>({})
+  const [fbSchedule, setFbSchedule] = useState("")
+  const runPublish = async (key: string, jobs: (() => Promise<unknown>)[]) => {
+    setPub((prev) => ({ ...prev, [key]: { state: "sending", text: jobs.length > 1 ? `0/${jobs.length}` : undefined } }))
+    let done = 0
+    try {
+      for (const job of jobs) {
+        await job()
+        done++
+        if (jobs.length > 1) setPub((prev) => ({ ...prev, [key]: { state: "sending", text: `${done}/${jobs.length}` } }))
+      }
+      setPub((prev) => ({ ...prev, [key]: { state: "done", text: fbSchedule && key.startsWith("facebook") ? "Agendado" : "Publicado" } }))
+    } catch (err) {
+      setPub((prev) => ({ ...prev, [key]: { state: "error", text: `${done ? `${done} ok · ` : ""}${err instanceof Error ? err.message : "Erro"}` } }))
+    }
+  }
+  const scheduledAt = () => (fbSchedule ? new Date(fbSchedule).toISOString() : undefined)
 
   const formats = useMemo(() => Array.from(new Set(CHANNELS.filter((c) => channels.has(c.id)).map((c) => c.format))), [channels])
   const family = TEMPLATE_FAMILIES.find((f) => f.id === familyId) || TEMPLATE_FAMILIES[0]
@@ -347,6 +371,44 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, onCl
                     </div>
                   </div>
 
+                  {meta && c.id !== "wa-channel" && (
+                    <PublishBar
+                      channel={c.id}
+                      count={list.length}
+                      igReady={igReady}
+                      fbReady={metaReady}
+                      connected={metaReady}
+                      pub={pub}
+                      fbSchedule={fbSchedule}
+                      onSchedule={setFbSchedule}
+                      onPublish={(target) => {
+                        if (!meta) return
+                        const cap = (a: Art, network: "instagram" | "facebook") => captionFor(promoOf(a.promoId), { ...captionOpts, network })
+                        const key = `${c.id}:${target}`
+                        if (target === "ig-each") void runPublish(key, list.map((a) => () => meta.publish({ network: "instagram", kind: "post", images: [a.dataUrl], caption: cap(a, "instagram"), promoId: a.promoId })))
+                        if (target === "ig-carousel")
+                          void runPublish(key, [
+                            () => meta.publish({ network: "instagram", kind: "post", images: list.slice(0, 10).map((a) => a.dataUrl), caption: carouselCaption(list.slice(0, 10).map((a) => promoOf(a.promoId)), captionOpts) }),
+                          ])
+                        if (target === "ig-stories") void runPublish(key, list.map((a) => () => meta.publish({ network: "instagram", kind: "story", images: [a.dataUrl] })))
+                        if (target === "fb-stories") void runPublish(key, list.map((a) => () => meta.publish({ network: "facebook", kind: "story", images: [a.dataUrl] })))
+                        if (target === "fb-each")
+                          void runPublish(key, list.map((a) => () => meta.publish({ network: "facebook", kind: "post", images: [a.dataUrl], caption: cap(a, "facebook"), scheduledAt: scheduledAt() })))
+                        if (target === "fb-album")
+                          void runPublish(key, [
+                            () =>
+                              meta.publish({
+                                network: "facebook",
+                                kind: "post",
+                                images: list.slice(0, 10).map((a) => a.dataUrl),
+                                caption: whatsappChannelMessage(list.slice(0, 10).map((a) => promoOf(a.promoId)), { campaign: campaign?.name, maxDiscount: campaign?.maxDiscount }).replace(/\*/g, ""),
+                                scheduledAt: scheduledAt(),
+                              }),
+                          ])
+                      }}
+                    />
+                  )}
+
                   {c.id === "wa-channel" && (
                     <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-[12px] bg-gray-50 p-3 font-sans text-[13px] text-gray-700">{waMessage}</pre>
                   )}
@@ -396,6 +458,91 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, onCl
           </section>
         </div>
       </div>
+    </div>
+  )
+}
+
+type PublishTarget = "ig-each" | "ig-carousel" | "ig-stories" | "fb-stories" | "fb-each" | "fb-album"
+
+/** Botões de publicar direto por canal, com o andamento de cada envio */
+function PublishBar({
+  channel,
+  count,
+  igReady,
+  fbReady,
+  connected,
+  pub,
+  fbSchedule,
+  onSchedule,
+  onPublish,
+}: {
+  channel: ChannelId
+  count: number
+  igReady: boolean
+  fbReady: boolean
+  connected: boolean
+  pub: Record<string, { state: "sending" | "done" | "error"; text?: string }>
+  fbSchedule: string
+  onSchedule: (v: string) => void
+  onPublish: (target: PublishTarget) => void
+}) {
+  if (!connected) {
+    return <p className="rounded-[12px] bg-gray-50 p-3 text-[13px] text-gray-500">Conecte o Facebook no painel para publicar daqui sem baixar as artes.</p>
+  }
+  const actions: { target: PublishTarget; label: string; ready: boolean }[] =
+    channel === "ig-feed"
+      ? [
+          { target: "ig-each", label: `Instagram: ${count > 1 ? `${count} posts` : "1 post"}`, ready: igReady },
+          ...(count > 1 ? [{ target: "ig-carousel" as const, label: `Instagram: carrossel${count > 10 ? " (10 primeiras)" : ""}`, ready: igReady }] : []),
+        ]
+      : channel === "stories"
+        ? [
+            { target: "ig-stories", label: `Stories no Instagram (${count})`, ready: igReady },
+            { target: "fb-stories", label: `Stories no Facebook (${count})`, ready: fbReady },
+          ]
+        : [
+            { target: "fb-each", label: `Facebook: ${count > 1 ? `${count} posts` : "1 post"}`, ready: fbReady },
+            ...(count > 1 ? [{ target: "fb-album" as const, label: `Facebook: álbum${count > 10 ? " (10 primeiras)" : ""}`, ready: fbReady }] : []),
+          ]
+  return (
+    <div className="flex flex-col gap-2 rounded-[12px] bg-blue-50/60 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {actions.map((a) => {
+          const st = pub[`${channel}:${a.target}`]
+          return (
+            <button
+              key={a.target}
+              type="button"
+              disabled={!a.ready || st?.state === "sending"}
+              onClick={() => onPublish(a.target)}
+              title={a.ready ? undefined : "A Página conectada não tem Instagram profissional ligado"}
+              className="inline-flex items-center gap-2 rounded-[10px] bg-[#1877F2] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#166FE5] disabled:opacity-50"
+            >
+              {st?.state === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : st?.state === "done" ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+              {a.label}
+              {st?.text && <span className="font-semibold opacity-90">· {st.text}</span>}
+            </button>
+          )
+        })}
+        {channel === "facebook" && (
+          <label className="ml-auto inline-flex items-center gap-2 text-[12px] font-semibold text-gray-600">
+            Agendar
+            <input
+              type="datetime-local"
+              value={fbSchedule}
+              onChange={(e) => onSchedule(e.target.value)}
+              className="rounded-[8px] border border-gray-200 bg-white px-2 py-1 text-[12px]"
+            />
+          </label>
+        )}
+      </div>
+      {Object.entries(pub)
+        .filter(([k, v]) => k.startsWith(`${channel}:`) && v.state === "error")
+        .map(([k, v]) => (
+          <p key={k} className="text-[12px] font-semibold text-red-600">
+            {v.text}
+          </p>
+        ))}
     </div>
   )
 }
