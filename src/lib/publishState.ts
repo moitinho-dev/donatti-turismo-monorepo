@@ -1,5 +1,7 @@
 /** Situação de um canal no Publicar: tipos e regras sem banco, para usar também na tela */
 
+import type { Channel } from "./channels"
+
 export type PublishState = "none" | "published" | "scheduled" | "shared" | "simulated" | "error"
 
 export interface ChannelState {
@@ -20,3 +22,6 @@ export function needsConfirm(state: ChannelState): boolean {
     state.state === "simulated"
   )
 }
+
+/** GET /api/publish/summary: estado de cada canal por promo; canal sem registro não aparece (= "none") */
+export type PublishSummary = Record<string, Partial<Record<Channel, PublishState>>>

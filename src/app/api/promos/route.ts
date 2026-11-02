@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { z } from "zod"
 import prisma from "@/lib/db"
-import { publishPromoPost } from "@/lib/googleBusiness"
 import { suggestSiteSection } from "@/lib/destinations"
 import { findSiteImageForDestination } from "@/lib/imageSearch"
 import { slugify } from "@/lib/utils"
@@ -233,6 +232,7 @@ export async function POST(req: NextRequest) {
     const parcelas = typeof data.PARCELAS === "string" ? parseInt(data.PARCELAS, 10) || 15 : data.PARCELAS || 15
     const siteFields = await resolveSiteFields(data)
 
+    // O Google não é postado aqui: a tela publica pelo /api/publish, com a arte (postGoogleAfterSite)
     if (isUpdate) {
       // Check if promo exists
       const existingPromo = await prisma.promo.findUnique({
@@ -276,14 +276,6 @@ export async function POST(req: NextRequest) {
         include: { createdBy: { select: { name: true } } },
       })
 
-      // Auto-post no Google só quando a promo ENTRA no site agora (best-effort).
-      // Editar uma promo que já está no site (ex.: Dados da oferta no Studio) não posta de novo.
-      if (!existingPromo.sitePublished && updatedPromo.sitePublished) {
-        publishPromoPost(updatedPromo.id).catch((err) => {
-          console.error("Google Business post error:", err)
-        })
-      }
-
       return NextResponse.json(toApiFormat(updatedPromo))
     } else {
       // Create new promo
@@ -313,12 +305,6 @@ export async function POST(req: NextRequest) {
         },
         include: { createdBy: { select: { name: true } } },
       })
-
-      if (newPromo.sitePublished) {
-        publishPromoPost(newPromo.id).catch((err) => {
-          console.error("Google Business post error:", err)
-        })
-      }
 
       return NextResponse.json(toApiFormat(newPromo), { status: 201 })
     }

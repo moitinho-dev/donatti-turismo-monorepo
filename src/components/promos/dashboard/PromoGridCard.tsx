@@ -4,6 +4,9 @@ import { MapPin, Calendar, Edit2, Trash2, Loader2, Plane, PenTool, ImageIcon, Gl
 import type { PromoData } from "./types"
 import { getPromoStatus, getRegimeLabel, formatPrice } from "./types"
 import { getSectionLabel } from "@/lib/utils"
+import type { Channel } from "@/lib/channels"
+import type { PublishState } from "@/lib/publishState"
+import { ChannelStatusRow } from "./ChannelStatusRow"
 
 interface PromoGridCardProps {
   promo: PromoData
@@ -11,6 +14,8 @@ interface PromoGridCardProps {
   loadingImage?: boolean
   publishing?: boolean
   viewMode?: "grid" | "list"
+  /** Situação dos canais (GET /api/publish/summary); undefined: ainda não carregou */
+  channels?: Partial<Record<Channel, PublishState>>
   onEdit: (promo: PromoData) => void
   onGenerateImage: (promo: PromoData) => void
   onDelete: (id: string) => void
@@ -29,6 +34,7 @@ export function PromoGridCard({
   loadingImage,
   publishing,
   viewMode = "grid",
+  channels,
   onEdit,
   onGenerateImage,
   onDelete,
@@ -147,6 +153,13 @@ export function PromoGridCard({
             </span>
           )}
         </div>
+
+        {channels && status !== "vencida" && (
+          <div className={`mb-3 flex items-center gap-2 ${viewMode === "list" ? "flex-wrap" : ""}`}>
+            <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Canais</span>
+            <ChannelStatusRow states={channels} sitePublished={!!promo.SITE_PUBLISHED} />
+          </div>
+        )}
 
         <div className="mt-auto pt-3 border-t border-gray-100 grid grid-cols-2 gap-2">
           <button
