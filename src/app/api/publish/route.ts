@@ -9,7 +9,6 @@ import { canPublish, channelStatus, offerHash, recordPublish, type PublishState 
 import { computeSlug } from "@/lib/utils"
 import { resolveSiteFields } from "@/lib/siteFields"
 import { isOwnMediaUrl } from "@/lib/mediaHosts"
-import { CAMPAIGN_PATH } from "@/config/blackFriday"
 import { metaSession } from "../meta/session"
 
 export const runtime = "nodejs"
@@ -155,7 +154,6 @@ export async function POST(req: Request) {
       await prisma.promo.update({ where: { id: main.id }, data: site })
       revalidatePath("/")
       revalidatePath("/pacotes/" + computeSlug({ ...main, siteSlug: site.siteSlug }))
-      revalidatePath(CAMPAIGN_PATH)
       await record("published")
       return NextResponse.json({
         ok: true,

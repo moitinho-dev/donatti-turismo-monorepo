@@ -26,7 +26,8 @@ const nextConfig = {
         destination: "https://donattiturismo.com/:path*",
         permanent: true,
       },
-      { source: "/black-friday", destination: "/black-november", permanent: true },
+      // A Black November ocupa a raiz enquanto está ligada; desligada, "/" é a home (temporário: a campanha vai e volta)
+      { source: "/black-friday", destination: "/", permanent: false },
       { source: "/black-friday/preview", destination: "/black-november/preview", permanent: true },
     ]
   },

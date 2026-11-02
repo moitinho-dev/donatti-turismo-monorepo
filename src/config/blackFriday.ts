@@ -5,7 +5,10 @@
  *
  * - "esquenta": página ligada, antes do início — contagem para a abertura
  * - "ao-vivo": entre início e fim — contagem para o encerramento
- * - "encerrada" / "desligada": site volta ao layout padrão e /black-november sai do ar
+ * - "encerrada" / "desligada": a raiz ("/") volta a ser a home
+ *
+ * Ligada (esquenta ou ao vivo), a página da campanha ocupa a raiz do site ("/").
+ * /black-november só redireciona para "/"; a equipe revisa em /black-november/preview.
  *
  * A página é ligada e as datas são trocadas no painel de promos (tabela site_settings).
  * As variáveis abaixo só definem o padrão, usado até alguém salvar no painel:
@@ -18,7 +21,7 @@ export type BlackFridayPhase = "desligada" | "esquenta" | "ao-vivo" | "encerrada
 
 /** Configuração da campanha. Datas em ISO para poder ir do servidor para o navegador. */
 export interface BlackFridaySettings {
-  /** Página /black-november e faixa da home no ar */
+  /** Página da campanha no ar (na raiz do site) */
   enabled: boolean
   startsAt: string
   endsAt: string
@@ -29,8 +32,9 @@ export interface BlackFridaySettings {
 const DEFAULT_START = "2026-11-01T00:00:00-04:00" // Black November: o mês inteiro, no horário de Campo Grande
 const DEFAULT_END = "2026-11-30T23:59:59-04:00"
 
-/** Nome e endereço públicos da campanha */
+/** Nome público da campanha */
 export const CAMPAIGN_NAME = "Black November"
+/** Endereço antigo (redireciona para "/"); a pré-visualização da equipe fica em `${CAMPAIGN_PATH}/preview` */
 export const CAMPAIGN_PATH = "/black-november"
 
 const toIso = (value: string | undefined, fallback: string) => {
