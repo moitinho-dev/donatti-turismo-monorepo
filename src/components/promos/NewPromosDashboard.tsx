@@ -423,20 +423,22 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           <>
             <BlackFridayPanel promos={promos} />
             <MetaPanel meta={meta} />
-            <div className="max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm">
-              <div>
-                <p className="text-[15px] font-black text-gray-900">Artes em lote</p>
-                <p className="text-[13px] text-gray-500">Feed, stories, Facebook e Canal do WhatsApp de várias ofertas de uma vez, com legenda.</p>
+            {!STUDIO_V2 && (
+              <div className="max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm">
+                <div>
+                  <p className="text-[15px] font-black text-gray-900">Artes em lote</p>
+                  <p className="text-[13px] text-gray-500">Feed, stories, Facebook e Canal do WhatsApp de várias ofertas de uma vez, com legenda.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBatchOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-[14px] bg-gray-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-gray-800"
+                >
+                  <Layers className="h-4 w-4" />
+                  Gerar em lote
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setBatchOpen(true)}
-                className="inline-flex items-center gap-2 rounded-[14px] bg-gray-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-gray-800"
-              >
-                <Layers className="h-4 w-4" />
-                Gerar em lote
-              </button>
-            </div>
+            )}
             <PromoListPanel
               promos={promos}
               isLoading={isLoading}
@@ -496,7 +498,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         </div>
       )}
 
-      {batchOpen && (
+      {!STUDIO_V2 && batchOpen && (
         <div hidden={batchHidden}>
           <BatchGenerator
             promos={promos}
