@@ -8,9 +8,11 @@ import { Section } from "./ui"
 interface AddPanelProps {
   doc: StudioDoc
   onAdd: (layers: Layer[]) => void
+  /** Studio v2 separa Textos e Elementos em abas */
+  only?: "texts" | "elements"
 }
 
-export function AddPanel({ doc, onAdd }: AddPanelProps) {
+export function AddPanel({ doc, onAdd, only }: AddPanelProps) {
   const W = doc.width
   const H = doc.height
   const s = Math.min(W, H) / 1080
@@ -104,54 +106,60 @@ export function AddPanel({ doc, onAdd }: AddPanelProps) {
 
   return (
     <div className="space-y-6">
-      <Section title="Textos">
-        <div className="grid gap-2">
-          {textPresets.map((p, i) => (
-            <button
-              key={p.label}
-              type="button"
-              onClick={() => onAdd([p.node()])}
-              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left hover:border-amber-400"
-            >
-              <Type className="h-4 w-4 text-gray-400" />
-              <span className={i === 0 ? "text-[18px] font-black" : i === 1 ? "text-[15px] font-bold" : "text-[13px]"}>{p.label}</span>
-            </button>
-          ))}
-        </div>
-      </Section>
+      {only !== "elements" && (
+        <>
+          <Section title="Textos">
+            <div className="grid gap-2">
+              {textPresets.map((p, i) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => onAdd([p.node()])}
+                  className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left hover:border-amber-400"
+                >
+                  <Type className="h-4 w-4 text-gray-400" />
+                  <span className={i === 0 ? "text-[18px] font-black" : i === 1 ? "text-[15px] font-bold" : "text-[13px]"}>{p.label}</span>
+                </button>
+              ))}
+            </div>
+          </Section>
 
-      <Section title="Dados da promo">
-        <div className="flex flex-wrap gap-1.5">
-          {VARIABLES.map((v) => (
-            <button
-              key={v.key}
-              type="button"
-              title={`Exemplo: ${v.example}`}
-              onClick={() => onAdd([text({ text: `{${v.key}}`, fontSize: 48 * s, fontWeight: "700" })])}
-              className="rounded-lg bg-violet-50 px-2 py-1 text-[12px] font-semibold text-violet-700 hover:bg-violet-100"
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-[11px] text-gray-400">Viram texto que muda sozinho com os dados de cada promo.</p>
-      </Section>
+          <Section title="Dados da promo">
+            <div className="flex flex-wrap gap-1.5">
+              {VARIABLES.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  title={`Exemplo: ${v.example}`}
+                  onClick={() => onAdd([text({ text: `{${v.key}}`, fontSize: 48 * s, fontWeight: "700" })])}
+                  className="rounded-lg bg-violet-50 px-2 py-1 text-[12px] font-semibold text-violet-700 hover:bg-violet-100"
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400">Viram texto que muda sozinho com os dados de cada promo.</p>
+          </Section>
+        </>
+      )}
 
-      <Section title="Elementos">
-        <div className="grid grid-cols-2 gap-2">
-          {elements.map((el) => (
-            <button
-              key={el.label}
-              type="button"
-              onClick={() => onAdd(el.make())}
-              className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2 py-3 text-[11px] font-semibold text-gray-600 hover:border-amber-400"
-            >
-              <span className="flex h-7 items-center text-gray-500">{el.preview}</span>
-              {el.label}
-            </button>
-          ))}
-        </div>
-      </Section>
+      {only !== "texts" && (
+        <Section title="Elementos">
+          <div className="grid grid-cols-2 gap-2">
+            {elements.map((el) => (
+              <button
+                key={el.label}
+                type="button"
+                onClick={() => onAdd(el.make())}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2 py-3 text-[11px] font-semibold text-gray-600 hover:border-amber-400"
+              >
+                <span className="flex h-7 items-center text-gray-500">{el.preview}</span>
+                {el.label}
+              </button>
+            ))}
+          </div>
+        </Section>
+      )}
     </div>
   )
 }

@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import prisma from "@/lib/db"
-import {
-  MetaError,
-  getMetaConnection,
-  publicImageUrl,
-  publishFacebookPost,
-  publishFacebookStory,
-  publishInstagramPost,
-  publishInstagramStory,
-} from "@/lib/meta"
+import { MetaError, getMetaConnection, publishMeta } from "@/lib/meta"
+import type { MetaChannel } from "@/lib/channels"
 import { metaSession } from "../session"
 
 export const runtime = "nodejs"
@@ -55,23 +48,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const images = []
-    for (const img of body.images) images.push(await publicImageUrl(img))
-    const token = conn.pageAccessToken
-    const result =
-      body.network === "facebook"
-        ? body.kind === "story"
-          ? await publishFacebookStory(conn.pageId, token, images[0])
-          : await publishFacebookPost(conn.pageId, token, { images, caption: body.caption, scheduledAt })
-        : body.kind === "story"
-          ? await publishInstagramStory(conn.igUserId!, token, images[0])
-          : await publishInstagramPost(conn.igUserId!, token, { images, caption: body.caption })
-
-    const id = ("id" in result && result.id) || ("post_id" in result && result.post_id) || null
+    const channel: MetaChannel = `${body.network === "facebook" ? "fb" : "ig"}-${body.kind === "story" ? "story" : "feed"}`
+    const { externalId: id } = await publishMeta(channel, conn, body.images, body.caption, scheduledAt)
     if (body.promoId && id && body.network === "instagram" && body.kind === "post") {
       // Só marca o post na promo de quem pode editá-la (admin ou quem criou)
       await prisma.promo
-        .updateMany({ where: { id: body.promoId, ...(user.admin ? {} : { createdById: user.id }) }, data: { instagramPostId: String(id) } })
+        .updateMany({ where: { id: body.promoId, ...(user.admin ? {} : { createdById: user.id }) }, data: { instagramPostId: id } })
         .catch(() => undefined)
     }
     return NextResponse.json({ ok: true, id, scheduled: !!scheduledAt })

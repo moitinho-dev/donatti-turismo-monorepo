@@ -11,7 +11,7 @@ const designSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1).max(120),
   kind: z.enum(["template", "design"]),
-  format: z.enum(["story", "feed", "square", "landscape"]),
+  format: z.enum(["story", "feed", "square", "landscape", "set"]),
   data: z.record(z.unknown()),
   promoId: z.string().nullable().optional(),
   // Miniatura em data URL (PNG/JPEG pequeno); é enviada ao armazenamento
@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
   const designs = await prisma.design.findMany({
     where: {
       kind,
-      ...(format ? { format } : {}),
+      // Templates da equipe salvos como conjunto (format "set") valem para qualquer formato
+      ...(format ? { format: kind === "template" ? { in: [format, "set"] } : format } : {}),
       ...(promoId ? { promoId } : {}),
       // Agentes veem os templates da equipe e só os próprios designs
       ...(kind === "design" && session.user.role !== "admin" ? { createdById: session.user.id } : {}),

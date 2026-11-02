@@ -361,18 +361,35 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }
 
     try {
-      await savePromo(payload)
-                setFormSuccess(formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!")
+      const saved = await savePromo(payload)
+      const base = formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!"
+      setFormSuccess(base)
 
-              // Reset form if it's a new promo
-              if (!formData.id) {
-                resetForm()
-              }
+      // Entrou no site agora (nova já publicada, ou rascunho que foi publicado): vai também para o Google
+      const enteredSite = !!saved?.SITE_PUBLISHED && (!formData.id || !promo?.SITE_PUBLISHED)
+      let googleFailed: string | null = null
+      if (enteredSite) {
+        // Carrega o desenho da arte (Konva) só agora, fora do pacote do formulário
+        googleFailed = await import("@/lib/client/postGoogle")
+          .then(async ({ postGoogleAfterSite, googleError }) => googleError(await postGoogleAfterSite(saved)))
+          .catch(() => "Não foi possível publicar no Google. Tente de novo em alguns minutos.")
+        if (googleFailed) {
+          setFormSuccess(null)
+          setFormError(`Publicado no site; o Google falhou: ${googleFailed}`)
+        } else {
+          setFormSuccess("Publicado no site e no Google.")
+        }
+      }
 
-      // Notify parent component
+      // Reset form if it's a new promo
+      if (!formData.id) {
+        resetForm()
+      }
+
+      // Notify parent component (mais tempo quando há aviso de falha para dar para ler)
       setTimeout(() => {
         onSuccess()
-      }, 1500)
+      }, googleFailed ? 5000 : 1500)
     } catch (error) {
       setFormError("Erro ao salvar promoção. Por favor, tente novamente.")
     }

@@ -7,6 +7,7 @@ import { PromoGridCard } from "./PromoGridCard"
 import type { PromoData, ViewMode } from "./types"
 import { getPromoStatus, getRegimeLabel } from "./types"
 import { getSectionLabel, getPriceNumber, parsePromoDates } from "@/lib/utils"
+import type { PublishSummary } from "@/lib/publishState"
 
 type StatusFilter = "todas" | "no-site" | "rascunho" | "vencida"
 type SortMode = "recentes" | "proxima-saida" | "menor-preco"
@@ -18,6 +19,8 @@ interface PromoListPanelProps {
   promoImages: Record<string, string>
   loadingPromoImages: Record<string, boolean>
   publishingIds: Record<string, boolean>
+  /** Situação dos canais por promo; null até carregar */
+  channelSummary?: PublishSummary | null
   onEdit: (promo: PromoData) => void
   onGenerateImage: (promo: PromoData) => void
   onDelete: (id: string) => void
@@ -65,6 +68,7 @@ export function PromoListPanel({
   promoImages,
   loadingPromoImages,
   publishingIds,
+  channelSummary = null,
   onEdit,
   onGenerateImage,
   onDelete,
@@ -288,6 +292,7 @@ export function PromoListPanel({
                   loadingImage={loadingPromoImages[promo.id]}
                   publishing={!!publishingIds[promo.id]}
                   viewMode={viewMode}
+                  channels={channelSummary ? channelSummary[promo.id] ?? {} : undefined}
                   onEdit={onEdit}
                   onGenerateImage={onGenerateImage}
                   onDelete={onDelete}

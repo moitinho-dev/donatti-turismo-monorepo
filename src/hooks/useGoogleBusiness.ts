@@ -9,6 +9,8 @@ interface UseGoogleBusinessOptions {
 
 export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOptions) {
   const [gbpConnected, setGbpConnected] = useState(false)
+  /** Conectado e com conta/local escolhidos: dá para postar */
+  const [gbpReady, setGbpReady] = useState(false)
   const [gbpAccountName, setGbpAccountName] = useState("")
   const [gbpLocationName, setGbpLocationName] = useState("")
   const [gbpAccounts, setGbpAccounts] = useState<Array<{ name: string; accountName?: string }>>([])
@@ -18,12 +20,19 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
   const [gbpBusy, setGbpBusy] = useState(false)
 
   const refreshGbp = useCallback(async () => {
-    if (userRole !== "admin") return
     try {
-      const res = await fetch("/api/google-business/settings")
-      if (!res.ok) return
-      const data = await res.json()
-      setGbpConnected(Boolean(data?.connected))
+      // Situação da conexão: qualquer pessoa da equipe publica no Google
+      const res = await fetch("/api/google-business/status")
+      if (res.ok) {
+        const data = await res.json()
+        setGbpConnected(Boolean(data?.connected))
+        setGbpReady(Boolean(data?.ready))
+      }
+      // Conta e local escolhidos: só admin troca
+      if (userRole !== "admin") return
+      const settings = await fetch("/api/google-business/settings")
+      if (!settings.ok) return
+      const data = await settings.json()
       setGbpAccountName(data?.accountName || "")
       setGbpLocationName(data?.locationName || "")
     } catch {
@@ -124,6 +133,7 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
 
   return {
     gbpConnected,
+    gbpReady,
     gbpAccountName,
     setGbpAccountName,
     gbpLocationName,

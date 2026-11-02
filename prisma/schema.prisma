@@ -25,6 +25,7 @@ model User {
 
   // Relations
   promos   Promo[]
+  publishLogs PublishLog[]
   layouts  Layout[]
   designs  Design[]
   assets   Asset[]
@@ -113,6 +114,7 @@ model Promo {
   createdById String
   createdBy   User     @relation(fields: [createdById], references: [id])
   designs     Design[]
+  publishLogs PublishLog[]
 
   @@index([campaign])
   @@map("promos")
@@ -265,4 +267,25 @@ model SiteSetting {
   updatedAt DateTime @updatedAt
 
   @@map("site_settings")
+}
+
+// Registro de cada tentativa de publicação por canal
+model PublishLog {
+  id           String    @id @default(cuid())
+  promoId      String
+  promo        Promo     @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  channel      String
+  kind         String
+  externalId   String?
+  status       String
+  error        String?   @db.Text
+  scheduledFor DateTime?
+  offerHash    String
+  createdById  String
+  createdBy    User      @relation(fields: [createdById], references: [id])
+  createdAt    DateTime  @default(now())
+
+  @@index([promoId, channel])
+  @@index([createdAt])
+  @@map("publish_logs")
 }

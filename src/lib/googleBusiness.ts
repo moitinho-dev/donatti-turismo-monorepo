@@ -173,7 +173,31 @@ const extractIdsForV4 = (accountName: string, locationName: string) => {
 const buildWhatsappUrl = (message: string) =>
   `https://wa.me/5567992167694?text=${encodeURIComponent(message)}`
 
-export const publishPromoPost = async (promoId: string) => {
+export interface PublishPromoPostOptions {
+  /** Arte do Google (URL https pública); sem ela usa a foto do site */
+  imageUrl?: string
+  /** Apaga o post anterior da promo e cria um novo (atualização da oferta) */
+  replace?: boolean
+}
+
+/** Apaga um post do Google; 404 conta como já apagado */
+const deleteLocalPost = async (token: string, postName: string) => {
+  const res = await fetch(`https://mybusiness.googleapis.com/v4/${postName}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text().catch(() => "")
+    throw new Error(`Google API error ${res.status}: ${text}`)
+  }
+}
+
+export const publishPromoPost = async (
+  promoId: string,
+  opts: PublishPromoPostOptions = {},
+): Promise<{ name: string; skipped?: boolean }> => {
+  if (opts.imageUrl && !opts.imageUrl.startsWith("https://")) throw new Error("A imagem do Google precisa ser um endereço https")
+
   const { token, connection } = await getAccessToken()
   if (!connection.accountName || !connection.locationName) {
     throw new Error("Google Business target (account/location) not configured")
@@ -182,7 +206,7 @@ export const publishPromoPost = async (promoId: string) => {
   const promo = await prisma.promo.findUnique({ where: { id: promoId } })
   if (!promo) throw new Error("Promo not found")
   if (!promo.sitePublished) throw new Error("Promo is not published on site")
-  if (promo.googleBusinessPostName) return { skipped: true, reason: "already_posted" }
+  if (promo.googleBusinessPostName && !opts.replace) return { name: promo.googleBusinessPostName, skipped: true }
 
   const { accountId, locationId } = extractIdsForV4(connection.accountName, connection.locationName)
   const endpoint = `https://mybusiness.googleapis.com/v4/accounts/${encodeURIComponent(
@@ -215,7 +239,13 @@ export const publishPromoPost = async (promoId: string) => {
     `Olá! Vi a oferta no Google e quero saber mais sobre ${promo.destino} (${promo.dataFormatada}).`,
   )
 
-  const payload: any = {
+  const payload: {
+    languageCode: string
+    summary: string
+    topicType: string
+    callToAction: { actionType: string; url: string }
+    media?: Array<{ mediaFormat: string; sourceUrl: string }>
+  } = {
     languageCode: "pt-BR",
     summary,
     topicType: "STANDARD",
@@ -225,9 +255,14 @@ export const publishPromoPost = async (promoId: string) => {
     },
   }
 
-  if (promo.siteImage && promo.siteImage.startsWith("http")) {
+  if (opts.imageUrl) {
+    payload.media = [{ mediaFormat: "PHOTO", sourceUrl: opts.imageUrl }]
+  } else if (promo.siteImage && promo.siteImage.startsWith("http")) {
     payload.media = [{ mediaFormat: "PHOTO", sourceUrl: promo.siteImage }]
   }
+
+  // Substituir: cria o novo primeiro; o antigo só sai depois (se a criação falhar, o post antigo continua no ar)
+  const previous = opts.replace ? promo.googleBusinessPostName : null
 
   const created = await fetchJson<{ name?: string }>(endpoint, {
     method: "POST",
@@ -238,14 +273,22 @@ export const publishPromoPost = async (promoId: string) => {
     body: JSON.stringify(payload),
   })
 
-  if (created?.name) {
-    await prisma.promo.update({
-      where: { id: promo.id },
-      data: { googleBusinessPostName: created.name },
-    })
+  if (!created?.name) throw new Error("O Google não devolveu o post criado")
+  await prisma.promo.update({
+    where: { id: promo.id },
+    data: { googleBusinessPostName: created.name },
+  })
+
+  if (previous && previous !== created.name) {
+    try {
+      await deleteLocalPost(token, previous)
+    } catch (err) {
+      // O post novo já está no ar e salvo na promo: o antigo fica sobrando, mas a publicação deu certo
+      console.error("Google: não deu para apagar o post anterior", previous, err)
+    }
   }
 
-  return created
+  return { name: created.name }
 }
 
 export const syncPublishedPromos = async (limit = 20) => {
@@ -259,8 +302,8 @@ export const syncPublishedPromos = async (limit = 20) => {
 
   for (const promo of promos) {
     try {
-      const res: any = await publishPromoPost(promo.id)
-      results.push({ id: promo.id, ok: true, skipped: Boolean(res?.skipped) })
+      const res = await publishPromoPost(promo.id)
+      results.push({ id: promo.id, ok: true, skipped: Boolean(res.skipped) })
     } catch (err) {
       results.push({ id: promo.id, ok: false, error: err instanceof Error ? err.message : String(err) })
     }

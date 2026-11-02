@@ -7,6 +7,7 @@ import { usePromo } from "@/hooks/usePromo"
 import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
 import { useInstagram } from "@/hooks/useInstagram"
 import { usePromoImages } from "@/hooks/usePromoImages"
+import { usePublishSummary } from "@/hooks/usePublishSummary"
 import { CheckCircle2, AlertCircle, Layers } from "lucide-react"
 import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
@@ -32,12 +33,20 @@ const Studio = dynamic(() => import("@/components/studio/Studio").then((m) => m.
   loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
 })
 
+// Studio novo (4 formatos juntos) só com NEXT_PUBLIC_STUDIO_V2=on; o atual continua o padrão
+const STUDIO_V2 = process.env.NEXT_PUBLIC_STUDIO_V2 === "on"
+const StudioV2 = dynamic(() => import("@/components/studio/v2/StudioV2").then((m) => m.StudioV2), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
+})
+
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
   const gbp = useGoogleBusiness({ userRole: user.role, fetchPromos })
   const ig = useInstagram()
   const meta = useMeta()
   const { promoImages, loadingPromoImages, updatePromoImage } = usePromoImages(promos)
+  const { summary: channelSummary, refresh: refreshSummary } = usePublishSummary()
 
   const [activePanel, setActivePanel] = useState<ActivePanel>("list")
   const [selectedPromo, setSelectedPromo] = useState<PromoData | null>(null)
@@ -93,6 +102,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const handleDelete = async (id: string) => {
     try {
       await deletePromo(id)
+      void refreshSummary()
       setNotice({ type: "success", text: "Promo excluída." })
     } catch (err) {
       setNotice({ type: "error", text: err instanceof Error ? err.message : "Erro ao excluir" })
@@ -108,17 +118,41 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
       return next
     })
 
+  /**
+   * Toda promo que entra no site vai para o Google com a arte paisagem (a do Studio ou o modelo padrão).
+   * Devolve o erro pronto para a tela, ou null se deu certo. O desenho da arte (Konva) só carrega aqui,
+   * fora do pacote da lista.
+   */
+  const postGoogle = async (promo: PromoData): Promise<string | null> => {
+    let failed: string | null
+    try {
+      const { postGoogleAfterSite, googleError } = await import("@/lib/client/postGoogle")
+      failed = googleError(await postGoogleAfterSite(promo, { photo: promoImages[promo.id] }))
+    } catch {
+      failed = "Não foi possível publicar no Google. Tente de novo em alguns minutos."
+    }
+    void refreshSummary()
+    return failed
+  }
+
   // Publicar sem foto/seção funciona: o servidor completa com foto do destino e seção sugerida
   const handleTogglePublish = async (promo: PromoData) => {
     const publish = !promo.SITE_PUBLISHED
     setPublishing([promo.id], true)
     try {
-      const updated = await savePromo({ ...promo, SITE_PUBLISHED: publish })
+      const updated: PromoData = await savePromo({ ...promo, SITE_PUBLISHED: publish })
       if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
-      setNotice({
-        type: "success",
-        text: publish ? `${promo.DESTINO} publicado no site.` : `${promo.DESTINO} saiu do site.`,
-      })
+      if (!publish) {
+        void refreshSummary()
+        setNotice({ type: "success", text: `${promo.DESTINO} saiu do site.` })
+        return
+      }
+      const failed = await postGoogle(updated)
+      setNotice(
+        failed
+          ? { type: "error", text: `Publicado no site; o Google falhou: ${failed}` }
+          : { type: "success", text: "Publicado no site e no Google." },
+      )
     } catch (err) {
       setNotice({ type: "error", text: err instanceof Error ? err.message : "Erro ao atualizar a promo" })
     } finally {
@@ -131,6 +165,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     setPublishing(ids, true)
     const results = await Promise.allSettled(expired.map((p) => savePromo({ ...p, SITE_PUBLISHED: false })))
     setPublishing(ids, false)
+    void refreshSummary()
     const failed = results.filter((r) => r.status === "rejected").length
     setNotice(
       failed
@@ -151,8 +186,29 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     setSelectedPromo(null)
     void fetchPromos()
     void fetchStats()
+    void refreshSummary()
+    const promo = saved?.id ? (saved as unknown as PromoData) : null
+    // Promo no site: vai para o Google se ainda não foi, se deu erro ou se a oferta mudou (o post novo substitui o anterior)
+    if (promo?.SITE_PUBLISHED) void syncGoogleAfterSave(promo, !!created)
     // Promo nova: o próximo passo é a arte, então o Studio já abre com ela
-    if (created && saved?.id) handleGenerateImage(saved as unknown as PromoData)
+    if (created && promo) handleGenerateImage(promo)
+  }
+
+  const syncGoogleAfterSave = async (promo: PromoData, created: boolean) => {
+    // Sem conseguir carregar a verificação, segue para o post (o post novo substitui o anterior)
+    const needsPost = await import("@/lib/client/postGoogle").then(({ googleNeedsPost }) => googleNeedsPost(promo.id)).catch(() => true)
+    if (!needsPost) return
+    setPublishing([promo.id], true)
+    try {
+      const failed = await postGoogle(promo)
+      setNotice(
+        failed
+          ? { type: "error", text: `${created ? "Publicado no site" : "Promo salva"}; o Google falhou: ${failed}` }
+          : { type: "success", text: created ? "Publicado no site e no Google." : "Promo salva e Google atualizado." },
+      )
+    } finally {
+      setPublishing([promo.id], false)
+    }
   }
 
   const handleNewPromo = () => {
@@ -186,6 +242,24 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     handleGenerateImage(mockPromo)
   }
 
+  const handleStudioSavePromo = async (p: Record<string, unknown>) => {
+    const wasOnSite = !!selectedPromo?.SITE_PUBLISHED
+    const updated = await savePromo(p)
+    setSelectedPromo(updated)
+    if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
+    // Studio atual: "Publicar no site" passa por aqui, então o Google vai junto (o Studio novo publica o Google sozinho)
+    if (!STUDIO_V2 && !wasOnSite && updated?.SITE_PUBLISHED) {
+      // Enquanto posta, o botão "Postar oferta no Google" do Studio fica travado (não posta duas vezes)
+      setPublishing([updated.id], true)
+      void postGoogle(updated)
+        .then((failed) => {
+          if (failed) setNotice({ type: "error", text: `Publicado no site; o Google falhou: ${failed}` })
+        })
+        .finally(() => setPublishing([updated.id], false))
+    }
+    return updated
+  }
+
   const handleCloseEditor = () => {
     if (batchHidden && selectedPromo) {
       setBatchRefresh((r) => ({ promoId: selectedPromo.id, n: (r?.n || 0) + 1 }))
@@ -193,6 +267,9 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     }
     setActivePanel("list")
     setSelectedPromo(null)
+    // O Studio pode ter publicado em canais e mudado a oferta
+    void fetchPromos()
+    void refreshSummary()
   }
 
   return (
@@ -232,6 +309,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
               promoImages={promoImages}
               loadingPromoImages={loadingPromoImages}
               publishingIds={publishingIds}
+              channelSummary={channelSummary}
               onEdit={handleEdit}
               onGenerateImage={handleGenerateImage}
               onDelete={(id) => setDeleteConfirm(id)}
@@ -242,22 +320,26 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           </>
         )}
 
-        {activePanel === "editor" && selectedPromo && (
+        {activePanel === "editor" && selectedPromo && (STUDIO_V2 ? (
+          <StudioV2
+            key={selectedPromo.id}
+            promo={selectedPromo as unknown as StudioProps["promo"]}
+            isAdmin={user.role === "admin"}
+            onClose={handleCloseEditor}
+            onSavePromo={handleStudioSavePromo}
+          />
+        ) : (
           <Studio
             key={selectedPromo.id}
             promo={selectedPromo as unknown as StudioProps["promo"]}
             isAdmin={user.role === "admin"}
             onClose={handleCloseEditor}
-            onSavePromo={async (p) => {
-              const updated = await savePromo(p)
-              setSelectedPromo(updated)
-              if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
-              return updated
-            }}
+            onSavePromo={handleStudioSavePromo}
             ig={ig}
             gbp={gbp}
+            googlePosting={!!publishingIds[selectedPromo.id]}
           />
-        )}
+        ))}
 
         {activePanel === "stats" && <StatsPanel stats={stats} />}
       </main>

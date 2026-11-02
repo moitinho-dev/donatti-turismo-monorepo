@@ -28,6 +28,7 @@ import {
   PenTool,
 } from "lucide-react"
 import { ImageGallery } from "./ImageGallery"
+import type { PromoData } from "@/components/promos/dashboard/types"
 import { useLayouts, type ImageArea, type ElementConfig } from "@/hooks/useLayouts"
 
 interface PromoImageGeneratorProps {
@@ -131,6 +132,8 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [sitePublished, setSitePublished] = useState<boolean>(promo.SITE_PUBLISHED ?? false)
+  // Situação já salva no servidor (o checkbox muda `sitePublished` antes de salvar)
+  const savedPublishedRef = useRef<boolean>(promo.SITE_PUBLISHED ?? false)
   const [siteSection, setSiteSection] = useState<string>(promo.SITE_SECTION || "")
   const [siteSlug, setSiteSlug] = useState<string>(promo.SITE_SLUG || slugify(promo.DESTINO))
   const [siteDescription, setSiteDescription] = useState<string>(promo.SITE_DESCRIPTION || promo.HOTEL || "")
@@ -357,6 +360,25 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
     }
   }
 
+  /** Se a promo acabou de entrar no site, posta também no Google e mostra o resultado */
+  const googleIfEnteredSite = async (res: Response, publishFlag: boolean) => {
+    const wasPublished = savedPublishedRef.current
+    savedPublishedRef.current = publishFlag
+    if (!publishFlag || wasPublished) return
+    const saved = (await res.json().catch(() => null)) as PromoData | null
+    if (!saved?.id) return
+    // Carrega o desenho da arte (Konva) só agora, fora do pacote do gerador antigo
+    const failed = await import("@/lib/client/postGoogle")
+      .then(async ({ postGoogleAfterSite, googleError }) => googleError(await postGoogleAfterSite(saved)))
+      .catch(() => "Não foi possível publicar no Google. Tente de novo em alguns minutos.")
+    if (failed) {
+      setSiteMessage(null)
+      setSiteError(`Publicado no site; o Google falhou: ${failed}`)
+    } else {
+      setSiteMessage("Publicado no site e no Google.")
+    }
+  }
+
   const handleSavePublication = async (publishFlag: boolean) => {
     if (!promo.id) {
       setSiteError("Esta promoção precisa ser salva antes de publicar.")
@@ -378,6 +400,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
       }
       setSitePublished(publishFlag)
       setSiteMessage(publishFlag ? "Publicado no site com a imagem escolhida." : "Card do site atualizado.")
+      await googleIfEnteredSite(res, publishFlag)
     } catch (err) {
       setSiteError(err instanceof Error ? err.message : "Erro ao salvar publicação")
     } finally {
@@ -405,6 +428,7 @@ export function PromoImageGenerator({ promo }: PromoImageGeneratorProps) {
         throw new Error(data.error || "Erro ao salvar foto do card")
       }
       setSiteMessage("Foto do card atualizada.")
+      await googleIfEnteredSite(res, sitePublished)
     } catch (err) {
       setSiteError(err instanceof Error ? err.message : "Erro ao salvar foto do card")
     } finally {

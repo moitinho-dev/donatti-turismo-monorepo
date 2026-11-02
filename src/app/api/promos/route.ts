@@ -3,10 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import { z } from "zod"
 import prisma from "@/lib/db"
-import { publishPromoPost } from "@/lib/googleBusiness"
-import { suggestSiteSection } from "@/lib/destinations"
-import { findSiteImageForDestination } from "@/lib/imageSearch"
-import { slugify } from "@/lib/utils"
+import { resolveSiteFields } from "@/lib/siteFields"
 
 // Schema for promo validation
 const promoSchema = z.object({
@@ -106,46 +103,6 @@ function normalizeValorOriginal(original: string | null | undefined, valor: stri
   return Number.isFinite(de) && Number.isFinite(por) && de > por ? de.toFixed(2) : null
 }
 
-/** Slug livre: se outro pacote já usa, acrescenta -2, -3... (siteSlug é único no banco) */
-async function ensureUniqueSlug(slug: string, excludeId?: string): Promise<string> {
-  const base = slugify(slug)
-  if (!base) return base
-  let candidate = base
-  for (let i = 2; i < 50; i++) {
-    const taken = await prisma.promo.findFirst({
-      where: { siteSlug: candidate, ...(excludeId ? { NOT: { id: excludeId } } : {}) },
-      select: { id: true },
-    })
-    if (!taken) return candidate
-    candidate = `${base}-${i}`
-  }
-  return `${base}-${Date.now().toString(36)}`
-}
-
-/**
- * Completa os campos do card do site. Ao publicar sem seção ou sem foto, classifica a seção
- * pelo destino e busca uma foto horizontal do próprio destino, para o card nunca ir ao ar
- * com a foto genérica nem na seção errada.
- */
-async function resolveSiteFields(data: z.infer<typeof promoSchema>) {
-  const published = data.SITE_PUBLISHED || false
-  let section = (data.SITE_SECTION || "").trim() || null
-  let image = (data.SITE_IMAGE || "").trim() || null
-  const rawSlug = (data.SITE_SLUG || "").trim()
-
-  if (published && !section) {
-    section = suggestSiteSection(data.DESTINO) || "nacionais"
-  }
-  if (published && !image) {
-    image = await findSiteImageForDestination(data.DESTINO)
-  }
-
-  const slugSource = rawSlug || (published ? data.DESTINO : "")
-  const slug = slugSource ? await ensureUniqueSlug(slugSource, data.id) : null
-
-  return { sitePublished: published, siteSection: section, siteSlug: slug || null, siteImage: image }
-}
-
 export async function GET(req: NextRequest) {
   try {
     // Check authentication
@@ -231,8 +188,8 @@ export async function POST(req: NextRequest) {
 
     // Parse parcelas to number
     const parcelas = typeof data.PARCELAS === "string" ? parseInt(data.PARCELAS, 10) || 15 : data.PARCELAS || 15
-    const siteFields = await resolveSiteFields(data)
 
+    // O Google não é postado aqui: a tela publica pelo /api/publish, com a arte (postGoogleAfterSite)
     if (isUpdate) {
       // Check if promo exists
       const existingPromo = await prisma.promo.findUnique({
@@ -247,6 +204,9 @@ export async function POST(req: NextRequest) {
       if (session.user.role !== "admin" && existingPromo.createdById !== session.user.id) {
         return NextResponse.json({ error: "Você não tem permissão para editar esta promoção" }, { status: 403 })
       }
+
+      // Sem SITE_PUBLISHED no corpo (ex.: o Studio salvando a oferta), a promo fica como está no site
+      const siteFields = await resolveSiteFields(data, existingPromo.sitePublished)
 
       // Update promo
       const updatedPromo = await prisma.promo.update({
@@ -276,15 +236,9 @@ export async function POST(req: NextRequest) {
         include: { createdBy: { select: { name: true } } },
       })
 
-      // Auto-post to Google Business when publishing to the site (best-effort)
-      if (updatedPromo.sitePublished) {
-        publishPromoPost(updatedPromo.id).catch((err) => {
-          console.error("Google Business post error:", err)
-        })
-      }
-
       return NextResponse.json(toApiFormat(updatedPromo))
     } else {
+      const siteFields = await resolveSiteFields(data)
       // Create new promo
       const newPromo = await prisma.promo.create({
         data: {
@@ -312,12 +266,6 @@ export async function POST(req: NextRequest) {
         },
         include: { createdBy: { select: { name: true } } },
       })
-
-      if (newPromo.sitePublished) {
-        publishPromoPost(newPromo.id).catch((err) => {
-          console.error("Google Business post error:", err)
-        })
-      }
 
       return NextResponse.json(toApiFormat(newPromo), { status: 201 })
     }

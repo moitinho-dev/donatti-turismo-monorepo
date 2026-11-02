@@ -37,6 +37,7 @@ import { PublishPanel } from "./panels/PublishPanel"
 import { TemplatesPanel } from "./panels/TemplatesPanel"
 import { Spinner } from "./panels/ui"
 import { loadSavedArt, type SavedDesignData } from "./savedArt"
+import { savedDocsOnly } from "./artSet"
 
 export interface StudioProps {
   promo: Record<string, unknown> & { id: string; DESTINO: string }
@@ -45,6 +46,8 @@ export interface StudioProps {
   onSavePromo: (promo: Record<string, unknown>) => Promise<Record<string, unknown>>
   ig: ReturnType<typeof useInstagram>
   gbp: ReturnType<typeof useGoogleBusiness>
+  /** Studio atual: post automático no Google desta promo em andamento (trava o botão manual) */
+  googlePosting?: boolean
 }
 
 type Tab = "modelos" | "fotos" | "ia" | "adicionar" | "camadas" | "publicar" | "editar"
@@ -76,7 +79,7 @@ const buildFamily = (familyId: string | null, format: ArtFormat, photo: string |
   return withPhoto((TEMPLATE_FAMILIES.find((f) => f.id === familyId) || TEMPLATE_FAMILIES[0]).build(format), photo)
 }
 
-export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig, gbp }: StudioProps) {
+export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig, gbp, googlePosting }: StudioProps) {
   const isDemo = initialPromo.id === "demo-tutorial"
   const [promo, setPromo] = useState(initialPromo)
   const vars = useMemo(() => promoVariables(promo), [promo])
@@ -202,10 +205,12 @@ export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig,
         try {
           const saved = await loadSavedArt(initialPromo)
           if (alive && saved) {
+            // Só os formatos salvos: os que faltam o Studio monta ao abrir, com o modelo dele (inclusive o da equipe)
+            const docs = savedDocsOnly(saved)
             setDesignId(saved.designId)
             setPhotoUrl(saved.photo)
-            setHistory({ past: [], present: { docs: saved.docs, family: saved.family }, future: [] })
-            setFormat(FORMAT_ORDER.find((f) => saved.docs[f]) || "story")
+            setHistory({ past: [], present: { docs, family: saved.family }, future: [] })
+            setFormat(FORMAT_ORDER.find((f) => docs[f]) || "story")
             setLoading(false)
             return
           }
@@ -584,6 +589,7 @@ export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig,
             getDataUrl={(f) => getDataUrl(f, "image/jpeg")}
             ig={ig}
             gbp={gbp}
+            googlePosting={googlePosting}
           />
         )
       case "editar":

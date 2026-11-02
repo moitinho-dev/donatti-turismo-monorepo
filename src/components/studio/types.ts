@@ -21,6 +21,8 @@ interface LayerBase {
   rotation: number
   opacity: number
   locked?: boolean
+  /** Trava de template: aviso ao editar, não bloqueio */
+  templateLock?: boolean
   hidden?: boolean
   /** Some quando a variável não tem valor na promo (ex.: selo de desconto sem preço "de") */
   showIf?: string
