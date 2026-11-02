@@ -32,6 +32,13 @@ const Studio = dynamic(() => import("@/components/studio/Studio").then((m) => m.
   loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
 })
 
+// Studio novo (4 formatos juntos) só com NEXT_PUBLIC_STUDIO_V2=on; o atual continua o padrão
+const STUDIO_V2 = process.env.NEXT_PUBLIC_STUDIO_V2 === "on"
+const StudioV2 = dynamic(() => import("@/components/studio/v2/StudioV2").then((m) => m.StudioV2), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
+})
+
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
   const gbp = useGoogleBusiness({ userRole: user.role, fetchPromos })
@@ -186,6 +193,13 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     handleGenerateImage(mockPromo)
   }
 
+  const handleStudioSavePromo = async (p: Record<string, unknown>) => {
+    const updated = await savePromo(p)
+    setSelectedPromo(updated)
+    if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
+    return updated
+  }
+
   const handleCloseEditor = () => {
     if (batchHidden && selectedPromo) {
       setBatchRefresh((r) => ({ promoId: selectedPromo.id, n: (r?.n || 0) + 1 }))
@@ -242,22 +256,26 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           </>
         )}
 
-        {activePanel === "editor" && selectedPromo && (
+        {activePanel === "editor" && selectedPromo && (STUDIO_V2 ? (
+          <StudioV2
+            key={selectedPromo.id}
+            promo={selectedPromo as unknown as StudioProps["promo"]}
+            isAdmin={user.role === "admin"}
+            onClose={handleCloseEditor}
+            onSavePromo={handleStudioSavePromo}
+            meta={meta}
+          />
+        ) : (
           <Studio
             key={selectedPromo.id}
             promo={selectedPromo as unknown as StudioProps["promo"]}
             isAdmin={user.role === "admin"}
             onClose={handleCloseEditor}
-            onSavePromo={async (p) => {
-              const updated = await savePromo(p)
-              setSelectedPromo(updated)
-              if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
-              return updated
-            }}
+            onSavePromo={handleStudioSavePromo}
             ig={ig}
             gbp={gbp}
           />
-        )}
+        ))}
 
         {activePanel === "stats" && <StatsPanel stats={stats} />}
       </main>

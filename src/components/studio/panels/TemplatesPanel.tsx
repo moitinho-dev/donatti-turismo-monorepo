@@ -4,13 +4,16 @@ import { useEffect, useState } from "react"
 import { Trash2 } from "lucide-react"
 import { renderDoc } from "../render"
 import { TEMPLATE_FAMILIES, legacyLayoutToDoc, withPhoto, type LegacyLayout } from "../templates"
-import type { ArtFormat, StudioDoc } from "../types"
+import { templateDataToSet } from "../teamTemplates"
+import { FORMAT_ORDER, type ArtFormat, type StudioDoc } from "../types"
 import { Section, Spinner } from "./ui"
 
 interface TeamTemplate {
   id: string
   name: string
   thumbnailUrl: string | null
+  /** "set" = salvo com os 4 formatos (Studio v2) */
+  format?: string
   createdBy?: { name: string | null }
 }
 
@@ -20,14 +23,31 @@ interface TemplatesPanelProps {
   photoUrl: string | null
   activeFamily: string | null
   onApplyFamily: (familyId: string) => void
-  onApplyDoc: (doc: StudioDoc) => void
+  /** Studio atual: aplica um formato */
+  onApplyDoc?: (doc: StudioDoc) => void
+  /** Studio v2: aplica o template inteiro (os formatos que ele tiver) */
+  onApplyTemplateSet?: (docs: Partial<Record<ArtFormat, StudioDoc>>) => void
   refreshKey: number
-  hasLegacy: boolean
+  hasLegacy?: boolean
+  /** "v2" esconde os templates antigos da tela Templates */
+  variant?: "v1" | "v2"
 }
 
 const thumbCache = new Map<string, string>()
 
-export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFamily, onApplyDoc, refreshKey, hasLegacy }: TemplatesPanelProps) {
+export function TemplatesPanel({
+  format,
+  vars,
+  photoUrl,
+  activeFamily,
+  onApplyFamily,
+  onApplyDoc,
+  onApplyTemplateSet,
+  refreshKey,
+  hasLegacy = false,
+  variant = "v1",
+}: TemplatesPanelProps) {
+  const isV2 = variant === "v2"
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const [team, setTeam] = useState<TeamTemplate[] | null>(null)
   const [legacy, setLegacy] = useState<LegacyLayout[] | null>(null)
@@ -60,7 +80,7 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => alive && setTeam(d))
       .catch(() => alive && setTeam([]))
-    if (format === "story" || format === "feed") {
+    if (!isV2 && (format === "story" || format === "feed")) {
       fetch(`/api/layouts?format=${format}`)
         .then((r) => (r.ok ? r.json() : []))
         .then((d) => alive && setLegacy(Array.isArray(d) ? d : []))
@@ -71,7 +91,7 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
     return () => {
       alive = false
     }
-  }, [format, refreshKey])
+  }, [format, refreshKey, isV2])
 
   const openTeamTemplate = async (id: string) => {
     setLoadingId(id)
@@ -79,7 +99,14 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
       const res = await fetch(`/api/designs/${id}`)
       if (!res.ok) throw new Error()
       const design = await res.json()
-      onApplyDoc(withPhoto(design.data as StudioDoc, photoUrl))
+      // Template novo (4 formatos) ou antigo (um formato só)
+      const docs = templateDataToSet(design.data)
+      if (onApplyTemplateSet) {
+        if (Object.keys(docs).length) onApplyTemplateSet(docs)
+        return
+      }
+      const doc = docs[format] || FORMAT_ORDER.map((f) => docs[f]).find(Boolean)
+      if (doc && onApplyDoc) onApplyDoc(withPhoto(doc, photoUrl))
     } finally {
       setLoadingId(null)
     }
@@ -118,7 +145,7 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
           <button
             key={l.id}
             type="button"
-            onClick={() => onApplyDoc(withPhoto(legacyLayoutToDoc(l), photoUrl))}
+            onClick={() => onApplyDoc?.(withPhoto(legacyLayoutToDoc(l), photoUrl))}
             className="relative overflow-hidden rounded-xl border-2 border-transparent text-left hover:border-amber-300"
           >
             <div className={`${aspect} w-full bg-gray-800`}>{l.url ? <img src={l.url} alt={l.name} className="h-full w-full object-cover" /> : null}</div>
@@ -133,7 +160,7 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
 
   return (
     <div className="space-y-6">
-      {legacySection}
+      {!isV2 && legacySection}
 
       <Section title="Modelos Donatti">
         <div className={`grid gap-2.5 ${format === "landscape" ? "grid-cols-1" : "grid-cols-2"}`}>
@@ -160,14 +187,20 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-gray-400">Os modelos se adaptam aos 4 formatos. Ao trocar de formato, a arte é refeita no mesmo modelo.</p>
+        <p className="text-[11px] text-gray-400">
+          {isV2 ? "Escolher um modelo refaz os 4 formatos de uma vez." : "Os modelos se adaptam aos 4 formatos. Ao trocar de formato, a arte é refeita no mesmo modelo."}
+        </p>
       </Section>
 
       <Section title="Templates da equipe">
         {team === null ? (
           <Spinner />
         ) : team.length === 0 ? (
-          <p className="text-[12px] text-gray-500">Nenhum ainda. Em &quot;Publicar&quot;, use &quot;Salvar como template&quot; para a equipe reaproveitar uma arte.</p>
+          <p className="text-[12px] text-gray-500">
+            {isV2
+              ? "Nenhum ainda. Use \"Salvar como template\" aqui embaixo para a equipe reaproveitar esta arte."
+              : "Nenhum ainda. Em \"Publicar\", use \"Salvar como template\" para a equipe reaproveitar uma arte."}
+          </p>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
             {team.map((t) => (
@@ -186,6 +219,9 @@ export function TemplatesPanel({ format, vars, photoUrl, activeFamily, onApplyFa
                     )}
                   </div>
                   <p className="truncate px-1 py-1 text-[12px] font-semibold text-gray-800">{t.name}</p>
+                  {isV2 && t.format === "set" && (
+                    <span className="absolute left-1.5 top-1.5 rounded-full bg-gray-900/80 px-1.5 py-0.5 text-[9px] font-bold text-white">4 formatos</span>
+                  )}
                 </button>
                 <button
                   type="button"
