@@ -69,7 +69,10 @@ export async function POST(req: Request) {
 
     const id = ("id" in result && result.id) || ("post_id" in result && result.post_id) || null
     if (body.promoId && id && body.network === "instagram" && body.kind === "post") {
-      await prisma.promo.update({ where: { id: body.promoId }, data: { instagramPostId: String(id) } }).catch(() => undefined)
+      // Só marca o post na promo de quem pode editá-la (admin ou quem criou)
+      await prisma.promo
+        .updateMany({ where: { id: body.promoId, ...(user.admin ? {} : { createdById: user.id }) }, data: { instagramPostId: String(id) } })
+        .catch(() => undefined)
     }
     return NextResponse.json({ ok: true, id, scheduled: !!scheduledAt })
   } catch (error) {

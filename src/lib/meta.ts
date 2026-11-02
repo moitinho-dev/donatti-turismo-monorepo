@@ -22,27 +22,31 @@ export const metaRedirectUri = () => `${appBaseUrl()}/api/meta/callback`
 export const isMetaConfigured = () => !!(process.env.META_APP_ID && process.env.META_APP_SECRET && process.env.META_LOGIN_CONFIG_ID)
 
 // ---------------------------------------------------------------------------
-// OAuth: state assinado (evita que outra pessoa conecte a conta dela no lugar da Donatti)
+// OAuth: state assinado e preso ao navegador por um cookie (evita que outra pessoa conecte a conta dela)
 // ---------------------------------------------------------------------------
 
 const stateSecret = () => process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.META_APP_SECRET || ""
 
-export function signState(userEmail: string) {
-  const payload = `${Date.now()}.${randomBytes(8).toString("hex")}.${Buffer.from(userEmail).toString("base64url")}`
+export const META_NONCE_COOKIE = "meta_oauth_nonce"
+export const newNonce = () => randomBytes(16).toString("hex")
+
+export function signState(userEmail: string, nonce: string) {
+  const payload = `${Date.now()}.${nonce}.${Buffer.from(userEmail).toString("base64url")}`
   const sig = createHmac("sha256", stateSecret()).update(payload).digest("base64url")
   return `${payload}.${sig}`
 }
 
-/** Valida o state (assinatura e validade de 15 min) e devolve o e-mail de quem iniciou */
-export function verifyState(state: string | null): string | null {
+/** Valida o state (assinatura, validade de 15 min e nonce igual ao do cookie) e devolve o e-mail de quem iniciou */
+export function verifyState(state: string | null, cookieNonce: string | null | undefined): string | null {
   if (!state) return null
   const i = state.lastIndexOf(".")
   const payload = state.slice(0, i)
   const sig = Buffer.from(state.slice(i + 1))
   const expected = Buffer.from(createHmac("sha256", stateSecret()).update(payload).digest("base64url"))
   if (sig.length !== expected.length || !timingSafeEqual(sig, expected)) return null
-  const [ts, , email] = payload.split(".")
+  const [ts, nonce, email] = payload.split(".")
   if (Date.now() - Number(ts) > 15 * 60_000) return null
+  if (!cookieNonce || nonce !== cookieNonce) return null
   return Buffer.from(email, "base64url").toString()
 }
 
