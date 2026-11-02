@@ -43,10 +43,7 @@ export function AiPanel({ enabled, promo, format, photoUrl, selected, onSetPhoto
     return (
       <div className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-[13px] text-violet-900">
         <p className="font-bold">IA ainda não configurada</p>
-        <p>
-          Para gerar imagens e textos, configure as credenciais da AWS Bedrock no servidor (variáveis <code>AWS_BEARER_TOKEN_BEDROCK</code> ou{" "}
-          <code>AWS_ACCESS_KEY_ID</code>/<code>AWS_SECRET_ACCESS_KEY</code>).
-        </p>
+        <p>Para gerar imagens e textos com a IA, peça ao administrador do sistema para ativar.</p>
       </div>
     )
   }

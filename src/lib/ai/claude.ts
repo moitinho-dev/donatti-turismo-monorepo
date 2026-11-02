@@ -1,14 +1,15 @@
-import { AnthropicBedrockMantle } from "@anthropic-ai/bedrock-sdk"
+import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk"
 import type Anthropic from "@anthropic-ai/sdk"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
 import { z } from "zod/v4"
 import { AiNotConfiguredError, aiConfig, isAiConfigured } from "./config"
 
-let client: AnthropicBedrockMantle | null = null
+let client: AnthropicBedrock | null = null
 
 function getClient() {
   if (!isAiConfigured()) throw new AiNotConfiguredError()
-  client ??= new AnthropicBedrockMantle({ awsRegion: aiConfig.region })
+  // bedrock-runtime (InvokeModel): aceita os perfis de inferência "us.anthropic.*" exigidos pelos Claude novos
+  client ??= new AnthropicBedrock({ awsRegion: aiConfig.region })
   return client
 }
 
