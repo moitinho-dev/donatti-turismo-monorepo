@@ -1,6 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
+import type { MetaConnection } from "@prisma/client"
 import prisma from "./db"
 import { storageDriver, uploadImage } from "./storage"
+import { publishKind, type MetaChannel } from "./channels"
 
 /**
  * Meta pelo Login do Facebook para Empresas (META_LOGIN_CONFIG_ID, token de usuário do sistema).
@@ -240,4 +242,43 @@ export async function publishInstagramPost(igUserId: string, token: string, { im
 export async function publishInstagramStory(igUserId: string, token: string, image: string) {
   const c = await graph<{ id: string }>(`/${igUserId}/media`, { method: "POST", params: { access_token: token, image_url: image, media_type: "STORIES" } })
   return igPublish(igUserId, token, c.id)
+}
+
+// ---------------------------------------------------------------------------
+// Publicação por canal (usada por /api/meta/publish e /api/publish)
+// ---------------------------------------------------------------------------
+
+export type MetaPublishConnection = Pick<MetaConnection, "pageId" | "pageAccessToken" | "igUserId">
+
+/**
+ * Publica as imagens no canal da Meta. Mais de uma imagem no feed vira carrossel (Instagram)
+ * ou álbum (Facebook); story é uma imagem por chamada. `scheduledAt` só vale no feed do Facebook.
+ */
+export async function publishMeta(
+  channel: MetaChannel,
+  conn: MetaPublishConnection,
+  images: string[],
+  caption?: string,
+  scheduledAt?: Date | null,
+): Promise<{ externalId: string | null; kind: "post" | "story" | "carousel" | "album" }> {
+  if (!conn.pageId || !conn.pageAccessToken) throw new MetaError("Conecte a Meta no painel antes de publicar")
+  const instagram = channel === "ig-feed" || channel === "ig-story"
+  if (instagram && !conn.igUserId) throw new MetaError("A Página conectada não tem Instagram profissional ligado")
+  if (!images.length) throw new MetaError("Envie ao menos uma imagem")
+
+  const urls: string[] = []
+  for (const img of images) urls.push(await publicImageUrl(img))
+  const token = conn.pageAccessToken
+
+  const result =
+    channel === "fb-story"
+      ? await publishFacebookStory(conn.pageId, token, urls[0])
+      : channel === "fb-feed"
+        ? await publishFacebookPost(conn.pageId, token, { images: urls, caption, scheduledAt })
+        : channel === "ig-story"
+          ? await publishInstagramStory(conn.igUserId!, token, urls[0])
+          : await publishInstagramPost(conn.igUserId!, token, { images: urls, caption })
+
+  const id = ("id" in result && result.id) || ("post_id" in result && result.post_id) || null
+  return { externalId: id ? String(id) : null, kind: publishKind(channel, urls.length) }
 }
