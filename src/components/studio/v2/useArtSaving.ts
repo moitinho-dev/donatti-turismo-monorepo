@@ -121,7 +121,7 @@ export function useArtSaving({ set, vars, format, promo, isDemo, loading, rev, d
 
   /** Grava os 4 formatos como template da equipe; texto fixo com dados desta promo pode virar variável */
   const saveTemplate = async (name: string) => {
-    if (!set) return
+    if (isDemo || !set) return
     let formats = set.docs
     const keys = FORMAT_ORDER.flatMap((f) => fixedTextHits(set.docs[f], vars).map((h) => h.key))
     if (keys.length) {

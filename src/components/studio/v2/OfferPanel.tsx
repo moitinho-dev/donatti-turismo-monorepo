@@ -42,22 +42,40 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
   const [status, setStatus] = useState<Status>({ kind: "idle" })
   const pending = useRef<Promo | null>(null)
   const timer = useRef<number | null>(null)
+  // Um salvamento por vez; o que chegar no meio espera e só a versão mais nova é enviada
+  const running = useRef(false)
+  const queued = useRef<Promo | null>(null)
 
   const save = useCallback(
-    async (next: Promo) => {
+    async (first: Promo) => {
       pending.current = null
-      const missing = REQUIRED.filter(([k]) => !str(next[k]).trim()).map(([, label]) => label)
-      if (missing.length) {
-        setStatus({ kind: "missing", fields: missing })
+      if (running.current) {
+        queued.current = first
         return
       }
-      setStatus({ kind: "saving" })
+      running.current = true
+      let next: Promo | null = first
       try {
-        const updated = await onSavePromo(next)
-        onSaved(updated, next)
-        setStatus({ kind: "saved" })
-      } catch (err) {
-        setStatus({ kind: "error", text: err instanceof Error ? err.message : "Não deu para salvar a promo" })
+        while (next) {
+          const current: Promo = next
+          const missing = REQUIRED.filter(([k]) => !str(current[k]).trim()).map(([, label]) => label)
+          if (missing.length) {
+            setStatus({ kind: "missing", fields: missing })
+          } else {
+            setStatus({ kind: "saving" })
+            try {
+              const updated = await onSavePromo(current)
+              onSaved(updated, current)
+              setStatus({ kind: "saved" })
+            } catch (err) {
+              setStatus({ kind: "error", text: err instanceof Error ? err.message : "Não deu para salvar a promo" })
+            }
+          }
+          next = queued.current
+          queued.current = null
+        }
+      } finally {
+        running.current = false
       }
     },
     [onSavePromo, onSaved],
@@ -77,16 +95,32 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
     [],
   )
 
-  const update = (patch: Record<string, unknown>) => {
+  /**
+   * "debounce": textos salvam 800 ms depois da última tecla.
+   * "hold": preço só muda a arte; salva ao sair do campo ou com Enter (nada de "3,29" no meio da digitação).
+   * "now": escolha fechada (parcelas, regime, saída) salva na hora.
+   */
+  const update = (patch: Record<string, unknown>, mode: "debounce" | "hold" | "now" = "debounce") => {
     const next = { ...promo, ...patch } as Promo
     onChange(next)
     if (readOnly) return
     pending.current = next
     if (timer.current) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => {
-      timer.current = null
-      if (pending.current) void saveRef.current(pending.current)
-    }, SAVE_DELAY)
+    timer.current = null
+    if (mode === "now") void saveRef.current(next)
+    else if (mode === "debounce") {
+      timer.current = window.setTimeout(() => {
+        timer.current = null
+        if (pending.current) void saveRef.current(pending.current)
+      }, SAVE_DELAY)
+    }
+  }
+
+  /** Fecha a edição do preço: salva o que ficou pendente */
+  const flush = () => {
+    if (timer.current) window.clearTimeout(timer.current)
+    timer.current = null
+    if (pending.current) void saveRef.current(pending.current)
   }
 
   const regime = (REGIMES.find((r) => promo[r.value])?.value || "") as Regime | ""
@@ -131,11 +165,15 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
             onChange={(e) => {
               setValorText(e.target.value)
               const n = getPriceNumber(e.target.value)
-              update({ VALOR: n ? n.toFixed(2) : "" })
+              update({ VALOR: n ? n.toFixed(2) : "" }, "hold")
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") flush()
             }}
             onBlur={() => {
               const n = getPriceNumber(valorText)
               if (n) setValorText(brl(n))
+              flush()
             }}
             className={inputCls}
           />
@@ -147,7 +185,7 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
               <button
                 key={n}
                 type="button"
-                onClick={() => update({ PARCELAS: n })}
+                onClick={() => update({ PARCELAS: n }, "now")}
                 aria-pressed={Number(promo.PARCELAS) === n}
                 className={`rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition-all ${Number(promo.PARCELAS) === n ? "bg-amber-500 text-white" : "border border-gray-200 bg-white text-gray-600 hover:border-amber-400"}`}
               >
@@ -162,7 +200,7 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
         <Field label="Regime">
           <select
             value={regime}
-            onChange={(e) => update(Object.fromEntries(REGIMES.map((r) => [r.value, r.value === e.target.value])))}
+            onChange={(e) => update(Object.fromEntries(REGIMES.map((r) => [r.value, r.value === e.target.value])), "now")}
             className={inputCls}
           >
             <option value="">Não informado</option>
@@ -181,7 +219,7 @@ export function OfferPanel({ promo, onChange, onSavePromo, onSaved, readOnly }: 
               ["SP", "São Paulo"],
             ].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-[13px] text-gray-700">
-                <input type="checkbox" checked={!!promo[key]} onChange={(e) => update({ [key]: e.target.checked })} className="h-4 w-4 accent-amber-500" />
+                <input type="checkbox" checked={!!promo[key]} onChange={(e) => update({ [key]: e.target.checked }, "now")} className="h-4 w-4 accent-amber-500" />
                 {label}
               </label>
             ))}

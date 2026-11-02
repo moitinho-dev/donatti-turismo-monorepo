@@ -276,8 +276,9 @@ export async function POST(req: NextRequest) {
         include: { createdBy: { select: { name: true } } },
       })
 
-      // Auto-post to Google Business when publishing to the site (best-effort)
-      if (updatedPromo.sitePublished) {
+      // Auto-post no Google só quando a promo ENTRA no site agora (best-effort).
+      // Editar uma promo que já está no site (ex.: Dados da oferta no Studio) não posta de novo.
+      if (!existingPromo.sitePublished && updatedPromo.sitePublished) {
         publishPromoPost(updatedPromo.id).catch((err) => {
           console.error("Google Business post error:", err)
         })
