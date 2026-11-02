@@ -7,6 +7,7 @@ import { getSectionLabel } from "@/lib/utils"
 import type { Channel } from "@/lib/channels"
 import type { PublishState } from "@/lib/publishState"
 import { ChannelStatusRow } from "./ChannelStatusRow"
+import { selectable } from "./selection"
 
 interface PromoGridCardProps {
   promo: PromoData
@@ -20,6 +21,10 @@ interface PromoGridCardProps {
   onGenerateImage: (promo: PromoData) => void
   onDelete: (id: string) => void
   onTogglePublish: (promo: PromoData) => void
+  /** Marcada para ação em lote */
+  selected?: boolean
+  /** Com ele, o cartão mostra a caixa de seleção (só no Studio novo) */
+  onToggleSelect?: (promo: PromoData) => void
 }
 
 const STATUS_STYLE = {
@@ -39,14 +44,21 @@ export function PromoGridCard({
   onGenerateImage,
   onDelete,
   onTogglePublish,
+  selected = false,
+  onToggleSelect,
 }: PromoGridCardProps) {
   const status = getPromoStatus(promo)
   const statusStyle = STATUS_STYLE[status]
   const regime = getRegimeLabel(promo)
+  const selection = onToggleSelect ? selectable(promo) : null
+  // Uma marcada que venceu depois (data editada) ainda pode ser desmarcada
+  const selectLocked = !!selection && !selection.ok && !selected
 
   return (
     <div
-      className={`bg-white rounded-[24px] border border-gray-200 overflow-hidden group/card hover:shadow-xl hover:border-amber-300/50 transition-all duration-300 flex h-full ${
+      className={`bg-white rounded-[24px] border overflow-hidden group/card hover:shadow-xl transition-all duration-300 flex h-full ${
+        selected ? "border-amber-500 ring-2 ring-amber-500/40" : "border-gray-200 hover:border-amber-300/50"
+      } ${
         viewMode === "list" ? "flex-col sm:flex-row" : "flex-col"
       } ${status === "vencida" ? "opacity-80" : ""}`}
     >
@@ -74,9 +86,28 @@ export function PromoGridCard({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
 
-        <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-[8px] text-[11px] font-black uppercase tracking-wide shadow-sm ${statusStyle.className}`}>
-          {statusStyle.label}
-        </span>
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          {selection && (
+            <label
+              title={selection.reason ?? (selected ? "Desmarcar" : "Marcar")}
+              className={`flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/90 shadow-sm backdrop-blur-md ${
+                selectLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={selected}
+                disabled={selectLocked}
+                onChange={() => onToggleSelect?.(promo)}
+                aria-label={`Marcar ${promo.DESTINO}`}
+                className="h-4 w-4 cursor-pointer accent-amber-500 disabled:cursor-not-allowed"
+              />
+            </label>
+          )}
+          <span className={`px-2.5 py-1 rounded-[8px] text-[11px] font-black uppercase tracking-wide shadow-sm ${statusStyle.className}`}>
+            {statusStyle.label}
+          </span>
+        </div>
 
         {/* Ações: sempre visíveis em telas de toque, no hover no desktop */}
         <div className="absolute top-3 right-3 flex gap-2 transition-all duration-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/card:opacity-100 focus-within:opacity-100">
