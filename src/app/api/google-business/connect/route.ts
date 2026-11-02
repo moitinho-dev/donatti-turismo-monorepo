@@ -13,7 +13,14 @@ export async function GET(req: Request) {
   if (!isGoogleConfigured()) return NextResponse.redirect(new URL("/promos?google=not-configured", req.url))
   // O nonce vai no state assinado e num cookie só deste navegador; o retorno exige os dois iguais
   const nonce = newNonce()
-  const res = NextResponse.redirect(buildConnectUrl(signState(user.email, nonce)))
+  let state: string
+  try {
+    state = signState(user.email, nonce)
+  } catch (err) {
+    console.error("Google: não deu para iniciar o login", err)
+    return NextResponse.redirect(new URL("/promos?google=not-configured", req.url))
+  }
+  const res = NextResponse.redirect(buildConnectUrl(state))
   res.cookies.set(GOOGLE_NONCE_COOKIE, nonce, {
     httpOnly: true,
     sameSite: "lax",

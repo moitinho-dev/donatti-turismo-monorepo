@@ -27,7 +27,12 @@ export const isMetaConfigured = () => !!(process.env.META_APP_ID && process.env.
 // OAuth: state assinado e preso ao navegador por um cookie (evita que outra pessoa conecte a conta dela)
 // ---------------------------------------------------------------------------
 
-const stateSecret = () => process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.META_APP_SECRET || ""
+const stateSecret = () => {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.META_APP_SECRET || ""
+  // Sem segredo a assinatura do state não protege nada: melhor falhar do que aceitar qualquer um
+  if (!secret) throw new Error("Segredo de sessão ausente")
+  return secret
+}
 
 export const META_NONCE_COOKIE = "meta_oauth_nonce"
 export const newNonce = () => randomBytes(16).toString("hex")
@@ -40,11 +45,12 @@ export function signState(userEmail: string, nonce: string) {
 
 /** Valida o state (assinatura, validade de 15 min e nonce igual ao do cookie) e devolve o e-mail de quem iniciou */
 export function verifyState(state: string | null, cookieNonce: string | null | undefined): string | null {
+  const secret = stateSecret()
   if (!state) return null
   const i = state.lastIndexOf(".")
   const payload = state.slice(0, i)
   const sig = Buffer.from(state.slice(i + 1))
-  const expected = Buffer.from(createHmac("sha256", stateSecret()).update(payload).digest("base64url"))
+  const expected = Buffer.from(createHmac("sha256", secret).update(payload).digest("base64url"))
   if (sig.length !== expected.length || !timingSafeEqual(sig, expected)) return null
   const [ts, nonce, email] = payload.split(".")
   if (Date.now() - Number(ts) > 15 * 60_000) return null

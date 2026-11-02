@@ -2,16 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("@/lib/db", () => ({
   default: {
-    googleBusinessConnection: { findFirst: vi.fn() },
+    googleBusinessConnection: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
     promo: { findUnique: vi.fn(), update: vi.fn() },
   },
 }))
 
 import prisma from "@/lib/db"
-import { buildConnectUrl, publishPromoPost } from "./googleBusiness"
+import { autoPickTarget, buildConnectUrl, listAccounts, listLocations, publishPromoPost, upsertRefreshToken } from "./googleBusiness"
 
 const db = prisma as unknown as {
-  googleBusinessConnection: { findFirst: ReturnType<typeof vi.fn> }
+  googleBusinessConnection: { findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> }
   promo: { findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }
 }
 
@@ -113,5 +113,98 @@ describe("link de conexão do Google", () => {
     expect(url.searchParams.get("redirect_uri")).toBe("https://app.donatti.com/api/google-business/callback")
     expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/business.manage")
     delete process.env.NEXT_PUBLIC_APP_URL
+  })
+})
+
+describe("reconexão", () => {
+  it("limpa a conta e o local escolhidos antes (pode ser outra conta do Google)", async () => {
+    db.googleBusinessConnection.findFirst.mockResolvedValue({ id: "c1", refreshToken: "velho", accountName: "accounts/1", locationName: "locations/2", locationTitle: "Loja" })
+    await upsertRefreshToken("novo")
+    expect(db.googleBusinessConnection.update).toHaveBeenCalledWith({
+      where: { id: "c1" },
+      data: { refreshToken: "novo", accountName: null, locationName: null, locationTitle: null },
+    })
+  })
+})
+
+/** Simula o Google: token + páginas de contas e locais (chave = pageToken ou "" para a primeira) */
+function mockPages(accounts: Record<string, unknown>, locations: Record<string, unknown>) {
+  const urls: URL[] = []
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) => {
+      const u = new URL(String(url))
+      urls.push(u)
+      if (u.href.startsWith("https://oauth2.googleapis.com/token")) return json(200, { access_token: "tok" })
+      const pages = u.hostname.startsWith("mybusinessaccountmanagement") ? accounts : locations
+      return json(200, pages[u.searchParams.get("pageToken") || ""] ?? {})
+    }),
+  )
+  return urls
+}
+
+describe("listagem paginada", () => {
+  it("contas: segue o nextPageToken", async () => {
+    mockPages({ "": { accounts: [{ name: "accounts/1" }], nextPageToken: "p2" }, p2: { accounts: [{ name: "accounts/2" }] } }, {})
+    expect((await listAccounts()).map((a) => a.name)).toEqual(["accounts/1", "accounts/2"])
+  })
+
+  it("locais: 100 por página com nome e título, juntando as páginas", async () => {
+    const urls = mockPages(
+      {},
+      {
+        "": { locations: [{ name: "locations/1", title: "A" }], nextPageToken: "p2" },
+        p2: { locations: [{ name: "locations/2", title: "B" }], nextPageToken: "p3" },
+        p3: { locations: [{ name: "locations/3", title: "C" }] },
+      },
+    )
+    expect((await listLocations("accounts/1")).map((l) => l.title)).toEqual(["A", "B", "C"])
+    const calls = urls.filter((u) => u.pathname.endsWith("/locations"))
+    expect(calls).toHaveLength(3)
+    expect(calls[0].pathname).toBe("/v1/accounts/1/locations")
+    expect(calls.every((u) => u.searchParams.get("pageSize") === "100" && u.searchParams.get("readMask") === "name,title")).toBe(true)
+  })
+
+  it("para em 10 páginas mesmo se o Google repetir o token", async () => {
+    const urls = mockPages({ "": { accounts: [{ name: "accounts/1" }], nextPageToken: "x" }, x: { accounts: [{ name: "accounts/1" }], nextPageToken: "x" } }, {})
+    expect(await listAccounts()).toHaveLength(10)
+    expect(urls.filter((u) => u.pathname === "/v1/accounts")).toHaveLength(10)
+  })
+})
+
+describe("escolha automática do local", () => {
+  beforeEach(() => {
+    db.googleBusinessConnection.findFirst.mockResolvedValue({ id: "c1", refreshToken: "r", accountName: null, locationName: null })
+  })
+
+  it("uma conta e um local: salva e devolve o nome", async () => {
+    mockPages({ "": { accounts: [{ name: "accounts/1" }] } }, { "": { locations: [{ name: "locations/9", title: "Donatti Campo Grande" }] } })
+    expect(await autoPickTarget()).toBe("Donatti Campo Grande")
+    expect(db.googleBusinessConnection.update).toHaveBeenCalledWith({
+      where: { id: "c1" },
+      data: { accountName: "accounts/1", locationName: "locations/9", locationTitle: "Donatti Campo Grande" },
+    })
+  })
+
+  it("um local na primeira página mas outro na segunda: não escolhe", async () => {
+    mockPages(
+      { "": { accounts: [{ name: "accounts/1" }] } },
+      { "": { locations: [{ name: "locations/9", title: "A" }], nextPageToken: "p2" }, p2: { locations: [{ name: "locations/10", title: "B" }] } },
+    )
+    expect(await autoPickTarget()).toBeNull()
+    expect(db.googleBusinessConnection.update).not.toHaveBeenCalled()
+  })
+
+  it("duas contas (em páginas diferentes): não escolhe", async () => {
+    mockPages({ "": { accounts: [{ name: "accounts/1" }], nextPageToken: "p2" }, p2: { accounts: [{ name: "accounts/2" }] } }, {})
+    expect(await autoPickTarget()).toBeNull()
+    expect(db.googleBusinessConnection.update).not.toHaveBeenCalled()
+  })
+
+  it("já tem local escolhido: não mexe", async () => {
+    db.googleBusinessConnection.findFirst.mockResolvedValue({ id: "c1", refreshToken: "r", accountName: "accounts/1", locationName: "locations/9" })
+    const urls = mockPages({}, {})
+    expect(await autoPickTarget()).toBeNull()
+    expect(urls).toHaveLength(0)
   })
 })

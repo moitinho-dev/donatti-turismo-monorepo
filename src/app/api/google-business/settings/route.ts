@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
-import { getBusinessConnection, saveBusinessTarget } from "@/lib/googleBusiness"
+import { ACCOUNT_NAME_RE, LOCATION_NAME_RE, getBusinessConnection, saveBusinessTarget } from "@/lib/googleBusiness"
 import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 const schema = z.object({
-  accountName: z.string().min(1),
-  locationName: z.string().min(1),
+  accountName: z.string().regex(ACCOUNT_NAME_RE),
+  locationName: z.string().regex(LOCATION_NAME_RE),
   locationTitle: z.string().max(300).optional().nullable(),
 })
 

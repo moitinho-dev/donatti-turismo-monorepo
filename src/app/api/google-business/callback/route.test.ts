@@ -38,7 +38,7 @@ beforeEach(() => {
   session.user = ADMIN
   vi.mocked(exchangeCodeForTokens).mockResolvedValue({ refresh_token: "r1" })
   vi.mocked(upsertRefreshToken).mockResolvedValue({} as never)
-  vi.mocked(autoPickTarget).mockResolvedValue(undefined)
+  vi.mocked(autoPickTarget).mockResolvedValue(null)
 })
 
 describe("retorno do login do Google", () => {
@@ -51,6 +51,28 @@ describe("retorno do login do Google", () => {
     expect(autoPickTarget).toHaveBeenCalled()
     // O nonce vale uma vez só
     expect(res.headers.get("set-cookie")).toMatch(/google_oauth_nonce=;.*Path=\/api\/google-business/i)
+  })
+
+  it("escolheu o único local sozinho: avisa com auto=1", async () => {
+    vi.mocked(autoPickTarget).mockResolvedValue("Donatti Campo Grande")
+    const { google, location } = await call({ code: "c1", state: signState(ADMIN.email, NONCE) })
+    expect(google).toBe("connected")
+    expect(location.searchParams.get("auto")).toBe("1")
+  })
+
+  it("sem escolha automática não manda auto", async () => {
+    vi.mocked(autoPickTarget).mockResolvedValue(null)
+    const { location } = await call({ code: "c1", state: signState(ADMIN.email, NONCE) })
+    expect(location.searchParams.get("auto")).toBeNull()
+  })
+
+  it("sem segredo de sessão no servidor: não aceita o retorno", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const state = signState(ADMIN.email, NONCE)
+    delete process.env.AUTH_SECRET
+    const { google } = await call({ code: "c1", state })
+    expect(google).toBe("not-configured")
+    expect(exchangeCodeForTokens).not.toHaveBeenCalled()
   })
 
   it("sem state não troca o código", async () => {

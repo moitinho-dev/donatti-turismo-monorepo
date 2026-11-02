@@ -32,16 +32,21 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
     loadGbpAccounts,
     loadGbpLocations,
     saveGbpTarget,
+    refreshGbp,
   } = gbp
   const params = useSearchParams()
-  const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null)
+  // auto: o retorno do login já escolheu o único local (o nome vem da situação da conexão)
+  const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string; auto?: boolean } | null>(null)
   const [changing, setChanging] = useState(false)
+  const [accountsFailed, setAccountsFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const loaded = useRef(false)
 
   useEffect(() => {
     const key = params.get("google")
     if (!key || !NOTICES[key]) return
-    setNotice({ ...NOTICES[key], text: params.get("msg") ? `${NOTICES[key].text} ${params.get("msg")}` : NOTICES[key].text })
+    const auto = key === "connected" && params.get("auto") === "1"
+    setNotice({ ...NOTICES[key], auto, text: params.get("msg") ? `${NOTICES[key].text} ${params.get("msg")}` : NOTICES[key].text })
     window.history.replaceState(null, "", "/promos")
   }, [params])
 
@@ -52,6 +57,9 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
     loaded.current = true
     void (async () => {
       const accounts = await loadGbpAccounts()
+      // Falhou (ou veio vazio): mantém a escolha salva e oferece tentar de novo
+      setAccountsFailed(!accounts.length)
+      if (!accounts.length) return
       const account = accounts.find((a) => a.name === gbpAccountName)?.name || (accounts.length === 1 ? accounts[0].name : "")
       if (account !== gbpAccountName) {
         setGbpAccountName(account)
@@ -61,7 +69,7 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
       const locations = await loadGbpLocations(account)
       if (locations.length === 1) setGbpLocationName(locations[0].name)
     })()
-  }, [picking, gbpAccountName, loadGbpAccounts, loadGbpLocations, setGbpAccountName, setGbpLocationName])
+  }, [picking, attempt, gbpAccountName, loadGbpAccounts, loadGbpLocations, setGbpAccountName, setGbpLocationName])
 
   if (!gbpLoaded) return null
   const card = "max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm"
@@ -70,8 +78,16 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
 
   const stopChanging = () => {
     setChanging(false)
+    setAccountsFailed(false)
     loaded.current = false
   }
+  const retryAccounts = () => {
+    loaded.current = false
+    setAttempt((n) => n + 1)
+  }
+  const noticeText = notice?.auto
+    ? `Selecionamos ${gbpLocationTitle || "o único local da conta"} automaticamente. Troque se não for este local.`
+    : notice?.text
 
   let text: string
   if (!gbpConnected) {
@@ -97,8 +113,11 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
             Postando em <b className="text-gray-800">{gbpLocationTitle || "local escolhido"}</b>
           </p>
         )}
-        {notice && <p className={`mt-1 text-[13px] font-semibold ${notice.tone === "ok" ? "text-emerald-600" : "text-red-600"}`}>{notice.text}</p>}
+        {notice && <p className={`mt-1 text-[13px] font-semibold ${notice.tone === "ok" ? "text-emerald-600" : "text-red-600"}`}>{noticeText}</p>}
         {picking && gbpError && <p className="mt-1 text-[13px] font-semibold text-red-600">{gbpError}</p>}
+        {picking && accountsFailed && !gbpError && (
+          <p className="mt-1 text-[13px] font-semibold text-red-600">Nenhuma conta com Perfil da Empresa apareceu neste login do Google.</p>
+        )}
       </div>
 
       {isAdmin && (
@@ -140,6 +159,11 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
                   </option>
                 ))}
               </select>
+              {accountsFailed && (
+                <button type="button" className={`${btn} border border-gray-200 text-gray-700 hover:bg-gray-50`} disabled={gbpBusy} onClick={retryAccounts}>
+                  Tentar de novo
+                </button>
+              )}
               <button
                 type="button"
                 className={`${btn} bg-gray-900 text-white hover:bg-gray-800`}
@@ -153,7 +177,15 @@ export function GooglePanel({ gbp, isAdmin }: { gbp: ReturnType<typeof useGoogle
                 Salvar
               </button>
               {changing && gbpReady && (
-                <button type="button" className={`${btn} text-gray-500 hover:text-gray-800`} onClick={stopChanging}>
+                <button
+                  type="button"
+                  className={`${btn} text-gray-500 hover:text-gray-800`}
+                  onClick={() => {
+                    stopChanging()
+                    // Volta a conta e o local salvos (a escolha pela metade não fica na tela)
+                    void refreshGbp()
+                  }}
+                >
                   Cancelar
                 </button>
               )}
