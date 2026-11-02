@@ -6,6 +6,7 @@ import {
   deviceOf,
   friendlyError,
   initialSelection,
+  initialSelectionWith,
   isUploadedUrl,
   offerOnly,
   publishOrder,
@@ -168,5 +169,28 @@ describe("offerOnly", () => {
       DESTINO: "Maceió",
       SITE_SLUG: "maceio",
     })
+  })
+})
+
+describe("initialSelectionWith", () => {
+  it("sem lembrança (null, vazia ou inválida): igual a initialSelection", () => {
+    const st = statusOf({ "ig-feed": { state: "published" } })
+    const want = [...initialSelection(st)].sort()
+    expect([...initialSelectionWith(st, null)].sort()).toEqual(want)
+    expect([...initialSelectionWith(st, [])].sort()).toEqual(want)
+    expect([...initialSelectionWith(st, ["x" as Channel])].sort()).toEqual(want)
+  })
+  it("só os canais lembrados, nada a mais", () => {
+    expect([...initialSelectionWith(statusOf(), ["ig-feed", "ig-story"])].sort()).toEqual(["ig-feed", "ig-story"])
+  })
+  it("lembrado já publicado e em dia vem desmarcado; desatualizado volta", () => {
+    expect([...initialSelectionWith(statusOf({ "ig-feed": { state: "published" } }), ["ig-feed"])]).toEqual([])
+    expect([...initialSelectionWith(statusOf({ "ig-feed": { state: "published", stale: true } }), ["ig-feed"])]).toEqual(["ig-feed"])
+  })
+  it("site lembrado leva o Google", () => {
+    expect([...initialSelectionWith(statusOf(), ["site"])].sort()).toEqual(["google", "site"])
+  })
+  it("entradas inválidas são ignoradas", () => {
+    expect([...initialSelectionWith(statusOf(), ["nope" as Channel, "ig-feed"])]).toEqual(["ig-feed"])
   })
 })
