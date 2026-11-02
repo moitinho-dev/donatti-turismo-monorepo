@@ -3,7 +3,7 @@ import type { ChannelState, PublishState } from "@/lib/publishState"
 import { captionsFor, carouselCaption, whatsappChannelMessage, type CaptionPromo } from "@/lib/promoCaptions"
 import { computeSlug, getPriceNumber } from "@/lib/utils"
 import type { Captions } from "../artSet"
-import { MAX_GROUP, type BulkJob, type WaMode } from "./bulkPlan"
+import { MAX_GROUP, republishPrompts, type BulkJob, type WaMode } from "./bulkPlan"
 import { initialSelectionWith, isApiChannel } from "./publishView"
 
 /** Publicar todas: regras e textos sem tela (seleção, andamento por promo × canal) */
@@ -38,6 +38,28 @@ const isDone = (s: ChannelState | undefined) => !!s && !s.stale && (s.state === 
 /** Quantas promos já estão publicadas (agendadas ou compartilhadas) e em dia no canal */
 export function doneCount(status: StatusByPromo, promoIds: string[], channel: Channel): number {
   return promoIds.filter((id) => isDone(status[id]?.[channel])).length
+}
+
+/**
+ * Confirmações de republicar: a situação lida do servidor mais o que já saiu de verdade nesta sessão
+ * (publicado, agendado ou compartilhado; simulado não conta). Assim uma situação ainda não relida
+ * não deixa publicar de novo sem perguntar.
+ */
+export function bulkRepublishPrompts(jobs: BulkJob[], status: StatusByPromo, runs: Record<string, JobRun>): { channel: Channel; count: number }[] {
+  const merged: StatusByPromo = { ...status }
+  for (const [key, run] of Object.entries(runs)) {
+    if (run.phase !== "done" || (run.status !== "published" && run.status !== "scheduled" && run.status !== "shared")) continue
+    // key = "canal:promo1,promo2" (BulkJob.key)
+    const cut = key.indexOf(":")
+    const channel = key.slice(0, cut) as Channel
+    for (const id of key.slice(cut + 1).split(",")) {
+      const cur = merged[id]
+      const s = cur?.[channel]
+      if (s && !s.stale && (s.state === "published" || s.state === "scheduled" || s.state === "shared")) continue
+      merged[id] = { ...(cur || ({} as Record<Channel, ChannelState>)), [channel]: { state: run.status, at: null, by: null, error: null, stale: false } }
+    }
+  }
+  return republishPrompts(jobs, merged)
 }
 
 /** Grupos do carrossel / álbum: até 10 promos, na ordem da seleção */

@@ -4,6 +4,7 @@ import type { ChannelState } from "@/lib/publishState"
 import { jobsFor } from "./bulkPlan"
 import {
   apiJobs,
+  bulkRepublishPrompts,
   bulkSelection,
   campaignOf,
   doneCount,
@@ -163,5 +164,28 @@ describe("legendas", () => {
     const one = waMessageDefault("one", list, () => null)
     expect(one).toContain("Maceió")
     expect(one).not.toContain("Natal")
+  })
+})
+
+describe("bulkRepublishPrompts", () => {
+  const jobs = jobsFor(ids(3), ["ig-feed", "google"], "single", "batch")
+  it("situação velha + envio feito nesta sessão: ainda pergunta", () => {
+    const status: StatusByPromo = { p1: st(), p2: st(), p3: st() }
+    const runs = {
+      "ig-feed:p1": { phase: "done" as const, status: "published" as const },
+      "ig-feed:p2": { phase: "done" as const, status: "scheduled" as const },
+      "google:p3": { phase: "error" as const, error: "x" },
+    }
+    expect(bulkRepublishPrompts(jobs, status, runs)).toEqual([{ channel: "ig-feed", count: 2 }])
+  })
+  it("simulado nesta sessão não conta a mais; sem situação lida também pergunta", () => {
+    expect(bulkRepublishPrompts(jobs, {}, { "google:p1": { phase: "done", status: "simulated" } })).toEqual([])
+    expect(bulkRepublishPrompts(jobs, {}, { "google:p2": { phase: "done", status: "published" } })).toEqual([{ channel: "google", count: 1 }])
+  })
+  it("carrossel feito conta cada promo do grupo; não conta duas vezes o que o servidor já mostra", () => {
+    const single = jobsFor(ids(3), ["ig-feed"], "single", "batch")
+    const status: StatusByPromo = { p1: st({ "ig-feed": { state: "published" } }), p2: st(), p3: st() }
+    const runs = { "ig-feed:p1,p2,p3": { phase: "done" as const, status: "published" as const } }
+    expect(bulkRepublishPrompts(single, status, runs)).toEqual([{ channel: "ig-feed", count: 3 }])
   })
 })

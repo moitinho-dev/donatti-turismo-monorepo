@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { RotateCcw } from "lucide-react"
+import { ImageDown, RotateCcw } from "lucide-react"
 import type { FeedMode, WaMode } from "./bulkPlan"
 import { groupsSummary } from "./bulkView"
 import type { Device } from "./publishView"
@@ -176,6 +176,9 @@ export function WhatsAppSection({
   getSquares,
   getStories,
   filenameBase,
+  lazy,
+  channelCount,
+  statusCount,
   onShared,
 }: {
   channel: boolean
@@ -190,9 +193,28 @@ export function WhatsAppSection({
   getSquares: () => Promise<string[]>
   getStories: () => Promise<string[]>
   filenameBase: string
+  /** Muitas promos: as imagens só são desenhadas depois do "Preparar imagens" */
+  lazy: boolean
+  channelCount: number
+  statusCount: number
   onShared: (c: WaChannel) => void
 }) {
   const [error, setError] = useState<Partial<Record<WaChannel, string>>>({})
+  const [prepared, setPrepared] = useState<Partial<Record<WaChannel, true>>>({})
+  // Antes de desenhar: um botão (o compartilhar do celular precisa da arte pronta antes do toque)
+  const prepare = (c: WaChannel, n: number) => (
+    <div className="border-t border-gray-100 px-3 py-2.5">
+      <button
+        type="button"
+        onClick={() => setPrepared((p) => ({ ...p, [c]: true }))}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-[12.5px] font-bold text-gray-700 hover:border-gray-300"
+      >
+        <ImageDown className="h-4 w-4" /> Preparar as {n} imagens
+      </button>
+    </div>
+  )
+  // Uma imagem só ("1 imagem + mensagem") sai direto
+  const ready = (c: WaChannel) => !lazy || !!prepared[c] || (c === "wa-channel" ? channelCount : statusCount) === 1
   const share = (c: WaChannel) => {
     setError((e) => ({ ...e, [c]: undefined }))
     onShared(c)
@@ -218,7 +240,8 @@ export function WhatsAppSection({
             <textarea value={message} disabled={running} onChange={(e) => onMessage(e.target.value)} rows={7} aria-label="Mensagem do Canal do WhatsApp" className={textArea} />
             <Regenerate onClick={onRegenerate} disabled={running} />
           </div>
-          {!running && (
+          {!running && !ready("wa-channel") && prepare("wa-channel", channelCount)}
+          {!running && ready("wa-channel") && (
             <ShareWhatsApp
               device={device}
               getImages={getSquares}
@@ -237,7 +260,8 @@ export function WhatsAppSection({
             <p className="text-[13px] font-bold text-gray-900">Status do WhatsApp</p>
             <p className="text-[11.5px] text-gray-500">Imagens story de todas, sem texto.</p>
           </div>
-          {!running && (
+          {!running && !ready("wa-status") && prepare("wa-status", statusCount)}
+          {!running && ready("wa-status") && (
             <ShareWhatsApp
               device={device}
               getImages={getStories}

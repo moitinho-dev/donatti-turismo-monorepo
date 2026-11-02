@@ -26,7 +26,7 @@ export const errorOf = async (res: Response, fallback: string) => {
 }
 
 /** Erro com mensagem já pronta para a equipe (o resto vira "sem conexão" ou mensagem simples) */
-class PublishError extends Error {}
+export class PublishError extends Error {}
 
 /** Sobe uma arte (data URL) e devolve a URL pública que a rede social e o Google vão baixar */
 export async function uploadImage(dataUrl: string): Promise<string> {

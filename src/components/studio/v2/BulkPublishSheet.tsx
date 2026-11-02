@@ -12,9 +12,10 @@ import { Spinner } from "../panels/ui"
 import { BulkChannels } from "./BulkChannels"
 import { BulkProgress, type ProgressError } from "./BulkProgress"
 import { CaptionSection, FeedSection, Heading, WhatsAppSection } from "./BulkSections"
-import { googleBlockedBySite, jobsFor, republishPrompts, type BulkJob, type FeedMode, type WaMode } from "./bulkPlan"
+import { googleBlockedBySite, jobsFor, type BulkJob, type FeedMode, type WaMode } from "./bulkPlan"
 import {
   apiJobs,
+  bulkRepublishPrompts,
   bulkSelection,
   doneCount,
   feedGroups,
@@ -27,7 +28,7 @@ import {
   type JobRun,
 } from "./bulkView"
 import { ScheduleBox, localInput } from "./ScheduleBox"
-import { UPLOAD_ERROR, deviceOf, readRemembered, scheduleError, toggleChannel, writeRemembered, type Device } from "./publishView"
+import { SCHEDULE_TOO_CLOSE, UPLOAD_ERROR, deviceOf, readRemembered, scheduleError, toggleChannel, writeRemembered, type Device } from "./publishView"
 import { useBulkImages, useBulkStatus } from "./useBulkData"
 
 export interface BulkPublishSheetProps {
@@ -47,14 +48,19 @@ const formatOf = (c: Channel) => CHANNELS.find((x) => x.id === c)!.format
 const isWa = (c: Channel): c is "wa-channel" | "wa-status" => c === "wa-channel" || c === "wa-status"
 const DEFAULT_SELECTION: Channel[] = ["site", "google"]
 const SITE_FIRST = "Publique no site antes"
+/** Acima disto, as imagens do WhatsApp só são desenhadas quando a pessoa pede (memória do celular) */
+const LAZY_WA_OVER = 10
 
 /** Publicar todas: canais, como sai no feed e no WhatsApp, legendas e o andamento de cada promo × canal */
-export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSent }: BulkPublishSheetProps) {
+export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, onSent }: BulkPublishSheetProps) {
+  // Promo sem arte carregada (leitura que falhou na grade) fica de fora da rodada
+  const promos = useMemo(() => all.filter((p) => sets[p.id]), [all, sets])
+  const left = all.length - promos.length
   const idsKey = promos.map((p) => p.id).join(",")
-  const ids = useMemo(() => idsKey.split(","), [idsKey])
+  const ids = useMemo(() => (idsKey ? idsKey.split(",") : []), [idsKey])
   const byId = useMemo(() => Object.fromEntries(promos.map((p) => [p.id, p])), [promos])
 
-  const { status, load, reload: loadStatus } = useBulkStatus(promos, ids)
+  const { status, load, refreshing, reload: loadStatus } = useBulkStatus(promos, ids)
 
   // Marcados ao abrir: decididos uma vez, com a primeira situação lida; depois valem os cliques
   const [remembered] = useState(readRemembered)
@@ -115,6 +121,11 @@ export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSen
   const progressRef = useRef<HTMLElement>(null)
 
   const runJob = async (j: BulkJob) => {
+    // O horário agendado pode ter ficado perto demais durante a rodada (ou até o "Tentar de novo")
+    if (j.channel === "fb-feed" && scheduling && scheduleError(scheduleAt)) {
+      setRun(j.key, { phase: "error", error: SCHEDULE_TOO_CLOSE })
+      return
+    }
     setRun(j.key, { phase: "busy" })
     const f = formatOf(j.channel)
     const images: string[] = []
@@ -169,7 +180,7 @@ export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSen
   }
 
   const publishAll = async () => {
-    if (running || load !== "ready" || !toPublish.length) return
+    if (running || refreshing || load !== "ready" || !toPublish.length) return
     writeRemembered(selected)
     if (scheduling) {
       const err = scheduleError(scheduleAt)
@@ -178,7 +189,7 @@ export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSen
     }
     // Uma pergunta por canal com promos já publicadas; "Cancelar" pula só aquele canal
     const skip = new Set<Channel>()
-    for (const p of republishPrompts(toPublish, status)) if (!window.confirm(republishMessage(label(p.channel), p.count))) skip.add(p.channel)
+    for (const p of bulkRepublishPrompts(toPublish, status, runsRef.current)) if (!window.confirm(republishMessage(label(p.channel), p.count))) skip.add(p.channel)
     // Pulados guardam o que já aconteceu nesta sessão (um erro antigo continua com "Tentar de novo")
     for (const j of toPublish) {
       if (!skip.has(j.channel)) setRun(j.key, null)
@@ -286,6 +297,11 @@ export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSen
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-4 lg:px-6">
+          {left > 0 && (
+            <p role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-semibold text-amber-900">
+              {left === 1 ? "1 promoção sem arte carregada ficou de fora." : `${left} promoções sem arte carregada ficaram de fora.`}
+            </p>
+          )}
           {load === "loading" && (
             <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5 text-[13px] font-semibold text-gray-600">
               <Spinner className="h-3.5 w-3.5" /> Carregando situação dos canais…
@@ -346,6 +362,9 @@ export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSen
               getSquares={getSquares}
               getStories={getStories}
               filenameBase={waBase}
+              lazy={ids.length > LAZY_WA_OVER}
+              channelCount={waChannelJob?.promoIds.length || 0}
+              statusCount={ids.length}
               onShared={(c) => void shared(c === "wa-channel" ? waChannelJob : waStatusJob)}
             />
           )}
@@ -373,12 +392,12 @@ export function BulkPublishSheet({ promos, sets, onClose, onSitePublished, onSen
           <button
             type="button"
             onClick={() => void publishAll()}
-            disabled={running || load !== "ready" || !toPublish.length}
+            disabled={running || refreshing || load !== "ready" || !toPublish.length}
             title={waOnly ? "O WhatsApp é compartilhado pelos botões do canal" : undefined}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-sm hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {running ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-            Publicar{toPublish.length ? ` (${toPublish.length})` : ""}
+            {running || (refreshing && load === "ready") ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+            {refreshing && !running && load === "ready" ? "Atualizando situação…" : `Publicar${toPublish.length ? ` (${toPublish.length})` : ""}`}
           </button>
         </footer>
       </aside>
