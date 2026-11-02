@@ -46,6 +46,9 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [publishingIds, setPublishingIds] = useState<Record<string, boolean>>({})
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
+  // Studio aberto a partir do lote: o lote fica escondido (não perde as artes) e volta ao fechar
+  const [batchHidden, setBatchHidden] = useState(false)
+  const [batchRefresh, setBatchRefresh] = useState<{ promoId: string; n: number } | null>(null)
   const [campaign, setCampaign] = useState<{ name: string; maxDiscount?: number } | null>(null)
 
   // Campanha no ar (ou no esquenta): o lote já abre com o filtro e o modelo dela
@@ -141,13 +144,15 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     setActivePanel("editor")
   }
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (saved?: Record<string, unknown>, created?: boolean) => {
     // Dados da extensão já usados: tira da URL para "Nova promo" abrir em branco
     if (searchParams.get("autofill")) window.history.replaceState(null, "", "/promos")
     setShowFormModal(false)
     setSelectedPromo(null)
     void fetchPromos()
     void fetchStats()
+    // Promo nova: o próximo passo é a arte, então o Studio já abre com ela
+    if (created && saved?.id) handleGenerateImage(saved as unknown as PromoData)
   }
 
   const handleNewPromo = () => {
@@ -182,6 +187,10 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   }
 
   const handleCloseEditor = () => {
+    if (batchHidden && selectedPromo) {
+      setBatchRefresh((r) => ({ promoId: selectedPromo.id, n: (r?.n || 0) + 1 }))
+      setBatchHidden(false)
+    }
     setActivePanel("list")
     setSelectedPromo(null)
   }
@@ -265,7 +274,22 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         </div>
       )}
 
-      {batchOpen && <BatchGenerator promos={promos} promoImages={promoImages} campaign={campaign} meta={meta} onClose={() => setBatchOpen(false)} />}
+      {batchOpen && (
+        <div hidden={batchHidden}>
+          <BatchGenerator
+            promos={promos}
+            promoImages={promoImages}
+            campaign={campaign}
+            meta={meta}
+            refresh={batchRefresh}
+            onEditInStudio={(p) => {
+              setBatchHidden(true)
+              handleGenerateImage(p)
+            }}
+            onClose={() => setBatchOpen(false)}
+          />
+        </div>
+      )}
 
       {deleteConfirm && (
         <DeleteConfirmModal

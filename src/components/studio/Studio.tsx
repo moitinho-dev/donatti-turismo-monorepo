@@ -36,6 +36,7 @@ import { PropertiesPanel } from "./panels/PropertiesPanel"
 import { PublishPanel } from "./panels/PublishPanel"
 import { TemplatesPanel } from "./panels/TemplatesPanel"
 import { Spinner } from "./panels/ui"
+import { loadSavedArt, type SavedDesignData } from "./savedArt"
 
 export interface StudioProps {
   promo: Record<string, unknown> & { id: string; DESTINO: string }
@@ -53,11 +54,6 @@ interface Snapshot {
   family: string | null
 }
 
-interface SavedDesignData {
-  formats: Partial<Record<ArtFormat, StudioDoc>>
-  family: string | null
-  photo: string | null
-}
 
 const TABS: { id: Exclude<Tab, "editar">; label: string; Icon: typeof LayoutTemplate }[] = [
   { id: "modelos", label: "Modelos", Icon: LayoutTemplate },
@@ -204,29 +200,14 @@ export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig,
       if (alive) setLegacyDefaults(legacy)
       if (!isDemo) {
         try {
-          const list = await fetch(`/api/designs?kind=design&promoId=${encodeURIComponent(initialPromo.id)}`).then((r) => (r.ok ? r.json() : []))
-          if (list[0]?.id) {
-            const saved = await fetch(`/api/designs/${list[0].id}`).then((r) => (r.ok ? r.json() : null))
-            const data = saved?.data as SavedDesignData | undefined
-            if (alive && data?.formats) {
-              setDesignId(saved.id)
-              // Arte salva sem foto: usa a foto atual da promo nos espaços de foto vazios
-              const savedPhoto = data.photo || (initialPromo.SITE_IMAGE as string) || null
-              const docs = data.photo
-                ? data.formats
-                : Object.fromEntries(
-                    Object.entries(data.formats).map(([f, d]) => [
-                      f,
-                      d && { ...d, layers: d.layers.map((l) => (l.type === "image" && l.role === "photo" && !l.src && savedPhoto ? { ...l, src: savedPhoto } : l)) },
-                    ]),
-                  )
-              setPhotoUrl(savedPhoto)
-              setHistory({ past: [], present: { docs, family: data.family }, future: [] })
-              const first = FORMAT_ORDER.find((f) => data.formats[f]) || "story"
-              setFormat(first)
-              setLoading(false)
-              return
-            }
+          const saved = await loadSavedArt(initialPromo)
+          if (alive && saved) {
+            setDesignId(saved.designId)
+            setPhotoUrl(saved.photo)
+            setHistory({ past: [], present: { docs: saved.docs, family: saved.family }, future: [] })
+            setFormat(FORMAT_ORDER.find((f) => saved.docs[f]) || "story")
+            setLoading(false)
+            return
           }
         } catch {
           // segue com o modelo padrão
@@ -243,7 +224,7 @@ export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig,
         }
       }
       if (!alive) return
-      const family = legacy.story ? "legacy" : initialPromo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
+      const family = initialPromo.CAMPAIGN === "black-friday" ? "black-november" : legacy.story ? "legacy" : "destaque"
       setPhotoUrl(photo)
       setHistory({ past: [], present: { docs: { story: buildFamily(family, "story", photo, legacy) }, family }, future: [] })
       setDirty(false)

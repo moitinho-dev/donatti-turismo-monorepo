@@ -2,7 +2,8 @@
 
 /**
  * Gerador em lote: várias promos → artes de todos os canais de uma vez.
- * Usa os modelos do Studio (templates.ts) e o mesmo desenho fora da tela da exportação (renderDoc).
+ * A arte de cada promo é a salva no Studio (formato por formato); o modelo escolhido só entra
+ * onde a promo ainda não tem arte. Desenha com o mesmo renderDoc da exportação do Studio.
  *
  * Canais:
  * - Instagram feed (4:5) e Facebook (1:1): uma arte por promo, cada uma com legenda
@@ -10,11 +11,12 @@
  * - Canal do WhatsApp: uma mensagem com a lista de ofertas + o lote, ou uma imagem + a mensagem
  */
 
-import { useMemo, useRef, useState } from "react"
-import { Check, Copy, Download, Loader2, Send, Share2, Sparkles, X } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Check, Copy, Download, Loader2, Pencil, Send, Share2, Sparkles, X } from "lucide-react"
 import { TEMPLATE_FAMILIES, withPhoto } from "@/components/studio/templates"
 import { promoVariables, type PromoLike } from "@/components/studio/variables"
 import { renderDoc } from "@/components/studio/render"
+import { loadSavedArt, type SavedArt } from "@/components/studio/savedArt"
 import { FORMATS, type ArtFormat } from "@/components/studio/types"
 import { captionFor, carouselCaption, whatsappChannelMessage } from "@/lib/promoCaptions"
 import type { useMeta } from "@/hooks/useMeta"
@@ -36,6 +38,8 @@ interface Art {
   format: ArtFormat
   dataUrl: string
   filename: string
+  /** "studio" = arte salva da promo; "modelo" = gerada pelo modelo escolhido */
+  source: "studio" | "modelo"
 }
 
 interface BatchGeneratorProps {
@@ -45,6 +49,10 @@ interface BatchGeneratorProps {
   campaign?: { name: string; maxDiscount?: number } | null
   /** Conexão com a Meta: com ela os canais ganham "Publicar" (Instagram e Facebook) */
   meta?: ReturnType<typeof useMeta> | null
+  /** Abre a promo no Studio (o lote fica guardado e volta quando o Studio fecha) */
+  onEditInStudio?: (promo: PromoData) => void
+  /** Muda quando uma promo volta do Studio: o lote redesenha só as artes dela */
+  refresh?: { promoId: string; n: number } | null
   onClose: () => void
 }
 
@@ -53,7 +61,7 @@ const dataUrlToFile = async (dataUrl: string, filename: string) => {
   return new File([blob], filename, { type: blob.type })
 }
 
-export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta = null, onClose }: BatchGeneratorProps) {
+export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta = null, onEditInStudio, refresh = null, onClose }: BatchGeneratorProps) {
   const [scope, setScope] = useState<Scope>(campaign ? "campanha" : "no-site")
   const candidates = useMemo(
     () =>
@@ -108,20 +116,30 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta
     return next
   }
 
+  const [useStudio, setUseStudio] = useState(true)
+
+  /** Arte da promo num formato: a do Studio, se houver, senão o modelo escolhido */
+  const renderOne = async (p: PromoData, f: ArtFormat, saved: SavedArt | null, index: number): Promise<Art> => {
+    const fromStudio = useStudio ? saved?.docs[f] : undefined
+    const doc = fromStudio || withPhoto(family.build(f), p.SITE_IMAGE || promoImages[p.id] || null)
+    const dataUrl = await renderDoc(doc, promoVariables(p as unknown as PromoLike), { mime: "image/jpeg", quality: 0.9 })
+    return { promoId: p.id, format: f, dataUrl, source: fromStudio ? "studio" : "modelo", filename: `${String(index + 1).padStart(2, "0")}-${slugify(p.DESTINO) || "oferta"}-${f}.jpg` }
+  }
+  const savedFor = async (p: PromoData) => (useStudio ? loadSavedArt(p).catch(() => null) : null)
+
   const generate = async () => {
     cancelRef.current = false
     setArts([])
     setFailures([])
-    const jobs = selected.flatMap((p) => formats.map((f) => ({ p, f })))
+    const jobs = selected.flatMap((p, pi) => formats.map((f) => ({ p, pi, f })))
     setProgress({ done: 0, total: jobs.length })
+    const saved = new Map(await Promise.all(selected.map(async (p) => [p.id, await savedFor(p)] as const)))
     const out: Art[] = []
     const failed: string[] = []
-    for (const [i, { p, f }] of jobs.entries()) {
+    for (const [i, { p, pi, f }] of jobs.entries()) {
       if (cancelRef.current) break
       try {
-        const doc = withPhoto(family.build(f), p.SITE_IMAGE || promoImages[p.id] || null)
-        const dataUrl = await renderDoc(doc, promoVariables(p as unknown as PromoLike), { mime: "image/jpeg", quality: 0.9 })
-        out.push({ promoId: p.id, format: f, dataUrl, filename: `${String(i + 1).padStart(2, "0")}-${slugify(p.DESTINO) || "oferta"}-${f}.jpg` })
+        out.push(await renderOne(p, f, saved.get(p.id) || null, pi))
         setArts([...out])
       } catch (err) {
         console.error("Lote: falhou", p.DESTINO, f, err)
@@ -132,6 +150,24 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta
     setFailures(failed)
     setProgress(null)
   }
+
+  // Promo editada no Studio: redesenha só as artes dela, no mesmo lugar
+  useEffect(() => {
+    if (!refresh) return
+    const p = selected.find((x) => x.id === refresh.promoId)
+    if (!p || !arts.some((a) => a.promoId === p.id)) return
+    let alive = true
+    void (async () => {
+      const saved = await savedFor(p)
+      const pi = selected.indexOf(p)
+      const fresh = await Promise.all(formats.map((f) => renderOne(p, f, saved, pi).catch(() => null)))
+      if (!alive) return
+      setArts((prev) => prev.map((a) => (a.promoId === p.id ? fresh.find((x) => x?.format === a.format) || a : a)))
+    })()
+    return () => {
+      alive = false
+    }
+  }, [refresh?.n]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const artsFor = (format: ArtFormat) => arts.filter((a) => a.format === format)
   const promoOf = (id: string) => selected.find((p) => p.id === id)!
@@ -245,7 +281,15 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta
             </section>
 
             <section className="flex flex-col gap-3">
-              <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-400">2 · Modelo</h3>
+              <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-400">2 · Arte</h3>
+              <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-gray-200 p-3">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 accent-amber-500" checked={useStudio} onChange={() => setUseStudio(!useStudio)} />
+                <span>
+                  <span className="block text-[14px] font-bold text-gray-900">Usar a arte feita no Studio</span>
+                  <span className="block text-[12px] text-gray-500">Cada promo sai com a arte salva dela. O modelo abaixo só entra onde ainda não tem arte.</span>
+                </span>
+              </label>
+              <span className="text-[12px] font-semibold text-gray-500">{useStudio ? "Modelo para quem ainda não tem arte" : "Modelo para todas"}</span>
               <div className="grid grid-cols-3 gap-2">
                 {TEMPLATE_FAMILIES.map((f) => (
                   <button
@@ -421,8 +465,25 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta
                       const key = `${c.id}-${a.filename}`
                       return (
                         <figure key={key} className="flex flex-col gap-2">
-                          <img src={a.dataUrl} alt={`${p.DESTINO} · ${FORMATS[a.format].label}`} className="w-full rounded-[10px] border border-gray-200" />
+                          <div className="relative">
+                            <img src={a.dataUrl} alt={`${p.DESTINO} · ${FORMATS[a.format].label}`} className="w-full rounded-[10px] border border-gray-200" />
+                            <span
+                              className={`absolute left-1.5 top-1.5 rounded-[6px] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${a.source === "studio" ? "bg-emerald-600 text-white" : "bg-white/90 text-gray-700"}`}
+                            >
+                              {a.source === "studio" ? "Studio" : "Modelo"}
+                            </span>
+                          </div>
                           <figcaption className="flex flex-wrap gap-1.5">
+                            {onEditInStudio && (
+                              <button
+                                type="button"
+                                onClick={() => onEditInStudio(p)}
+                                className="inline-flex items-center gap-1 rounded-[8px] bg-amber-100 px-2 py-1 text-[12px] font-bold text-amber-800 hover:bg-amber-200"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Studio
+                              </button>
+                            )}
                             <a href={a.dataUrl} download={a.filename} className="inline-flex items-center gap-1 rounded-[8px] bg-gray-100 px-2 py-1 text-[12px] font-bold text-gray-700 hover:bg-gray-200">
                               <Download className="h-3.5 w-3.5" />
                               Baixar

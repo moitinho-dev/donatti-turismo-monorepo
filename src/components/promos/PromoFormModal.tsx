@@ -48,7 +48,8 @@ interface PromoFormModalProps {
   promo?: Record<string, unknown> | null
   isOpen: boolean
   onClose: () => void
-  onSuccess: () => void
+  /** `saved` = promo como voltou da API; `created` = era uma promo nova */
+  onSuccess: (saved?: Record<string, unknown>, created?: boolean) => void
   /** Query string vinda da extensão do Chrome (?autofill=...) */
   autofill?: string | null
 }
@@ -274,10 +275,10 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess, autofill }: 
       return
     }
     try {
-      await savePromo(toApiPayload(form))
+      const saved = await savePromo(toApiPayload(form))
       if (!isEditing) clearDraft()
-      setNotice({ type: "success", text: isEditing ? "Promoção atualizada!" : "Promoção criada!" })
-      window.setTimeout(onSuccess, 700)
+      setNotice({ type: "success", text: isEditing ? "Promoção atualizada!" : "Promoção criada! Abrindo o Studio para criar a arte…" })
+      window.setTimeout(() => onSuccess(saved, !isEditing), 700)
     } catch (err) {
       setNotice({ type: "error", text: err instanceof Error && err.message ? err.message : "Erro ao salvar. Tente novamente." })
     }
