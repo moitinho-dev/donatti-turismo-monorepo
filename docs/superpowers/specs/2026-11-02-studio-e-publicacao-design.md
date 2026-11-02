@@ -68,6 +68,7 @@ Hoje o sistema falha nisso por quatro motivos:
 | Prazo | **Redesenho completo já**, todas as fases em sequência, mesmo com a Black November no ar. |
 | Permissões | **Todo mundo faz tudo:** qualquer pessoa logada publica em todos os canais (Google incluso) e cria e edita templates. As travas viram só um aviso ("este elemento é travado no template: alterar mesmo assim?"). |
 | Celular | A equipe usa **Android e iPhone**: os dois caminhos de compartilhar no WhatsApp. |
+| Google | **Toda promo publicada vai para o Google Business**, sempre: um post por promo, com a arte (não a foto crua). |
 | Identidade da campanha | Manual da Black November: logo, amarelo `#FED400`, preto, faixas de esquenta, preço de varejo, foto do destino em evidência. |
 
 ## 6. Como funciona
@@ -114,7 +115,9 @@ Comportamento:
   - Instagram e Facebook: direto pela conexão da Meta (`/api/meta/publish`).
   - Google: direto pela integração atual.
   - Canal e Status do WhatsApp: não têm API. No Android, um toque abre o compartilhar do sistema com as imagens e a mensagem. No iPhone (que costuma perder o texto ao mandar várias imagens), são dois passos: "Copiar mensagem" e "Compartilhar imagens". No computador, baixa as imagens e copia a mensagem.
-  - Google: liberado para qualquer pessoa logada (hoje só admin; a rota `/api/google-business/post` muda).
+  - Google: liberado para qualquer pessoa logada (hoje só admin; a rota `/api/google-business/post` muda). **Sempre marcado e obrigatório** quando a promo vai para o site: o post leva a arte no formato paisagem e o botão de WhatsApp. No modo várias promos é sempre um post por promo (o Google não tem carrossel), mesmo quando o feed sai em carrossel.
+  - O post automático no Google que hoje dispara ao salvar uma promo publicada (`promos/route.ts`, sem esperar resposta e com a foto crua) passa a ser feito pelo Publicar, com a arte, esperando a resposta e gravando o status. Promo publicada no site sem passar pelo Studio (ex.: botão "Publicar no site" da lista) continua indo para o Google na hora, com a arte salva se houver e a foto se não houver, e o status fica registrado do mesmo jeito.
+  - Mudou a oferta depois de postada no Google: o post do Google é atualizado (hoje fica preso no "já postado").
 - **Status por canal:** depois de publicar, o canal mostra ✓, a data e quem publicou. Se depois disso os dados da oferta mudarem, o status mostra "oferta alterada depois do post". Publicar de novo no mesmo canal pede confirmação. O status fica salvo (ver 6.6) e aparece também na lista do `/promos`.
 - **Baixar:** um formato, ou os 4 em zip.
 - **Concluir:** fecha o Studio e volta para a lista.
@@ -137,7 +140,7 @@ Comportamento:
 
 ### 6.5 Painel `/promos`
 
-- **Topo:** "Para fazer" com contadores clicáveis: promos sem arte, promos com arte e não postadas, promos vencidas no site. Mais ações rápidas: "Nova promo".
+- **Topo:** "Para fazer" com contadores clicáveis: promos sem arte, promos com arte e não postadas, promos no site sem post no Google (com "Postar todas no Google"), promos vencidas no site. Mais ações rápidas: "Nova promo".
 - **Lista:** visão em tabela (padrão) e cartões. Colunas: foto, destino e hotel, datas, preço, site (no ar ou rascunho) e **Canais** (ícones dos canais já publicados). Ações por linha: editar dados, abrir no Studio, duplicar, excluir. Seleção múltipla com a barra de 6.4.
 - **Duplicar promo:** cria uma cópia (sem a arte publicada e sem o status de canais) e abre o formulário.
 - **Configurações** (página nova): campanha Black November (o `BlackFridayPanel` sai do topo), conexão Meta (o `MetaPanel` sai do topo), Google e template padrão. Qualquer pessoa logada vê e usa; conectar ou trocar a conta da Meta e do Google continua exigindo admin (é a conta da empresa).
