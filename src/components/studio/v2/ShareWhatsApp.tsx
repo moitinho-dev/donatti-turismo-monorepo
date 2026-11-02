@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Copy, Download, Share2 } from "lucide-react"
 import { downloadDataUrl } from "../render"
-import type { Device } from "./publishView"
+import { COPY_ERROR, IMAGE_ERROR, NO_SHARE_ERROR, SHARE_ERROR, type Device } from "./publishView"
 
 interface Props {
   device: Device
@@ -19,8 +19,6 @@ const toFile = async (dataUrl: string, filename: string) => {
   const blob = await (await fetch(dataUrl)).blob()
   return new File([blob], filename, { type: blob.type || "image/jpeg" })
 }
-
-const IMAGE_ERROR = "Não deu para gerar a imagem: alguma foto da arte não permite exportação. Troque a foto e tente de novo."
 
 /**
  * Canal e Status do WhatsApp não têm API: Android abre o compartilhar do sistema com imagem e mensagem;
@@ -53,7 +51,7 @@ export function ShareWhatsApp({ device, getImage, message, filename, onShared, o
       window.setTimeout(() => setCopied(false), 1800)
       onShared()
     } catch {
-      onError("Não deu para copiar a mensagem. Selecione e copie a legenda do WhatsApp.")
+      onError(COPY_ERROR)
     }
   }
 
@@ -62,7 +60,7 @@ export function ShareWhatsApp({ device, getImage, message, filename, onShared, o
     if (!img) return
     const data: ShareData = withText ? { files: [img.file], text: message } : { files: [img.file] }
     if (!navigator.canShare?.(data)) {
-      onError("Este aparelho não abre o compartilhar com imagens. Use Baixar e Copiar mensagem.")
+      onError(NO_SHARE_ERROR)
       return
     }
     try {
@@ -71,7 +69,7 @@ export function ShareWhatsApp({ device, getImage, message, filename, onShared, o
     } catch (err) {
       // Fechou o compartilhar sem escolher: não marca
       if (err instanceof DOMException && err.name === "AbortError") return
-      onError("Não deu para abrir o compartilhar. Tente de novo.")
+      onError(SHARE_ERROR)
     }
   }
 

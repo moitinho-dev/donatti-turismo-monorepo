@@ -15,7 +15,17 @@ import { ChannelList, type Run } from "./ChannelList"
 import { PublishPreview } from "./PublishPreview"
 import { ScheduleBox, localInput } from "./ScheduleBox"
 import { ShareWhatsApp } from "./ShareWhatsApp"
-import { deviceOf, publishOrder, scheduleError, toggleChannel, type Device } from "./publishView"
+import {
+  IMAGE_ERROR,
+  UNSAVED,
+  UPLOAD_ERROR,
+  deviceOf,
+  initialSelection,
+  publishOrder,
+  scheduleError,
+  toggleChannel,
+  type Device,
+} from "./publishView"
 
 type Promo = Record<string, unknown> & { id: string; DESTINO: string }
 
@@ -33,17 +43,20 @@ export interface PublishSheetProps {
   onDownload: (which: ArtFormat | "all", mime: "image/png" | "image/jpeg") => void
 }
 
-const IMAGE_ERROR = "Não deu para gerar a imagem: alguma foto da arte não permite exportação. Troque a foto e tente de novo."
-const UPLOAD_ERROR = "Não foi possível enviar a arte. Tente de novo."
+/** Antes de saber a situação dos canais (e na promo não salva) */
+const DEFAULT_SELECTION: Channel[] = ["site", "google"]
 const label = (c: Channel) => CHANNELS.find((x) => x.id === c)!.label
 const formatOf = (c: Channel) => CHANNELS.find((x) => x.id === c)!.format
 
 /** Painel Publicar: canais, legenda por rede, prévia e situação de cada canal */
 export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onClose, format, onDownload }: PublishSheetProps) {
   const canPublish = !!promo.id && promo.id !== "demo-tutorial"
-  const { status, publish, markShared } = usePublish(canPublish ? promo.id : null)
+  const { status, initialStatus, load, refresh, publish, markShared } = usePublish(canPublish ? promo.id : null)
 
-  const [selected, setSelected] = useState<Set<Channel>>(() => new Set<Channel>(["site", "google"]))
+  // Marcados ao abrir: seguem a primeira situação lida (uma vez); depois disso valem os cliques da pessoa
+  const [picked, setPicked] = useState<Set<Channel> | null>(null)
+  const seeded = useMemo(() => (initialStatus ? initialSelection(initialStatus) : new Set(DEFAULT_SELECTION)), [initialStatus])
+  const selected = picked ?? seeded
   const [focus, setFocus] = useState<Channel>("ig-feed")
   const [tab, setTab] = useState<Network>("instagram")
   const [when, setWhen] = useState<"now" | "schedule">("now")
@@ -150,7 +163,7 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
   }
 
   const publishAll = async () => {
-    if (!canPublish || running || !toPublish.length) return
+    if (!canPublish || load !== "ready" || running || !toPublish.length) return
     if (scheduling) {
       const err = scheduleError(scheduleAt)
       setScheduleMsg(err)
@@ -194,7 +207,7 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
 
   const toggle = (c: Channel) => {
     const next = toggleChannel(selected, c)
-    setSelected(next)
+    setPicked(next)
     if (next.has(c)) setFocus(c)
     if (!next.has("fb-feed")) setWhen("now")
   }
@@ -277,7 +290,20 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
 
             {!canPublish && (
               <p role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-semibold text-amber-900">
-                Salve a promoção para publicar.
+                {UNSAVED}
+              </p>
+            )}
+            {load === "loading" && (
+              <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5 text-[13px] font-semibold text-gray-600">
+                <Spinner className="h-3.5 w-3.5" /> Carregando situação dos canais…
+              </p>
+            )}
+            {load === "error" && (
+              <p role="alert" className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] font-semibold text-red-700">
+                Não deu para carregar a situação dos canais.
+                <button type="button" onClick={() => void refresh()} className="font-bold text-red-800 underline underline-offset-2 hover:text-red-900">
+                  Tentar de novo
+                </button>
               </p>
             )}
 
@@ -373,7 +399,7 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
             <button
               type="button"
               onClick={() => void publishAll()}
-              disabled={!canPublish || running || !toPublish.length}
+              disabled={!canPublish || load !== "ready" || running || !toPublish.length}
               title={waOnly ? "O WhatsApp é compartilhado pelos botões do canal" : undefined}
               className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-sm hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
             >

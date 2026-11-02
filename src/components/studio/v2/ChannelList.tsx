@@ -91,7 +91,13 @@ interface RowProps {
 function ChannelRow({ channel, checked, forced, disabled, focused, state, run, onToggle, onFocus, onRetry, children }: RowProps) {
   const meta = CHANNELS.find((c) => c.id === channel)!
   const busy = run?.phase === "busy"
-  const error = run?.phase === "error" ? run.error : state?.state === "error" ? friendlyError(state.error, meta.label) : null
+  // Depois de um envio certo nesta sessão, o erro antigo gravado não aparece mais
+  const error =
+    run?.phase === "error"
+      ? friendlyError(run.error, meta.label)
+      : run?.phase !== "done" && state?.state === "error"
+        ? friendlyError(state.error, meta.label)
+        : null
   return (
     <li
       className={`rounded-2xl border bg-white transition-colors [-webkit-tap-highlight-color:transparent] ${focused ? "border-amber-400 ring-2 ring-amber-100" : "border-gray-200 hover:border-gray-300"}`}
@@ -127,8 +133,10 @@ function ChannelRow({ channel, checked, forced, disabled, focused, state, run, o
             </span>
           ) : error ? (
             <span className="text-red-600">Erro</span>
+          ) : run?.phase === "done" && (!state || state.state === "error") ? (
+            <span className="text-emerald-700">✓</span>
           ) : (
-            <span className={toneOf(state)}>{run?.phase === "done" && !state ? "✓" : stateLabel(state, meta.label)}</span>
+            <span className={toneOf(state)}>{stateLabel(state, meta.label)}</span>
           )}
         </span>
       </div>
