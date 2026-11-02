@@ -148,14 +148,24 @@ export async function selectPage(pageId: string) {
 // ---------------------------------------------------------------------------
 
 /** Sobe a imagem (data URL ou URL) e devolve uma URL pública que a Meta consegue baixar */
+const withTimeout = <T>(p: Promise<T>, ms: number) =>
+  Promise.race([p, new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Tempo esgotado (${ms} ms)`)), ms))])
+
 export async function publicImageUrl(image: string): Promise<string> {
   if (/^https:\/\//.test(image)) return image
   const match = /^data:(image\/(?:jpeg|png));base64,(.+)$/.exec(image)
   if (!match) throw new MetaError("Imagem inválida")
   const buffer = Buffer.from(match[2], "base64")
   const driver = storageDriver()
-  if (driver === "s3" || driver === "supabase") return uploadImage(buffer, match[1], "social", { inline: false })
-  // Sem S3/Supabase: guarda no banco e serve por /api/media/[id]
+  // MEDIA_STORAGE=db força o banco (o Supabase de produção chegou a levar 60 s por arquivo)
+  if ((driver === "s3" || driver === "supabase") && process.env.MEDIA_STORAGE !== "db") {
+    try {
+      return await withTimeout(uploadImage(buffer, match[1], "social", { inline: false }), 12_000)
+    } catch (error) {
+      console.error("Mídia: armazenamento falhou, guardando no banco", error)
+    }
+  }
+  // Sem S3/Supabase (ou se falharem): guarda no banco e serve por /api/media/[id]
   const media = await prisma.publishedMedia.create({ data: { contentType: match[1], data: buffer } })
   // Limpa o que a Meta já baixou há mais de uma semana
   void prisma.publishedMedia.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 7 * 86_400_000) } } }).catch(() => undefined)
