@@ -13,7 +13,8 @@ export interface BulkJob {
   kind: "post" | "story" | "carousel" | "album" | "site" | "share"
 }
 
-const MAX_GROUP = 10
+/** Carrossel do Instagram e álbum do Facebook: até 10 imagens */
+export const MAX_GROUP = 10
 
 const isWa = (c: Channel) => c === "wa-channel" || c === "wa-status"
 

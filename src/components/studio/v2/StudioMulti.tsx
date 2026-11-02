@@ -10,6 +10,7 @@ import { preloadAllFonts, renderDoc } from "../render"
 import { openArt, saveArtSet } from "../savedArt"
 import type { ArtFormat } from "../types"
 import { promoVariables } from "../variables"
+import { BulkPublishSheet } from "./BulkPublishSheet"
 import { MultiGrid, type GridItem } from "./MultiGrid"
 import { defaultFamilyOf, editedPromos, hasUnpublished, newlyPublished, nextThumbJob, publishedPromoIds, thumbKey, type ThumbCache } from "./multiState"
 import { StudioV2 } from "./StudioV2"
@@ -41,6 +42,9 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   const [applying, setApplying] = useState<{ i: number; n: number } | null>(null)
   const [applyErrors, setApplyErrors] = useState<{ destino: string; error: string }[]>([])
   const [fontsReady, setFontsReady] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  /** Promos com algum envio que saiu pelo Publicar todas (republicar não muda o resumo, então não daria para saber por ele) */
+  const [sent, setSent] = useState<Set<string>>(() => new Set())
   const ids = useMemo(() => list.map((p) => p.id), [list])
 
   // ---------------------------------------------------------------------------
@@ -50,7 +54,11 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   const [baseline, setBaseline] = useState<PublishSummary | null>(null)
   if (summary && !baseline) setBaseline(summary)
   const published = useMemo(() => publishedPromoIds(summary), [summary])
-  const publishedThisSession = useMemo(() => (summary ? newlyPublished(baseline, summary) : new Set<string>()), [baseline, summary])
+  const publishedThisSession = useMemo(() => {
+    const out = summary ? newlyPublished(baseline, summary) : new Set<string>()
+    for (const id of sent) out.add(id)
+    return out
+  }, [baseline, summary, sent])
 
   // ---------------------------------------------------------------------------
   // Artes: a salva de cada promo ou o modelo padrão (o mesmo que o Studio abriria)
@@ -98,8 +106,8 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   const drawing = useRef(false)
 
   useEffect(() => {
-    // Com o editor aberto a grade não aparece: não disputa o processador com a arte
-    if (!fontsReady || open !== null || drawing.current) return
+    // Com o editor ou o Publicar todas abertos: não disputa o processador com as artes
+    if (!fontsReady || open !== null || bulkOpen || drawing.current) return
     const id = nextThumbJob(ids, format, sets, thumbs)
     if (!id) return
     const promo = list.find((p) => p.id === id)!
@@ -111,7 +119,7 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
         drawing.current = false
         setThumbs((prev) => new Map(prev).set(thumbKey(id, format), { set, url }))
       })
-  }, [fontsReady, open, ids, list, format, sets, thumbs])
+  }, [fontsReady, open, bulkOpen, ids, list, format, sets, thumbs])
 
   const thumbOf = (id: string, f: ArtFormat): string | null | undefined => {
     const hit = thumbs.get(thumbKey(id, f))
@@ -218,21 +226,37 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   }))
 
   return (
-    <MultiGrid
-      items={items}
-      format={format}
-      onFormat={setFormat}
-      onOpen={setOpen}
-      onClose={close}
-      ready={ready}
-      applying={applying}
-      applyErrors={applyErrors}
-      onApply={(f) => void applyAll(f)}
-      onDismissErrors={() => setApplyErrors([])}
-      onRetry={(id) => {
-        const p = list.find((x) => x.id === id)
-        if (p) void loadArt(p)
-      }}
-    />
+    <>
+      <MultiGrid
+        items={items}
+        format={format}
+        onFormat={setFormat}
+        onOpen={setOpen}
+        onClose={close}
+        ready={ready}
+        applying={applying}
+        applyErrors={applyErrors}
+        onApply={(f) => void applyAll(f)}
+        onDismissErrors={() => setApplyErrors([])}
+        onRetry={(id) => {
+          const p = list.find((x) => x.id === id)
+          if (p) void loadArt(p)
+        }}
+        canPublishAll={ready && !applying}
+        onPublishAll={() => setBulkOpen(true)}
+      />
+      {bulkOpen && (
+        <BulkPublishSheet
+          promos={list}
+          sets={sets}
+          onClose={() => setBulkOpen(false)}
+          onSitePublished={(id, fields) => mergePromo({ ...fields, id })}
+          onSent={(ids) => {
+            if (ids.size) setSent((prev) => new Set([...prev, ...ids]))
+            void refresh()
+          }}
+        />
+      )}
+    </>
   )
 }

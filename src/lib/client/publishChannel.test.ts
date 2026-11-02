@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { NETWORK_ERROR } from "@/components/studio/v2/publishView"
-import { publishChannel } from "./publishChannel"
+import { NETWORK_ERROR, SHARED_MARK_ERROR } from "@/components/studio/v2/publishView"
+import { markShared, publishChannel } from "./publishChannel"
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } })
 
@@ -27,5 +27,22 @@ describe("publishChannel", () => {
   it("falha de rede vira mensagem amigável", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch") }))
     expect(await publishChannel("a", "site", { images: ["https://cdn/y.jpg"] })).toEqual({ ok: false, error: NETWORK_ERROR })
+  })
+})
+
+describe("markShared", () => {
+  it("marca o canal da promo e devolve a situação", async () => {
+    const fetchMock = vi.fn(async () => json({ ok: true, status: "shared" }))
+    vi.stubGlobal("fetch", fetchMock)
+    expect(await markShared("a", "wa-status")).toEqual({ ok: true, status: "shared" })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe("/api/publish/shared")
+    expect(JSON.parse(init.body as string)).toEqual({ promoId: "a", channel: "wa-status" })
+  })
+  it("erro do servidor ou de rede vira mensagem", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "Sem permissão para publicar esta promoção" }, 403)))
+    expect(await markShared("a", "wa-channel")).toEqual({ ok: false, error: "Sem permissão para publicar esta promoção" })
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch") }))
+    expect(await markShared("a", "wa-channel")).toEqual({ ok: false, error: SHARED_MARK_ERROR })
   })
 })

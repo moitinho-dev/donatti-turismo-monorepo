@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { Channel } from "@/lib/channels"
-import type { ChannelState, PublishState } from "@/lib/publishState"
-import { SHARED_MARK_ERROR, UNSAVED } from "@/components/studio/v2/publishView"
-import { errorOf, publishChannel, type PublishOptions, type PublishResult } from "@/lib/client/publishChannel"
+import type { ChannelState } from "@/lib/publishState"
+import { UNSAVED } from "@/components/studio/v2/publishView"
+import { markShared as markSharedChannel, publishChannel, type PublishOptions, type PublishResult } from "@/lib/client/publishChannel"
 
 export { uploadImage } from "@/lib/client/publishChannel"
 export type { PublishOptions, PublishResult } from "@/lib/client/publishChannel"
 
 /** Situação de cada canal; null se não deu para ler (mantém o que já estava na tela) */
-async function fetchStatus(promoId: string): Promise<Record<Channel, ChannelState> | null> {
+export async function fetchStatus(promoId: string): Promise<Record<Channel, ChannelState> | null> {
   try {
     const res = await fetch(`/api/publish?promoId=${encodeURIComponent(promoId)}`, { cache: "no-store" })
     return res.ok ? ((await res.json()) as Record<Channel, ChannelState>) : null
@@ -70,16 +70,7 @@ export function usePublish(promoId: string | null) {
     async (channel: "wa-channel" | "wa-status"): Promise<PublishResult> => {
       if (!promoId) return { ok: false, error: UNSAVED }
       try {
-        const res = await fetch("/api/publish/shared", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ promoId, channel }),
-        })
-        if (!res.ok) return { ok: false, error: await errorOf(res, SHARED_MARK_ERROR) }
-        const data = (await res.json()) as { status?: PublishState }
-        return { ok: true, status: data.status ?? "shared" }
-      } catch {
-        return { ok: false, error: SHARED_MARK_ERROR }
+        return await markSharedChannel(promoId, channel)
       } finally {
         await refresh()
       }

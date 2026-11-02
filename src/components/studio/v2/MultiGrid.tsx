@@ -34,6 +34,9 @@ interface MultiGridProps {
   onApply: (familyId: string) => void
   onDismissErrors: () => void
   onRetry: (id: string) => void
+  /** Todas as artes lidas e nada sendo aplicado */
+  canPublishAll: boolean
+  onPublishAll: () => void
 }
 
 /** Colunas da grade conforme o formato (celular sempre 2) */
@@ -45,7 +48,7 @@ const COLS: Record<ArtFormat, string> = {
 }
 
 /** Grade de várias promos (como a prévia do "criar em massa"): formato, template para todas e uma arte por promo */
-export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, applying, applyErrors, onApply, onDismissErrors, onRetry }: MultiGridProps) {
+export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, applying, applyErrors, onApply, onDismissErrors, onRetry, canPublishAll, onPublishAll }: MultiGridProps) {
   const [family, setFamily] = useState("")
   const busy = !!applying
   const { width, height } = FORMATS[format]
@@ -67,17 +70,16 @@ export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, app
           <Layers className="hidden h-4 w-4 shrink-0 text-amber-500 md:block" />
           <span className="truncate">{items.length} promoções</span>
         </h1>
-        <span title="Disponível em breve" className="ml-auto shrink-0">
-          <button
-            type="button"
-            disabled
-            aria-label="Publicar todas (disponível em breve)"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-2 text-[13px] font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-          >
-            <Send className="h-4 w-4" />
-            Publicar todas
-          </button>
-        </span>
+        <button
+          type="button"
+          onClick={onPublishAll}
+          disabled={!canPublishAll}
+          title={canPublishAll ? undefined : "Carregando as artes…"}
+          className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-2 text-[13px] font-bold text-white shadow-sm hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+        >
+          <Send className="h-4 w-4" />
+          Publicar todas
+        </button>
       </header>
 
       <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-white px-3 py-2.5 md:px-4">

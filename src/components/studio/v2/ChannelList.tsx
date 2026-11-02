@@ -14,8 +14,8 @@ export type Run = { phase: "busy" } | { phase: "done" } | { phase: "error"; erro
 
 const RATIO: Record<ArtFormat, string> = { story: "9:16", feed: "4:5", square: "1:1", landscape: "1,91:1" }
 
-function ChannelIcon({ channel }: { channel: Channel }) {
-  const tile = "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white"
+export function ChannelIcon({ channel, small }: { channel: Channel; small?: boolean }) {
+  const tile = `flex shrink-0 items-center justify-center text-white ${small ? "h-6 w-6 rounded-lg [&_svg]:h-3.5 [&_svg]:w-3.5" : "h-9 w-9 rounded-xl"}`
   if (channel === "site")
     return (
       <span className={`${tile} bg-[#1D3153]`}>

@@ -1,6 +1,6 @@
 import type { Channel } from "@/lib/channels"
 import type { PublishState } from "@/lib/publishState"
-import { NETWORK_ERROR, UNSAVED, isUploadedUrl } from "@/components/studio/v2/publishView"
+import { NETWORK_ERROR, SHARED_MARK_ERROR, UNSAVED, isUploadedUrl } from "@/components/studio/v2/publishView"
 
 /** error só vem quando ok é false (o projeto roda sem strict, então o tipo não separa os dois casos) */
 export interface PublishResult {
@@ -67,5 +67,22 @@ export async function publishChannel(promoId: string, channel: Channel, opts: Pu
     // Falha de rede ("Failed to fetch", "Load failed") nunca aparece crua
     if (err instanceof PublishError && err.message) return { ok: false, error: err.message }
     return { ok: false, error: err instanceof TypeError ? NETWORK_ERROR : "Erro ao publicar" }
+  }
+}
+
+/** Canal e Status do WhatsApp: a equipe compartilha pelo celular; aqui só fica registrado. Nunca lança */
+export async function markShared(promoId: string, channel: "wa-channel" | "wa-status"): Promise<PublishResult> {
+  if (!promoId) return { ok: false, error: UNSAVED }
+  try {
+    const res = await fetch("/api/publish/shared", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ promoId, channel }),
+    })
+    if (!res.ok) return { ok: false, error: await errorOf(res, SHARED_MARK_ERROR) }
+    const data = (await res.json()) as { status?: PublishState }
+    return { ok: true, status: data.status ?? "shared" }
+  } catch {
+    return { ok: false, error: SHARED_MARK_ERROR }
   }
 }
