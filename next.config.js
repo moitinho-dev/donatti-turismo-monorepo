@@ -19,6 +19,13 @@ const nextConfig = {
   // A campanha virou Black November; o endereço antigo continua chegando na página
   async redirects() {
     return [
+      // Um endereço só: o login (sessão e conexão com a Meta/Google) e o SEO dependem de não alternar entre www e sem www
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.donattiturismo.com" }],
+        destination: "https://donattiturismo.com/:path*",
+        permanent: true,
+      },
       { source: "/black-friday", destination: "/black-november", permanent: true },
       { source: "/black-friday/preview", destination: "/black-november/preview", permanent: true },
     ]
