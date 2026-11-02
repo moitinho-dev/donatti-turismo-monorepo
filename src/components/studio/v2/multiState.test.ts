@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { PublishSummary } from "@/lib/publishState"
-import { buildArtSet, markEdited, type ArtSet } from "../artSet"
+import { applyFamily, buildArtSet, completeArtSet, markEdited, type ArtSet } from "../artSet"
 import {
   defaultFamilyOf,
   editedPromos,
@@ -29,6 +29,19 @@ describe("editedPromos", () => {
   it("só as promos com algum formato ajustado à mão", () => {
     expect(editedPromos({ a: set(), b: set(true), c: set(true) })).toEqual(["b", "c"])
     expect(editedPromos({})).toEqual([])
+  })
+
+  it("arte salva pelo Studio antigo (sem a lista de ajustes) conta como ajustada", () => {
+    const legacy = completeArtSet({ formats: { feed: set().docs.feed }, family: "destaque", photo: null }, "destaque")
+    const current = completeArtSet({ formats: { feed: set().docs.feed }, family: "destaque", photo: null, edited: [] }, "destaque")
+    expect(legacy.editedUnknown).toBe(true)
+    expect(current.editedUnknown).toBe(false)
+    expect(editedPromos({ a: legacy, b: current, c: set(true) })).toEqual(["a", "c"])
+  })
+
+  it("depois de aplicar o template, a arte antiga deixa de contar como ajustada", () => {
+    const legacy = completeArtSet({ formats: { feed: set().docs.feed }, family: "destaque", photo: null }, "destaque")
+    expect(editedPromos({ a: applyFamily(legacy, "destaque") })).toEqual([])
   })
 })
 

@@ -9,10 +9,13 @@ export function defaultFamilyOf(p: { CAMPAIGN?: unknown } | Record<string, unkno
   return p.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
 }
 
-/** Promos com algum formato ajustado à mão depois do template */
+/**
+ * Promos com algum formato ajustado à mão depois do template. Arte salva pelo Studio antigo
+ * (sem a lista de ajustes) conta como ajustada: pode ter sido mexida e não dá para saber.
+ */
 export function editedPromos(sets: Record<string, ArtSet>): string[] {
   return Object.entries(sets)
-    .filter(([, s]) => s.edited.length > 0)
+    .filter(([, s]) => s.edited.length > 0 || !!s.editedUnknown)
     .map(([id]) => id)
 }
 

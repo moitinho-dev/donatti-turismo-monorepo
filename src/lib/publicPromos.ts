@@ -49,7 +49,13 @@ export async function findPublishedPromoBySlug(slug: string): Promise<Promo | nu
   const direct = await prisma.promo.findFirst({ where: { sitePublished: true, siteSlug: slug } })
   if (direct) return direct
   const all = await prisma.promo.findMany({ where: { sitePublished: true } })
-  return all.find((p) => computeSlug(p) === slug) || null
+  // Também vale o endereço provisório (destino + id), usado em legendas feitas antes do site
+  // gravar o slug definitivo da promo
+  return (
+    all.find((p) => computeSlug(p) === slug) ||
+    all.find((p) => computeSlug({ ...p, siteSlug: null }) === slug) ||
+    null
+  )
 }
 
 export interface DestinationGroup {

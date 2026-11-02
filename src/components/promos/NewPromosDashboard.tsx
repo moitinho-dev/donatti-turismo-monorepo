@@ -19,7 +19,7 @@ import { StatsPanel } from "./dashboard/StatsPanel"
 import { DeleteConfirmModal } from "./dashboard/DeleteConfirmModal"
 import { BlackFridayPanel } from "./dashboard/BlackFridayPanel"
 import { BulkActionBar } from "./dashboard/BulkActionBar"
-import { keepExisting } from "./dashboard/selection"
+import { bulkPublishNotice, deleteConfirm as bulkDeleteConfirm, hiddenCount, keepExisting, unpublishConfirm } from "./dashboard/selection"
 import type { PromoData, ActivePanel, UserData } from "./dashboard/types"
 import type { StudioProps } from "@/components/studio/Studio"
 
@@ -72,13 +72,16 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   // só contam as que ainda existem
   const [selection, setSelection] = useState<string[]>([])
   const [bulkBusy, setBulkBusy] = useState(false)
+  /** Ids que a lista mostra com o filtro atual (null até ela dizer) */
+  const [visibleIds, setVisibleIds] = useState<string[] | null>(null)
   // Studio com várias promos aberto (na ordem da seleção)
   const [multiPromos, setMultiPromos] = useState<PromoData[] | null>(null)
   const selectedPromos = useMemo(
     () => keepExisting(selection, promos).map((id) => promos.find((p) => p.id === id)!),
     [selection, promos],
   )
-  const showBulkBar = STUDIO_V2 && (activePanel === "list" || activePanel === "form") && selectedPromos.length > 0
+  // Só com a lista na tela (com o formulário aberto por cima, não)
+  const showBulkBar = STUDIO_V2 && (activePanel === "list" || activePanel === "form") && !showFormModal && selectedPromos.length > 0
 
   // Campanha no ar (ou no esquenta): o lote já abre com o filtro e o modelo dela
   useEffect(() => {
@@ -215,16 +218,18 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     // Quem já está como pedido fica de fora (não posta de novo no Google)
     const targets = selectedPromos.filter((p) => !!p.SITE_PUBLISHED !== publish)
     if (!targets.length) return
+    if (!publish && !window.confirm(unpublishConfirm(targets.length))) return
     setBulkBusy(true)
     const errors: string[] = []
+    const googleErrors: string[] = []
     for (const promo of targets) {
       const { siteError, googleError } = await setSitePublished(promo, publish)
       if (siteError) errors.push(siteError)
-      else if (googleError) errors.push(`${promo.DESTINO}: entrou no site, mas o Google falhou: ${googleError}`)
+      // Entrou no site: conta como publicada; o Google vem à parte no aviso
+      else if (googleError) googleErrors.push(`${promo.DESTINO}: ${googleError}`)
     }
     const ok = targets.length - errors.length
-    if (publish)
-      bulkNotice(ok, errors, `${plural(ok, "publicada", "publicadas")} no site.`, (o, e) => `${plural(o, "publicada", "publicadas")}; ${e} com erro.`)
+    if (publish) setNotice(bulkPublishNotice(ok, errors, googleErrors))
     else
       bulkNotice(ok, errors, `${plural(ok, "tirada", "tiradas")} do site.`, (o, e) => `${plural(o, "tirada", "tiradas")} do site; ${e} com erro.`)
     finishBulk()
@@ -232,7 +237,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
 
   const handleBulkDelete = async () => {
     const targets = selectedPromos
-    if (!window.confirm(`Excluir ${plural(targets.length, "promoção", "promoções")}? Isso não pode ser desfeito.`)) return
+    const hidden = hiddenCount(targets.map((p) => p.id), visibleIds)
+    if (!window.confirm(bulkDeleteConfirm(targets.length, hidden))) return
     setBulkBusy(true)
     const errors: string[] = []
     for (const promo of targets) {
@@ -455,7 +461,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
               onNewPromo={handleNewPromo}
               onTogglePublish={(promo) => void handleTogglePublish(promo)}
               onUnpublishExpired={(list) => void handleUnpublishExpired(list)}
-              {...(STUDIO_V2 ? { selectedIds: selectedPromos.map((p) => p.id), onSelectionChange: setSelection } : {})}
+              {...(STUDIO_V2 ? { selectedIds: selectedPromos.map((p) => p.id), onSelectionChange: setSelection, onVisibleChange: setVisibleIds } : {})}
             />
           </>
         )}

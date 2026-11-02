@@ -136,7 +136,10 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
     if (!ready || applying) return
     const targets = list.filter((p) => sets[p.id])
     if (!targets.length) return
-    const edited = editedPromos(Object.fromEntries(targets.map((p) => [p.id, sets[p.id]])))
+    // Arte do Studio antigo sem a lista de ajustes só conta quando há mesmo uma arte salva
+    const edited = editedPromos(
+      Object.fromEntries(targets.map((p) => [p.id, designIds.current[p.id] ? sets[p.id] : { ...sets[p.id], editedUnknown: false }])),
+    )
     if (edited.length && !window.confirm(`Substituir os ajustes de ${edited.length === 1 ? "1 promoção" : `${edited.length} promoções`}?`)) return
     setApplyErrors([])
     const errors: { destino: string; error: string }[] = []
@@ -176,6 +179,9 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
     return updated
   }
 
+  /** Arte que não deu para ler não abre no editor: na grade ela tem o "Tentar de novo" */
+  const canOpen = (index: number) => !!list[index] && !failed[list[index].id]
+
   const close = () => {
     if (hasUnpublished(ids, publishedThisSession) && !window.confirm("Há promoções que ainda não foram publicadas. Fechar mesmo assim?")) return
     onClose()
@@ -204,7 +210,7 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
           index: open,
           onGo: (i) => {
             leaving(open)
-            setOpen(i)
+            setOpen(canOpen(i) ? i : null)
           },
           onBackToGrid: () => {
             leaving(open)
@@ -231,7 +237,7 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
         items={items}
         format={format}
         onFormat={setFormat}
-        onOpen={setOpen}
+        onOpen={(i) => canOpen(i) && setOpen(i)}
         onClose={close}
         ready={ready}
         applying={applying}

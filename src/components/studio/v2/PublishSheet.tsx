@@ -53,6 +53,13 @@ const DEFAULT_SELECTION: Channel[] = ["site", "google"]
 const label = (c: Channel) => CHANNELS.find((x) => x.id === c)!.label
 const formatOf = (c: Channel) => CHANNELS.find((x) => x.id === c)!.format
 
+/** Legendas geradas com os dados da oferta; o link usa o slug do site (ou o provisório) */
+function generateCaptions(promo: Promo, campaign: string | null) {
+  const siteSlug = typeof promo.SITE_SLUG === "string" && promo.SITE_SLUG ? promo.SITE_SLUG : null
+  const p = { ...promo, SITE_SLUG: computeSlug({ siteSlug, destino: promo.DESTINO, id: promo.id }) } as unknown as CaptionPromo
+  return captionsFor(p, campaign)
+}
+
 /** Painel Publicar: canais, legenda por rede, prévia e situação de cada canal */
 export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onClose, format, onDownload, onSitePublished }: PublishSheetProps) {
   const canPublish = !!promo.id && promo.id !== "demo-tutorial"
@@ -94,12 +101,11 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
   // Legendas: as salvas com a arte, ou geradas com os dados da oferta
   // ---------------------------------------------------------------------------
   const campaign = promo.CAMPAIGN === "black-friday" ? "Black November" : null
-  const generated = useMemo(() => {
-    const siteSlug = typeof promo.SITE_SLUG === "string" && promo.SITE_SLUG ? promo.SITE_SLUG : null
-    const p = { ...promo, SITE_SLUG: computeSlug({ siteSlug, destino: promo.DESTINO, id: promo.id }) } as unknown as CaptionPromo
-    return captionsFor(p, campaign)
-  }, [promo, campaign])
+  const generated = useMemo(() => generateCaptions(promo, campaign), [promo, campaign])
   const captions = set.captions ?? generated
+  /** Campos do site gravados neste painel: as legendas geradas seguintes levam o link definitivo */
+  const siteSaved = useRef<Record<string, unknown> | null>(null)
+  const liveCaptions = () => set.captions ?? (siteSaved.current ? generateCaptions({ ...promo, ...siteSaved.current }, campaign) : generated)
 
   const editCaption = (network: Network, text: string) => setCaptions({ ...captions, [network]: text })
   const regenerate = (network: Network) => setCaptions({ ...captions, [network]: generated[network] })
@@ -167,10 +173,12 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
         return false
       }
     }
-    const caption = c === "ig-feed" ? captions.instagram : c === "fb-feed" ? captions.facebook : undefined
+    const live = liveCaptions()
+    const caption = c === "ig-feed" ? live.instagram : c === "fb-feed" ? live.facebook : undefined
     const scheduledAt = c === "fb-feed" && scheduling ? new Date(scheduleAt).toISOString() : undefined
     const res = await publish(c, { images, caption, scheduledAt })
     setRun((r) => ({ ...r, [c]: res.ok ? { phase: "done" } : { phase: "error", error: res.error } }))
+    if (c === "site" && res.ok && res.promo) siteSaved.current = res.promo
     // A promo aberta passa a estar no site (um salvamento da oferta depois não a tira de lá)
     if (c === "site" && res.ok && res.status !== "simulated") onSitePublished?.({ SITE_PUBLISHED: true, ...res.promo })
     return res.ok

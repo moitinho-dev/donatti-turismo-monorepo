@@ -60,6 +60,11 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
   const idsKey = promos.map((p) => p.id).join(",")
   const ids = useMemo(() => (idsKey ? idsKey.split(",") : []), [idsKey])
   const byId = useMemo(() => Object.fromEntries(promos.map((p) => [p.id, p])), [promos])
+  /**
+   * Campos do site gravados nesta rodada: as legendas enviadas depois levam o link definitivo da oferta
+   * (a rodada roda com as promos de quando começou; a tela já recebe as atualizadas)
+   */
+  const siteSaved = useRef<Record<string, Record<string, unknown>>>({})
 
   const { status, load, refreshing, reload: loadStatus } = useBulkStatus(promos, ids)
 
@@ -149,11 +154,12 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
       }
     }
     const feedCaption = j.channel === "ig-feed" || j.channel === "fb-feed"
+    const promoOf = (id: string) => (siteSaved.current[id] ? ({ ...byId[id], ...siteSaved.current[id] } as PromoData) : byId[id])
     const caption = !feedCaption
       ? undefined
       : j.promoIds.length > 1
-        ? groupCaption(j.promoIds)
-        : promoCaptions(byId[j.promoIds[0]], savedOf(j.promoIds[0]))[j.channel === "ig-feed" ? "instagram" : "facebook"]
+        ? (groupText[j.promoIds.join(",")] ?? groupCaptionDefault(j.promoIds.map(promoOf)))
+        : promoCaptions(promoOf(j.promoIds[0]), savedOf(j.promoIds[0]))[j.channel === "ig-feed" ? "instagram" : "facebook"]
     const res = await publishChannel(j.promoIds[0], j.channel, {
       images,
       caption,
@@ -165,6 +171,7 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
       const id = j.promoIds[0]
       if (res.ok) siteFailed.current.delete(id)
       else siteFailed.current.add(id)
+      if (res.ok && res.promo) siteSaved.current[id] = res.promo
       if (res.ok && res.status !== "simulated") onSitePublished(id, { SITE_PUBLISHED: true, ...res.promo })
     }
   }

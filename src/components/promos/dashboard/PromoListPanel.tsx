@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Search, LayoutGrid, List, Loader2, FileText, Plus, AlertTriangle, ChevronDown, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { PromoGridCard } from "./PromoGridCard"
@@ -31,6 +31,8 @@ interface PromoListPanelProps {
   /** Ids marcados para ação em lote; com onSelectionChange a lista mostra as caixas de seleção */
   selectedIds?: string[]
   onSelectionChange?: (ids: string[]) => void
+  /** Ids que aparecem com o filtro atual (para as ações em lote avisarem das marcadas fora dele) */
+  onVisibleChange?: (ids: string[]) => void
 }
 
 function StatCard({
@@ -81,6 +83,7 @@ export function PromoListPanel({
   onUnpublishExpired,
   selectedIds = [],
   onSelectionChange,
+  onVisibleChange,
 }: PromoListPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [searchQuery, setSearchQuery] = useState("")
@@ -137,6 +140,10 @@ export function PromoListPanel({
     }
     return list
   }, [promos, searchQuery, statusFilter, sectionFilter, sortMode])
+
+  useEffect(() => {
+    onVisibleChange?.(filteredPromos.map((p) => p.id))
+  }, [filteredPromos, onVisibleChange])
 
   const selectableVisible = useMemo(() => filteredPromos.filter((p) => selectable(p).ok), [filteredPromos])
   const allVisibleSelected = selectableVisible.length > 0 && selectableVisible.every((p) => selectedIds.includes(p.id))
