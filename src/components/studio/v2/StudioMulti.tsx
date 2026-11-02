@@ -24,6 +24,7 @@ export interface StudioMultiProps {
 
 type Promo = StudioProps["promo"]
 const asPromo = (p: PromoData) => p as unknown as Promo
+const omit = <T,>(rec: Record<string, T>, id: string) => Object.fromEntries(Object.entries(rec).filter(([k]) => k !== id)) as Record<string, T>
 
 /** Artes abertas ao mesmo tempo (cada uma lê a arte salva ou monta o modelo) */
 const LOAD_AT_ONCE = 3
@@ -34,6 +35,8 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   const [format, setFormat] = useState<ArtFormat>("story")
   const [open, setOpen] = useState<number | null>(null)
   const [sets, setSets] = useState<Record<string, ArtSet>>({})
+  /** Promos cuja arte salva não deu para ler (fora do "aplicar em todas" até tentar de novo) */
+  const [failed, setFailed] = useState<Record<string, true>>({})
   const designIds = useRef<Record<string, string | null>>({})
   const [applying, setApplying] = useState<{ i: number; n: number } | null>(null)
   const [applyErrors, setApplyErrors] = useState<{ destino: string; error: string }[]>([])
@@ -58,10 +61,19 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
 
   const loadArt = useCallback(async (p: PromoData) => {
     const mine = bump(p.id)
-    const { set, designId } = await openArt(asPromo(p), defaultFamilyOf(p))
-    if (artSeq.current[p.id] !== mine) return
-    designIds.current[p.id] = designId
-    setSets((prev) => ({ ...prev, [p.id]: set }))
+    // Enquanto lê: sem arte (cartão em esqueleto e "Aplicar" travado), para nada gravar por cima de uma arte velha
+    setSets((prev) => omit(prev, p.id))
+    setFailed((prev) => omit(prev, p.id))
+    try {
+      // strict: leitura que falhou não vira modelo padrão (salvar por cima criaria outra arte)
+      const { set, designId } = await openArt(asPromo(p), defaultFamilyOf(p), { strict: true })
+      if (artSeq.current[p.id] !== mine) return
+      designIds.current[p.id] = designId
+      setSets((prev) => ({ ...prev, [p.id]: set }))
+    } catch {
+      if (artSeq.current[p.id] !== mine) return
+      setFailed((prev) => ({ ...prev, [p.id]: true }))
+    }
   }, [])
 
   useEffect(() => {
@@ -71,7 +83,7 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
       .then(() => alive && setFontsReady(true))
     const queue = [...initial]
     const worker = async () => {
-      for (let p = queue.shift(); p && alive; p = queue.shift()) await loadArt(p).catch(() => undefined)
+      for (let p = queue.shift(); p && alive; p = queue.shift()) await loadArt(p)
     }
     for (let i = 0; i < LOAD_AT_ONCE; i++) void worker()
     return () => {
@@ -109,16 +121,19 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   // ---------------------------------------------------------------------------
   // Template para todas
   // ---------------------------------------------------------------------------
-  const ready = ids.every((id) => sets[id])
+  // Todas lidas (as que falharam ficam de fora); nenhuma relendo
+  const ready = ids.every((id) => sets[id] || failed[id])
 
   const applyAll = async (familyId: string) => {
     if (!ready || applying) return
-    const edited = editedPromos(Object.fromEntries(ids.map((id) => [id, sets[id]])))
+    const targets = list.filter((p) => sets[p.id])
+    if (!targets.length) return
+    const edited = editedPromos(Object.fromEntries(targets.map((p) => [p.id, sets[p.id]])))
     if (edited.length && !window.confirm(`Substituir os ajustes de ${edited.length === 1 ? "1 promoção" : `${edited.length} promoções`}?`)) return
     setApplyErrors([])
     const errors: { destino: string; error: string }[] = []
-    for (const [i, p] of list.entries()) {
-      setApplying({ i: i + 1, n: list.length })
+    for (const [i, p] of targets.entries()) {
+      setApplying({ i: i + 1, n: targets.length })
       const next = applyFamily(sets[p.id], familyId)
       bump(p.id)
       try {
@@ -139,13 +154,17 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
   /** Saindo da promo aberta (o Studio já salvou): relê a arte dela e a situação dos canais */
   const leaving = (index: number) => {
     const p = list[index]
-    if (p) void loadArt(p).catch(() => undefined)
+    if (p) void loadArt(p)
     void refresh()
   }
 
+  const mergePromo = useCallback((updated: Record<string, unknown>) => {
+    setList((cur) => cur.map((x) => (x.id === updated.id ? ({ ...x, ...updated } as PromoData) : x)))
+  }, [])
+
   const savePromo = async (p: Record<string, unknown>) => {
     const updated = await onSavePromo(p)
-    setList((cur) => cur.map((x) => (x.id === updated.id ? ({ ...x, ...updated } as PromoData) : x)))
+    mergePromo(updated)
     return updated
   }
 
@@ -166,6 +185,7 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
           setOpen(null)
         }}
         onSavePromo={savePromo}
+        onPromoChange={mergePromo}
         queue={{
           items: list.map((p) => ({
             id: p.id,
@@ -194,6 +214,7 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
     thumb: thumbOf(p.id, format),
     edited: !!sets[p.id]?.edited.length,
     published: published.has(p.id),
+    failed: !!failed[p.id],
   }))
 
   return (
@@ -208,6 +229,10 @@ export function StudioMulti({ promos: initial, isAdmin = false, onClose, onSaveP
       applyErrors={applyErrors}
       onApply={(f) => void applyAll(f)}
       onDismissErrors={() => setApplyErrors([])}
+      onRetry={(id) => {
+        const p = list.find((x) => x.id === id)
+        if (p) void loadArt(p)
+      }}
     />
   )
 }

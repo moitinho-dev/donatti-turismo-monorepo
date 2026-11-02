@@ -21,10 +21,18 @@ export type SavedArt = ArtSet & { designId: string }
  * Arte salva sem foto: usa a foto atual da promo nos espaços de foto vazios.
  * Usado pelo Studio ao abrir e pelo gerador em lote, para os dois mostrarem a mesma arte.
  */
-export async function loadSavedArt(promo: { id: string; SITE_IMAGE?: unknown }, fallbackFamily = "destaque"): Promise<SavedArt | null> {
-  const list = await fetch(`/api/designs?kind=design&promoId=${encodeURIComponent(promo.id)}`).then((r) => (r.ok ? r.json() : []))
+export async function loadSavedArt(
+  promo: { id: string; SITE_IMAGE?: unknown },
+  fallbackFamily = "destaque",
+  { strict = false }: { strict?: boolean } = {},
+): Promise<SavedArt | null> {
+  // strict: leitura que falhou vira erro (quem chama avisa), em vez de "sem arte salva"
+  const failed = (): never => {
+    throw new Error("Não deu para carregar a arte")
+  }
+  const list = await fetch(`/api/designs?kind=design&promoId=${encodeURIComponent(promo.id)}`).then((r) => (r.ok ? r.json() : strict ? failed() : []))
   if (!list[0]?.id) return null
-  const saved = await fetch(`/api/designs/${list[0].id}`).then((r) => (r.ok ? r.json() : null))
+  const saved = await fetch(`/api/designs/${list[0].id}`).then((r) => (r.ok ? r.json() : strict ? failed() : null))
   const data = saved?.data as SavedDesignData | undefined
   if (!data?.formats) return null
   const photo = data.photo || (typeof promo.SITE_IMAGE === "string" ? promo.SITE_IMAGE : null) || null
@@ -43,20 +51,23 @@ export async function loadSavedArt(promo: { id: string; SITE_IMAGE?: unknown }, 
 /**
  * Arte da promo para abrir: a salva ou, sem arte salva, os 4 formatos no modelo com a foto da promo
  * (sem foto: a primeira da busca pelo destino). Mesma arte no Studio e na grade de várias promos.
+ * strict: se a leitura da arte salva falhar, lança erro em vez de cair no modelo padrão.
  */
 export async function openArt(
   promo: { id: string; DESTINO: string; SITE_IMAGE?: unknown },
   family: string,
-  { saved: readSaved = true }: { saved?: boolean } = {},
+  { saved: readSaved = true, strict = false }: { saved?: boolean; strict?: boolean } = {},
 ): Promise<{ set: ArtSet; designId: string | null }> {
   if (readSaved) {
     try {
-      const saved = await loadSavedArt(promo, family)
+      const saved = await loadSavedArt(promo, family, { strict })
       if (saved) {
         const { designId, ...set } = saved
         return { set, designId }
       }
-    } catch {
+    } catch (err) {
+      // strict: não monta o modelo por cima de uma arte que talvez exista (salvar criaria outra)
+      if (strict) throw err
       // segue com o modelo padrão
     }
   }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertCircle, Check, ImageOff, Layers, Send, X } from "lucide-react"
+import { AlertCircle, Check, ImageOff, Layers, RotateCw, Send, X } from "lucide-react"
 import { TEMPLATE_FAMILIES } from "../templates"
 import { FORMATS, FORMAT_ORDER, type ArtFormat } from "../types"
 import { Spinner } from "../panels/ui"
@@ -15,6 +15,8 @@ export interface GridItem {
   /** Algum formato ajustado à mão */
   edited: boolean
   published: boolean
+  /** Não deu para ler a arte salva: fica fora do "aplicar em todas" até tentar de novo */
+  failed: boolean
 }
 
 interface MultiGridProps {
@@ -31,6 +33,7 @@ interface MultiGridProps {
   applyErrors: { destino: string; error: string }[]
   onApply: (familyId: string) => void
   onDismissErrors: () => void
+  onRetry: (id: string) => void
 }
 
 /** Colunas da grade conforme o formato (celular sempre 2) */
@@ -42,7 +45,7 @@ const COLS: Record<ArtFormat, string> = {
 }
 
 /** Grade de várias promos (como a prévia do "criar em massa"): formato, template para todas e uma arte por promo */
-export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, applying, applyErrors, onApply, onDismissErrors }: MultiGridProps) {
+export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, applying, applyErrors, onApply, onDismissErrors, onRetry }: MultiGridProps) {
   const [family, setFamily] = useState("")
   const busy = !!applying
   const { width, height } = FORMATS[format]
@@ -172,7 +175,12 @@ export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, app
                   className="relative block overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition-all group-hover:shadow-lg group-hover:ring-2 group-hover:ring-amber-400 group-focus-visible:ring-2 group-focus-visible:ring-amber-500"
                   style={{ aspectRatio: `${width} / ${height}` }}
                 >
-                  {item.thumb ? (
+                  {item.failed ? (
+                    <span className="flex h-full flex-col items-center justify-center gap-1 bg-red-50 px-2 text-center text-[11px] font-semibold text-red-600">
+                      <AlertCircle className="h-5 w-5" />
+                      Não deu para carregar a arte
+                    </span>
+                  ) : item.thumb ? (
                     <img src={item.thumb} alt="" className="h-full w-full object-cover" />
                   ) : item.thumb === null ? (
                     <span className="flex h-full flex-col items-center justify-center gap-1 bg-gray-100 text-[11px] font-semibold text-gray-400">
@@ -198,6 +206,17 @@ export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, app
                   {item.edited && <span className="ml-auto shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">Ajustada</span>}
                 </span>
               </button>
+              {item.failed && (
+                <button
+                  type="button"
+                  onClick={() => onRetry(item.id)}
+                  disabled={busy}
+                  className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[12px] font-bold text-gray-700 hover:border-amber-400 disabled:opacity-50"
+                >
+                  <RotateCw className="h-3 w-3" />
+                  Tentar de novo
+                </button>
+              )}
             </li>
           ))}
         </ul>

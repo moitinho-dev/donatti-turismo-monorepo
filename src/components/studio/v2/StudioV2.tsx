@@ -52,6 +52,8 @@ export interface StudioQueue {
 export type StudioV2Props = Omit<StudioProps, "ig" | "gbp"> & {
   /** Várias promos: fila embaixo, anterior / próxima e "Voltar à grade". Quem usa monta o Studio com key={promo.id}. */
   queue?: StudioQueue
+  /** Promo atualizada no servidor (oferta salva, entrou no site): quem abriu mantém a sua cópia em dia */
+  onPromoChange?: (promo: Record<string, unknown> & { id: string; DESTINO: string }) => void
 }
 
 type Promo = StudioProps["promo"]
@@ -71,7 +73,7 @@ const formatList = (fs: ArtFormat[]) => {
 
 const reId = (d: StudioDoc): StudioDoc => ({ ...d, layers: d.layers.map((l) => ({ ...l, id: newId() })) })
 
-export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue }: StudioV2Props) {
+export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue, onPromoChange }: StudioV2Props) {
   const isDemo = initialPromo.id === "demo-tutorial"
   const defaultFamily = defaultFamilyOf(initialPromo)
   const [promo, setPromo] = useState<Promo>(initialPromo)
@@ -364,23 +366,38 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue }: S
   // ---------------------------------------------------------------------------
   // Dados da oferta e fechar
   // ---------------------------------------------------------------------------
-  const onOfferSaved = useCallback((updated: Record<string, unknown>, sent: Promo) => {
-    // Só usa a resposta se ninguém digitou de novo enquanto salvava
-    setPromo((cur) => (cur === sent ? ({ ...sent, ...updated } as Promo) : cur))
-  }, [])
+  // Última versão gravada no servidor (o que quem abriu precisa saber), sem o que ainda está sendo digitado
+  const serverPromo = useRef<Promo>(initialPromo)
+
+  const onOfferSaved = useCallback(
+    (updated: Record<string, unknown>, sent: Promo) => {
+      // Só usa a resposta se ninguém digitou de novo enquanto salvava
+      setPromo((cur) => (cur === sent ? ({ ...sent, ...updated } as Promo) : cur))
+      serverPromo.current = { ...serverPromo.current, ...sent, ...updated } as Promo
+      onPromoChange?.(serverPromo.current)
+    },
+    [onPromoChange],
+  )
 
   /** Publicar → Site deu certo: a promo aberta fica no site (com seção, slug e foto que o servidor completou) */
-  const onSitePublished = useCallback((fields: Record<string, unknown>) => {
-    setPromo((cur) => ({ ...cur, ...fields, SITE_PUBLISHED: true }) as Promo)
-  }, [])
+  const onSitePublished = useCallback(
+    (fields: Record<string, unknown>) => {
+      setPromo((cur) => ({ ...cur, ...fields, SITE_PUBLISHED: true }) as Promo)
+      serverPromo.current = { ...serverPromo.current, ...fields, SITE_PUBLISHED: true } as Promo
+      onPromoChange?.(serverPromo.current)
+    },
+    [onPromoChange],
+  )
 
-  /** Grava o que ainda não foi salvo (fechar, voltar à grade ou trocar de promo); false se a gravação falhou */
+  /**
+   * Grava o que ainda não foi salvo (fechar, voltar à grade ou trocar de promo). true: pode sair.
+   * Falhou: pergunta se sai mesmo assim (perde as alterações) ou fica para tentar de novo.
+   */
   const saveNow = async () => {
     if (!dirty || isDemo) return true
-    const ok = await saveDesign(true)
-    // Não sai da promo: as edições continuam aqui para tentar de novo
-    if (!ok) setToast({ type: "error", text: "Não deu para salvar; tente de novo." })
-    return ok
+    if (await saveDesign(true)) return true
+    setToast({ type: "error", text: "Não deu para salvar; tente de novo." })
+    return window.confirm("Não deu para salvar. Sair mesmo assim e perder as alterações?")
   }
 
   const close = async () => {
