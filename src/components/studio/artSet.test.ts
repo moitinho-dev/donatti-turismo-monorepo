@@ -32,6 +32,7 @@ describe("artSet", () => {
     expect(set.docs.story).toEqual(docStory)
     expect(set.generated).toEqual(["feed", "square", "landscape"])
     expect(Object.keys(set.docs)).toHaveLength(4)
+    expect(completeArtSet({ formats: {}, family: null, photo: null }, "clean").family).toBe("clean")
   })
 
   it("completeArtSet sem foto não inventa foto", () => {
@@ -59,7 +60,10 @@ describe("artSet", () => {
     const next = applyTemplateDocs(markEdited(set, "feed"), { story: tpl }, "destaque")
     expect(next.edited).toEqual([])
     expect(next.generated).toEqual(["feed", "square", "landscape"])
-    expect(photos({ ...next, docs: { ...next.docs } }).every((l) => l.src === "a.jpg")).toBe(true)
+    expect(photos(next).every((l) => l.src === "a.jpg")).toBe(true)
+    expect(next.docs.story.layers).toEqual(
+      tpl.layers.map((l) => (l.type === "image" && l.role === "photo" ? { ...l, src: "a.jpg" } : l)),
+    )
   })
 
   it("setPhotoAll troca a foto nos 4", () => {
@@ -71,12 +75,15 @@ describe("artSet", () => {
   it("propagate só leva text/fill/src, nunca posição", () => {
     const set = buildArtSet("black-november", "x.jpg")
     const next = propagate(set, "story", "Destino", { text: "X", x: 999 } as never)
+    let checked = 0
     for (const f of ["feed", "square", "landscape"] as const) {
       const before = set.docs[f].layers.find((l) => l.name === "Destino")
       const after = next.docs[f].layers.find((l) => l.name === "Destino")
       if (!before) continue
+      checked++
       expect(after).toMatchObject({ text: "X", x: before.x })
     }
+    expect(checked).toBeGreaterThan(0)
     expect(next.docs.story).toBe(set.docs.story)
   })
 

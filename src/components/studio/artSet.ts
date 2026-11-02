@@ -44,7 +44,7 @@ export function completeArtSet(saved: SavedDesignData, fallbackFamily: string): 
   }
   return {
     docs,
-    family: saved.family,
+    family,
     photo: saved.photo,
     edited: saved.edited ? FORMAT_ORDER.filter((f) => saved.edited!.includes(f)) : [],
     generated,

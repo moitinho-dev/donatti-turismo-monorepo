@@ -120,7 +120,7 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, meta
 
   /** Arte da promo num formato: a do Studio, se houver, senão o modelo escolhido */
   const renderOne = async (p: PromoData, f: ArtFormat, saved: SavedArt | null, index: number): Promise<Art> => {
-    const fromStudio = useStudio ? saved?.docs[f] : undefined
+    const fromStudio = useStudio && saved && !saved.generated.includes(f) ? saved.docs[f] : undefined
     const doc = fromStudio || withPhoto(family.build(f), p.SITE_IMAGE || promoImages[p.id] || null)
     const dataUrl = await renderDoc(doc, promoVariables(p as unknown as PromoLike), { mime: "image/jpeg", quality: 0.9 })
     return { promoId: p.id, format: f, dataUrl, source: fromStudio ? "studio" : "modelo", filename: `${String(index + 1).padStart(2, "0")}-${slugify(p.DESTINO) || "oferta"}-${f}.jpg` }
