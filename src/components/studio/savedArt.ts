@@ -1,7 +1,9 @@
 "use client"
 
 import type { ArtFormat, StudioDoc } from "./types"
-import { completeArtSet, type ArtSet, type Captions } from "./artSet"
+import { buildArtSet, completeArtSet, type ArtSet, type Captions } from "./artSet"
+import { renderDoc } from "./render"
+import { promoVariables } from "./variables"
 
 /** O que o Studio guarda em designs.data para a arte de uma promo */
 export interface SavedDesignData {
@@ -36,4 +38,76 @@ export async function loadSavedArt(promo: { id: string; SITE_IMAGE?: unknown }, 
         ]),
       ) as SavedDesignData["formats"])
   return { ...completeArtSet({ ...data, formats, photo }, fallbackFamily), designId: saved.id }
+}
+
+/**
+ * Arte da promo para abrir: a salva ou, sem arte salva, os 4 formatos no modelo com a foto da promo
+ * (sem foto: a primeira da busca pelo destino). Mesma arte no Studio e na grade de várias promos.
+ */
+export async function openArt(
+  promo: { id: string; DESTINO: string; SITE_IMAGE?: unknown },
+  family: string,
+  { saved: readSaved = true }: { saved?: boolean } = {},
+): Promise<{ set: ArtSet; designId: string | null }> {
+  if (readSaved) {
+    try {
+      const saved = await loadSavedArt(promo, family)
+      if (saved) {
+        const { designId, ...set } = saved
+        return { set, designId }
+      }
+    } catch {
+      // segue com o modelo padrão
+    }
+  }
+  let photo = typeof promo.SITE_IMAGE === "string" && promo.SITE_IMAGE ? promo.SITE_IMAGE : null
+  if (!photo) {
+    try {
+      const data = await fetch(`/api/image-search?query=${encodeURIComponent(promo.DESTINO)}&limit=1&orientation=portrait`).then((r) => r.json())
+      photo = data.results?.[0]?.urls?.regular || null
+    } catch {
+      photo = null
+    }
+  }
+  return { set: buildArtSet(family, photo), designId: null }
+}
+
+/** Miniatura para a lista; foto sem liberação de origem: salva sem miniatura */
+export async function thumbnailOf(d: StudioDoc, vars: Record<string, string>): Promise<string | undefined> {
+  try {
+    return await renderDoc(d, vars, { mime: "image/jpeg", quality: 0.75, maxWidth: 360 })
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Grava os 4 formatos como a arte da promo (POST /api/designs). Com designId, atualiza o mesmo design.
+ * A miniatura sai do formato `format`. Falha: lança Error com a mensagem do servidor.
+ */
+export async function saveArtSet(
+  promo: Record<string, unknown> & { id: string; DESTINO: string },
+  set: ArtSet,
+  designId?: string | null,
+  opts: { format?: ArtFormat; vars?: Record<string, string> } = {},
+): Promise<{ designId: string }> {
+  const format = opts.format ?? "story"
+  const vars = opts.vars ?? promoVariables(promo)
+  const data: SavedDesignData = { formats: set.docs, family: set.family, photo: set.photo, captions: set.captions ?? undefined, edited: set.edited }
+  const res = await fetch("/api/designs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: designId || undefined,
+      name: `${promo.DESTINO} - artes`,
+      kind: "design",
+      format,
+      data,
+      promoId: promo.id,
+      thumbnail: await thumbnailOf(set.docs[format], vars),
+    }),
+  })
+  const saved = await res.json().catch(() => ({}))
+  if (!res.ok || !saved?.id) throw new Error(saved?.error || "Erro ao salvar")
+  return { designId: saved.id }
 }

@@ -12,7 +12,6 @@ import { promoVariables } from "../variables"
 import {
   applyFamily,
   applyTemplateDocs,
-  buildArtSet,
   equivalentLayers,
   markEdited,
   propagate,
@@ -20,7 +19,7 @@ import {
   type ArtSet,
   type Captions,
 } from "../artSet"
-import { loadSavedArt } from "../savedArt"
+import { openArt } from "../savedArt"
 import { fixedTextHits, replaceFixedText } from "../teamTemplates"
 import { AddPanel } from "../panels/AddPanel"
 import { AiPanel } from "../panels/AiPanel"
@@ -31,6 +30,7 @@ import { TemplatesPanel } from "../panels/TemplatesPanel"
 import { Spinner } from "../panels/ui"
 import { BrandPanel, type BRAND_LOGOS } from "./BrandPanel"
 import { FormatStrip } from "./FormatStrip"
+import { defaultFamilyOf } from "./multiState"
 import { OfferPanel } from "./OfferPanel"
 import { PublishSheet } from "./PublishSheet"
 import { QueueStrip, StripToggle, type QueueItem, type StripView } from "./QueueStrip"
@@ -73,7 +73,7 @@ const reId = (d: StudioDoc): StudioDoc => ({ ...d, layers: d.layers.map((l) => (
 
 export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue }: StudioV2Props) {
   const isDemo = initialPromo.id === "demo-tutorial"
-  const defaultFamily = initialPromo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
+  const defaultFamily = defaultFamilyOf(initialPromo)
   const [promo, setPromo] = useState<Promo>(initialPromo)
   const vars = useMemo(() => promoVariables(promo), [promo])
   const aiStatus = useAiStatus()
@@ -148,31 +148,11 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue }: S
     const start = async () => {
       // Sem isso o primeiro desenho sai com a fonte padrão e os textos mudam de tamanho depois
       await preloadAllFonts().catch(() => undefined)
-      if (!isDemo) {
-        try {
-          const saved = await loadSavedArt(initialPromo, defaultFamily)
-          if (alive && saved) {
-            const { designId: id, ...art } = saved
-            setDesignId(id)
-            reset(seen(art))
-            setLoading(false)
-            return
-          }
-        } catch {
-          // segue com o modelo padrão
-        }
-      }
-      let photo = (initialPromo.SITE_IMAGE as string) || null
-      if (!photo) {
-        try {
-          const data = await fetch(`/api/image-search?query=${encodeURIComponent(initialPromo.DESTINO)}&limit=1&orientation=portrait`).then((r) => r.json())
-          photo = data.results?.[0]?.urls?.regular || null
-        } catch {
-          photo = null
-        }
-      }
+      // Demonstração não lê arte salva
+      const { set: art, designId: id } = await openArt(initialPromo, defaultFamily, { saved: !isDemo })
       if (!alive) return
-      reset(buildArtSet(defaultFamily, photo))
+      setDesignId(id)
+      reset(id ? seen(art) : art)
       setLoading(false)
     }
     void start()
@@ -394,14 +374,17 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue }: S
     setPromo((cur) => ({ ...cur, ...fields, SITE_PUBLISHED: true }) as Promo)
   }, [])
 
-  /** Grava o que ainda não foi salvo (fechar, voltar à grade ou trocar de promo) */
+  /** Grava o que ainda não foi salvo (fechar, voltar à grade ou trocar de promo); false se a gravação falhou */
   const saveNow = async () => {
-    if (dirty && !isDemo) await saveDesign(true)
+    if (!dirty || isDemo) return true
+    const ok = await saveDesign(true)
+    // Não sai da promo: as edições continuam aqui para tentar de novo
+    if (!ok) setToast({ type: "error", text: "Não deu para salvar; tente de novo." })
+    return ok
   }
 
   const close = async () => {
-    await saveNow()
-    onClose()
+    if (await saveNow()) onClose()
   }
 
   /** Sai desta promo pela fila: salva e só então avisa quem abriu (que troca a promo ou mostra a grade) */
@@ -410,8 +393,7 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue }: S
     leavingRef.current = true
     setLeaving(true)
     try {
-      await saveNow()
-      go()
+      if (await saveNow()) go()
     } finally {
       leavingRef.current = false
       setLeaving(false)

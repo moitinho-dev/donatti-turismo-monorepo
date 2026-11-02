@@ -42,6 +42,12 @@ const StudioV2 = dynamic(() => import("@/components/studio/v2/StudioV2").then((m
   loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
 })
 
+// Várias promos marcadas: grade com uma arte por promo e o editor de cada uma com a fila
+const StudioMulti = dynamic(() => import("@/components/studio/v2/StudioMulti").then((m) => m.StudioMulti), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
+})
+
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
   const gbp = useGoogleBusiness({ userRole: user.role, fetchPromos })
@@ -65,6 +71,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   // só contam as que ainda existem
   const [selection, setSelection] = useState<string[]>([])
   const [bulkBusy, setBulkBusy] = useState(false)
+  // Studio com várias promos aberto (na ordem da seleção)
+  const [multiPromos, setMultiPromos] = useState<PromoData[] | null>(null)
   const selectedPromos = useMemo(
     () => keepExisting(selection, promos).map((id) => promos.find((p) => p.id === id)!),
     [selection, promos],
@@ -263,6 +271,30 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     handleGenerateImage(promo)
   }
 
+  const handleBulkOpenStudioMany = (ids: string[]) => {
+    const list: PromoData[] = ids.flatMap((id) => selectedPromos.filter((p) => p.id === id))
+    if (list.length < 2) return
+    setSelection([])
+    setSelectedPromo(null)
+    setMultiPromos(list)
+    setActivePanel("editor")
+  }
+
+  /** Oferta mudada no Studio com várias: grava e atualiza a foto na lista (o Studio novo publica o Google sozinho) */
+  const handleMultiSavePromo = async (p: Record<string, unknown>) => {
+    const updated = await savePromo(p)
+    if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
+    return updated
+  }
+
+  const handleCloseMulti = () => {
+    setMultiPromos(null)
+    setActivePanel("list")
+    // O Studio pode ter publicado em canais e mudado ofertas
+    void fetchPromos()
+    void refreshSummary()
+  }
+
   const handleUnpublishExpired = async (expired: PromoData[]) => {
     const ids = expired.map((p) => p.id)
     setPublishing(ids, true)
@@ -424,7 +456,11 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           </>
         )}
 
-        {activePanel === "editor" && selectedPromo && (STUDIO_V2 ? (
+        {activePanel === "editor" && STUDIO_V2 && multiPromos && (
+          <StudioMulti promos={multiPromos} isAdmin={user.role === "admin"} onClose={handleCloseMulti} onSavePromo={handleMultiSavePromo} />
+        )}
+
+        {activePanel === "editor" && !multiPromos && selectedPromo && (STUDIO_V2 ? (
           <StudioV2
             key={selectedPromo.id}
             promo={selectedPromo as unknown as StudioProps["promo"]}
@@ -485,6 +521,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           canPublish={selectedPromos.some((p) => !p.SITE_PUBLISHED)}
           canUnpublish={selectedPromos.some((p) => p.SITE_PUBLISHED)}
           onOpenStudio={handleBulkOpenStudio}
+          onOpenStudioMany={handleBulkOpenStudioMany}
           onPublishSite={() => void handleBulkSite(true)}
           onUnpublishSite={() => void handleBulkSite(false)}
           onDuplicate={() => void handleDuplicate()}
