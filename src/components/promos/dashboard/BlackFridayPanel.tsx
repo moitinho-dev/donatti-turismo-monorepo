@@ -18,7 +18,7 @@ const HOUR = 3_600_000
 const phaseLabel: Record<BlackFridayPhase, string> = {
   desligada: "Página desligada",
   esquenta: "Esquenta · contagem para abrir",
-  "ao-vivo": "Black Friday no ar",
+  "ao-vivo": "Black November no ar",
   encerrada: "Campanha encerrada",
 }
 
@@ -31,7 +31,7 @@ const toLocalInput = (iso: string) => {
 const fromLocalInput = (value: string) => new Date(value).toISOString()
 
 /**
- * Controle da campanha na central de promos: liga a página /black-friday,
+ * Controle da campanha na central de promos: liga a página /black-november,
  * ajusta início e fim da contagem (antecipar, estender, encerrar) e o desconto do título.
  */
 export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
@@ -51,7 +51,7 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
     fetch("/api/black-friday")
       .then((r) => r.json())
       .then((data) => load(data.settings))
-      .catch(() => setMessage({ kind: "error", text: "Não foi possível carregar a Black Friday" }))
+      .catch(() => setMessage({ kind: "error", text: "Não foi possível carregar a Black November" }))
   }, [])
 
   // A fase vira sozinha quando a contagem zera
@@ -88,8 +88,8 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
 
   if (!saved || !draft || !phase) {
     return (
-      <section aria-label="Campanha Black Friday" className="max-w-7xl mx-auto mb-4 sm:mb-6 rounded-[20px] bg-[#0B0B0F] p-5 text-white/60 text-sm">
-        {message?.text || "Carregando Black Friday…"}
+      <section aria-label="Campanha Black November" className="max-w-7xl mx-auto mb-4 sm:mb-6 rounded-[20px] bg-[#0B0B0F] p-5 text-white/60 text-sm">
+        {message?.text || "Carregando Black November…"}
       </section>
     )
   }
@@ -123,7 +123,7 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
     save({ ...saved, endsAt: new Date(base + hours * HOUR).toISOString() }, `Black estendida até ${formatCampaignDate(new Date(base + hours * HOUR))}.`)
   }
   const endNow = () => {
-    if (!window.confirm("Encerrar a Black Friday agora? A página sai do ar e a home volta ao normal.")) return
+    if (!window.confirm("Encerrar a Black November agora? A página sai do ar e a home volta ao normal.")) return
     const now = Date.now()
     const startsAt = new Date(saved.startsAt).getTime() < now ? saved.startsAt : new Date(now - HOUR).toISOString()
     save({ ...saved, startsAt, endsAt: new Date(now).toISOString() }, "Black encerrada. A página saiu do ar.")
@@ -133,7 +133,7 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
   const ghost = "inline-flex items-center justify-center gap-2 rounded-[10px] border border-white/20 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
 
   return (
-    <section aria-label="Campanha Black Friday" className="max-w-7xl mx-auto mb-4 sm:mb-6 overflow-hidden rounded-[20px] bg-[#0B0B0F] text-white shadow-lg">
+    <section aria-label="Campanha Black November" className="max-w-7xl mx-auto mb-4 sm:mb-6 overflow-hidden rounded-[20px] bg-[#0B0B0F] text-white shadow-lg">
       <div className="flex flex-col gap-5 p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
@@ -142,9 +142,9 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
             </div>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-[#FED400]">{phaseLabel[phase]}</p>
-              <p className="text-base sm:text-lg font-black leading-tight">Página Black Friday</p>
+              <p className="text-base sm:text-lg font-black leading-tight">Página Black November</p>
               <p className="text-xs text-white/60 mt-0.5">
-                {tagged} oferta{tagged === 1 ? "" : "s"} marcada{tagged === 1 ? "" : "s"} como Black Friday no site.
+                {tagged} oferta{tagged === 1 ? "" : "s"} marcada{tagged === 1 ? "" : "s"} como Black November no site.
                 {tagged === 0 && " Sem marcadas, a página mostra as promos com preço “de”. Marque no cadastro da promo."}
               </p>
             </div>
@@ -240,13 +240,13 @@ export function BlackFridayPanel({ promos }: { promos: PromoData[] }) {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <a href="/black-friday/preview" target="_blank" rel="noopener noreferrer" className={ghost}>
+            <a href="/black-november/preview" target="_blank" rel="noopener noreferrer" className={ghost}>
               <Eye className="h-4 w-4" />
               Pré-visualizar
             </a>
             {(phase === "esquenta" || phase === "ao-vivo") && (
               <a
-                href="/black-friday"
+                href="/black-november"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-white px-3 py-2 text-sm font-bold text-black hover:bg-white/90"

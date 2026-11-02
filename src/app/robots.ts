@@ -5,9 +5,9 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      // Fotos das promos guardadas no banco são servidas por /api/promos/<id>/image
-      allow: ["/", "/api/promos/*/image"],
-      disallow: ["/admin/", "/agent/", "/promos/", "/login", "/api/", "/black-friday/preview"],
+      // Fotos das promos guardadas no banco (/api/promos/<id>/image) e artes enviadas à Meta (/api/media/<id>)
+      allow: ["/", "/api/promos/*/image", "/api/media/"],
+      disallow: ["/admin/", "/agent/", "/promos/", "/login", "/api/", "/black-november/preview"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

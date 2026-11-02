@@ -1,22 +1,24 @@
 /**
- * Campanha Black Friday.
+ * Campanha Black November (a Black Friday da Donatti, o mês de novembro inteiro).
+ * Os nomes internos (BlackFriday*, api/black-friday, campaign = "black-friday") ficaram
+ * como estavam para não mexer no banco nem no painel.
  *
  * - "esquenta": página ligada, antes do início — contagem para a abertura
  * - "ao-vivo": entre início e fim — contagem para o encerramento
- * - "encerrada" / "desligada": site volta ao layout padrão e /black-friday sai do ar
+ * - "encerrada" / "desligada": site volta ao layout padrão e /black-november sai do ar
  *
  * A página é ligada e as datas são trocadas no painel de promos (tabela site_settings).
  * As variáveis abaixo só definem o padrão, usado até alguém salvar no painel:
  *   NEXT_PUBLIC_BLACK_FRIDAY=off|on        (padrão: off, liga pelo botão do painel)
- *   NEXT_PUBLIC_BLACK_FRIDAY_START=2026-11-23T00:00:00-03:00
- *   NEXT_PUBLIC_BLACK_FRIDAY_END=2026-11-30T23:59:59-03:00
+ *   NEXT_PUBLIC_BLACK_FRIDAY_START=2026-11-01T00:00:00-04:00
+ *   NEXT_PUBLIC_BLACK_FRIDAY_END=2026-11-30T23:59:59-04:00
  */
 
 export type BlackFridayPhase = "desligada" | "esquenta" | "ao-vivo" | "encerrada"
 
 /** Configuração da campanha. Datas em ISO para poder ir do servidor para o navegador. */
 export interface BlackFridaySettings {
-  /** Página /black-friday e faixa da home no ar */
+  /** Página /black-november e faixa da home no ar */
   enabled: boolean
   startsAt: string
   endsAt: string
@@ -24,8 +26,12 @@ export interface BlackFridaySettings {
   maxDiscount: number
 }
 
-const DEFAULT_START = "2026-11-23T00:00:00-03:00" // segunda da Black Week
-const DEFAULT_END = "2026-11-30T23:59:59-03:00" // fim da Cyber Monday
+const DEFAULT_START = "2026-11-01T00:00:00-04:00" // Black November: o mês inteiro, no horário de Campo Grande
+const DEFAULT_END = "2026-11-30T23:59:59-04:00"
+
+/** Nome e endereço públicos da campanha */
+export const CAMPAIGN_NAME = "Black November"
+export const CAMPAIGN_PATH = "/black-november"
 
 const toIso = (value: string | undefined, fallback: string) => {
   const date = new Date(value || fallback)

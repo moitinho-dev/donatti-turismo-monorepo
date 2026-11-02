@@ -141,6 +141,35 @@ model InstagramConnection {
   @@map("instagram_connections")
 }
 
+// Conexão com a Meta pelo Login do Facebook para Empresas (token de usuário do sistema, não expira):
+// publica na Página do Facebook e no Instagram profissional ligado a ela
+model MetaConnection {
+  id              String    @id @default(cuid())
+  accessToken     String    @db.Text
+  tokenExpiresAt  DateTime?
+  pageId          String?
+  pageName        String?
+  pageAccessToken String?   @db.Text
+  igUserId        String?
+  igUsername      String?
+  connectedBy     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("meta_connections")
+}
+
+// Imagem enviada para publicação quando não há S3/Supabase: a Meta baixa por /api/media/[id]
+model PublishedMedia {
+  id          String   @id @default(cuid())
+  contentType String
+  data        Bytes
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("published_media")
+}
+
 // Lead model for capturing interested customers
 model Lead {
   id           String   @id @default(cuid())

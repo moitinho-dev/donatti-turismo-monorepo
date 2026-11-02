@@ -16,6 +16,13 @@ const nextConfig = {
       "./node_modules/@img/sharp-linuxmusl-x64/**/*",
     ],
   },
+  // A campanha virou Black November; o endereço antigo continua chegando na página
+  async redirects() {
+    return [
+      { source: "/black-friday", destination: "/black-november", permanent: true },
+      { source: "/black-friday/preview", destination: "/black-november/preview", permanent: true },
+    ]
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },

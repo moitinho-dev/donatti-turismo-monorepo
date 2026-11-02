@@ -243,7 +243,7 @@ export function Studio({ promo: initialPromo, isAdmin, onClose, onSavePromo, ig,
         }
       }
       if (!alive) return
-      const family = legacy.story ? "legacy" : initialPromo.CAMPAIGN === "black-friday" ? "black-friday" : "destaque"
+      const family = legacy.story ? "legacy" : initialPromo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
       setPhotoUrl(photo)
       setHistory({ past: [], present: { docs: { story: buildFamily(family, "story", photo, legacy) }, family }, future: [] })
       setDirty(false)

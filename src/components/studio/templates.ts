@@ -34,7 +34,6 @@ const text = (o: TextOpts): TextLayer => ({
 
 type ShapeOpts = Partial<ShapeLayer> & Pick<ShapeLayer, "x" | "y" | "width" | "height">
 const rect = (o: ShapeOpts): ShapeLayer => ({ id: newId(), name: "Forma", type: "rect", rotation: 0, opacity: 1, fill: BRAND.orange, ...o })
-const ellipse = (o: ShapeOpts): ShapeLayer => ({ id: newId(), name: "Círculo", type: "ellipse", rotation: 0, opacity: 1, fill: BRAND.yellow, ...o })
 
 type ImageOpts = Partial<ImageLayer> & Pick<ImageLayer, "x" | "y" | "width" | "height" | "src">
 const image = (o: ImageOpts): ImageLayer => ({ id: newId(), name: "Imagem", type: "image", rotation: 0, opacity: 1, fit: "cover", cornerRadius: 0, ...o })
@@ -117,50 +116,167 @@ function destaque(format: ArtFormat): StudioDoc {
   ])
 }
 
-/** Fundo preto, foto em cartão e selo de desconto */
-function blackFriday(format: ArtFormat): StudioDoc {
+// Peças da campanha Black November (manual da campanha): foto do destino em evidência,
+// faixas de esquenta, etiqueta do destino, preço de varejo e faixa amarela de chamada
+const BN = {
+  black: "#0A0A0C",
+  yellow: "#FED400",
+  logo: "/images/black-november/logo-black-november.svg",
+  logoRatio: 531 / 1112,
+  donattiInk: "/images/black-november/donatti-preto.svg",
+  donattiRatio: 230 / 756,
+  icon: (name: "aereo" | "cafe" | "hotel") => `/images/black-november/icons/icon-${name}.png`,
+}
+
+/** Faixa amarela inclinada com contorno preto e texto repetido (rotação em torno do canto esquerdo) */
+function bnTape(W: number, cy: number, h: number, rotation: number, label: string): Layer[] {
+  const x = -120
+  const width = W + 240
+  const y = cy - h / 2
+  return [
+    rect({ name: `Faixa ${label}`, x, y, width, height: h, rotation, fill: BN.yellow, stroke: BN.black, strokeWidth: Math.max(4, h * 0.09) }),
+    text({
+      name: `Texto faixa ${label}`,
+      text: Array.from({ length: 6 }, () => label).join("   •   "),
+      x: x + 30,
+      y: y + h * 0.24,
+      width: width * 3,
+      rotation,
+      fontSize: Math.round(h * 0.46),
+      fontWeight: "900",
+      fill: BN.black,
+      uppercase: true,
+      letterSpacing: 1,
+      fit: undefined,
+    }),
+  ]
+}
+
+/** Preço de varejo: "15x" e "R$" empilhados, reais grandes alinhados à direita e centavos em cima */
+function bnPrice(x: number, y: number, size: number): Layer[] {
+  const side = Math.round(size * 0.3)
+  // largura calibrada para 3 dígitos (a fonte encolhe nos de 4)
+  const intW = Math.round(size * 1.62)
+  const intX = x + side * 2.05
+  return [
+    text({ name: "A partir de", text: "A PARTIR DE", x, y, width: size * 3, fontSize: Math.round(size * 0.13), fontWeight: "900", letterSpacing: 4 }),
+    text({ name: "Parcelas", text: "{PARCELAS}", x: x - 2, y: y + size * 0.26, width: side * 2.4, fontSize: side, fontWeight: "900", uppercase: true }),
+    text({ name: "R$", text: "R$", x: x + side * 0.4, y: y + size * 0.72, width: side * 2, fontSize: side, fontWeight: "900", fill: BN.yellow }),
+    text({ name: "Parcela", text: "{VALOR_PARCELA_INT}", x: intX, y: y + size * 0.2, width: intW, fontSize: size, fontWeight: "900", fill: BN.yellow, align: "right", lineHeight: 1, letterSpacing: -4 }),
+    text({ name: "Centavos", text: "{VALOR_PARCELA_CENTS}", x: intX + intW + 4, y: y + size * 0.27, width: size * 0.9, fontSize: Math.round(size * 0.36), fontWeight: "900", fill: BN.yellow, fit: undefined }),
+    text({ name: "Por pessoa", text: "POR PESSOA  •  OU R$ {VALOR_TOTAL_INT}", x, y: y + size * 1.24, width: size * 3.6, fontSize: Math.round(size * 0.13), fontWeight: "900", letterSpacing: 2 }),
+  ]
+}
+
+/** Duração, datas e o que está incluso, com ícones */
+function bnInfo(x: number, y: number, s: number): Layer[] {
+  const icon = Math.round(50 * s)
+  const step = Math.round(104 * s)
+  const item = (i: number, name: "aereo" | "cafe" | "hotel", label: string, showIf?: string): Layer[] => [
+    image({ name: `Ícone ${label}`, src: BN.icon(name), x: x + i * step, y: y + 88 * s, width: icon, height: icon, fit: "contain", showIf }),
+    text({ name: label, text: label, x: x + i * step - 20 * s, y: y + 148 * s, width: icon + 40 * s, fontSize: Math.round(17 * s), fontWeight: "600", fontFamily: "Inter", align: "center", showIf }),
+  ]
+  return [
+    text({ name: "Noites", text: "{NOITES}", x, y, width: 380 * s, fontSize: Math.round(30 * s), fontWeight: "900", uppercase: true }),
+    text({ name: "Saída", text: "Saída {SAIDA}", x, y: y + 42 * s, width: 380 * s, fontSize: Math.round(19 * s), fontWeight: "600", fontFamily: "Inter", fill: "#C9C9CF" }),
+    ...item(0, "aereo", "Aéreo", "AEREO"),
+    ...item(1, "cafe", "{REGIME}", "REGIME"),
+    ...item(2, "hotel", "Hotel"),
+  ]
+}
+
+/** Etiqueta do destino + hotel + período */
+function bnOffer(x: number, y: number, w: number, s: number, hotelSize: number): Layer[] {
+  const pillH = Math.round(50 * s)
+  return [
+    rect({ name: "Etiqueta destino", x, y, width: 470 * s, height: pillH, fill: BN.yellow, cornerRadius: pillH / 2 }),
+    text({ name: "Destino", text: "{DESTINO}", x: x + 20 * s, y: y + pillH * 0.26, width: 430 * s, fontSize: Math.round(25 * s), fontWeight: "900", fill: BN.black, align: "center", uppercase: true, letterSpacing: 2 }),
+    text({ name: "Hotel", text: "{HOTEL}", x: x - 2, y: y + pillH + 16 * s, width: w, fontSize: hotelSize, fontWeight: "900", uppercase: true, letterSpacing: -1, lineHeight: 1 }),
+    text({ name: "Período", text: "{DATAS}", x, y: y + pillH + hotelSize + 32 * s, width: w, fontSize: Math.round(22 * s), fontWeight: "800", fill: BN.yellow, uppercase: true, letterSpacing: 2 }),
+  ]
+}
+
+/** Faixa amarela de chamada no pé, com o logo Donatti em preto */
+function bnBand(W: number, H: number, top: number, s: number, m: number): Layer[] {
+  const logoW = Math.round(190 * s)
+  return [
+    rect({ name: "Faixa chamada", x: -40, y: top, width: W + 80, height: H - top + 120, rotation: -1.3, fill: BN.yellow }),
+    text({ name: "Chamada", text: "GARANTA O SEU NO WHATSAPP", x: m, y: top + 34 * s, width: W - 2 * m - logoW - 30 * s, fontSize: Math.round(30 * s), fontWeight: "900", fill: BN.black }),
+    image({ name: "Logo Donatti", src: BN.donattiInk, x: W - m - logoW, y: top + 18 * s, width: logoW, height: Math.round(logoW * BN.donattiRatio), fit: "contain" }),
+    text({ name: "Aviso", text: "*Tarifa por pessoa, sujeita a disponibilidade e alteração sem aviso prévio.", x: m, y: top + 86 * s, width: W - 2 * m - logoW, fontSize: Math.round(14 * s), fontWeight: "500", fontFamily: "Inter", fill: BN.black }),
+  ]
+}
+
+const bnShade = (W: number, from: number, to: number) =>
+  rect({ name: "Degradê", x: 0, y: from, width: W, height: to - from + 2, fill: BN.black, gradient: { from: "rgba(10,10,12,0)", to: BN.black } })
+const bnTopShade = (W: number, h: number) => rect({ name: "Degradê topo", x: 0, y: 0, width: W, height: h, fill: "#000000", gradient: { from: "rgba(0,0,0,0.45)", to: "rgba(0,0,0,0)" } })
+const bnLogo = (x: number, y: number, w: number) => image({ name: "Logo Black November", src: BN.logo, x, y, width: w, height: Math.round(w * BN.logoRatio), fit: "contain" })
+
+/** Black November: foto do destino em evidência e preço de varejo (story respeita 250 px livres em cima e embaixo) */
+function blackNovember(format: ArtFormat): StudioDoc {
   const { width: W, height: H } = FORMATS[format]
-  const s = Math.min(W, H) / 1080
-  const m = Math.round(60 * s)
+  const tapes = (y1: number, y2: number, h: number) => [...bnTape(W, y1, h, -3, "Esquenta Black November"), ...bnTape(W, y2, h, 2.5, "Só na Donatti")]
 
   if (format === "landscape") {
-    const photoW = Math.round(W * 0.46)
-    const tx = photoW + 50
-    const tw = W - tx - 40
-    return doc(format, BRAND.black, [
-      photo({ x: 0, y: 0, width: photoW, height: H }),
-      ellipse({ name: "Selo desconto", x: photoW - 90, y: 40, width: 160, height: 160, fill: BRAND.yellow, showIf: "DESCONTO" }),
-      text({ text: "-{DESCONTO}%", x: photoW - 90, y: 95, width: 160, fontSize: 46, fontWeight: "900", fill: BRAND.black, align: "center" }),
-      text({ text: "BLACK FRIDAY", x: tx, y: 40, width: tw, fontSize: 64, fontFamily: "Anton", fontWeight: "400", fill: BRAND.yellow, letterSpacing: 2 }),
-      text({ text: "{DESTINO}", x: tx, y: 140, width: tw, fontSize: 52, fontWeight: "900", uppercase: true }),
-      text({ text: "{HOTEL} • {NOITES}", x: tx, y: 205, width: tw, fontSize: 22, fontWeight: "500", fill: "#D1D5DB" }),
-      text({ text: "De R$ {VALOR_DE}", x: tx, y: 270, width: tw, fontSize: 24, fontWeight: "600", fill: "#9CA3AF", textDecoration: "line-through" }),
-      text({ text: "{PARCELAS} de R$ {VALOR_PARCELA}", x: tx, y: 305, width: tw, fontSize: 54, fontWeight: "900", fill: BRAND.yellow }),
-      text({ text: "ou R$ {VALOR_TOTAL} por pessoa", x: tx, y: 372, width: tw, fontSize: 22, fontWeight: "500", fill: "#E5E7EB" }),
-      logo(true, tx, H - 100, 200),
-      text({ text: "{WHATSAPP}", x: tx + 220, y: H - 82, width: tw - 220, fontSize: 24, fontWeight: "800", align: "right" }),
+    const px = 540
+    return doc(format, BN.black, [
+      photo({ x: px, y: 0, width: W - px, height: H }),
+      ...tapes(40, 92, 46),
+      bnLogo(36, 128, 300),
+      ...bnOffer(40, 290, 470, 0.8, 38),
+      ...bnPrice(40, 404, 92),
+      ...bnBand(W, H, 560, 0.75, 40).slice(0, 3),
     ])
   }
 
-  const tall = H / W > 1.6
-  const photoY = Math.round((tall ? 330 : 230) * s)
-  const photoH = Math.round(H * (tall ? 0.4 : 0.38))
-  const yDest = photoY + photoH + 50 * s
-  const destSize = Math.round((tall ? 88 : 76) * s)
+  if (format === "story") {
+    const s = 1
+    const PH = 1290
+    return doc(format, BN.black, [
+      photo({ x: 0, y: 0, width: W, height: PH }),
+      bnTopShade(W, 420),
+      bnShade(W, 1000, PH),
+      ...tapes(300, 366, 66),
+      bnLogo(58, 450, 480),
+      ...bnOffer(64, 1050, W - 128, s, 72),
+      ...bnPrice(64, 1310, 150),
+      rect({ name: "Fio", x: 640, y: 1314, width: 3, height: 180, fill: BN.yellow }),
+      ...bnInfo(676, 1312, s),
+      ...bnBand(W, H, 1540, s, 64),
+    ])
+  }
 
-  return doc(format, BRAND.black, [
-    logo(true, m, m, Math.round(260 * s)),
-    text({ text: "BLACK FRIDAY", x: m, y: photoY - (tall ? 200 : 150) * s, width: W - 2 * m, fontSize: (tall ? 150 : 120) * s, fontFamily: "Anton", fontWeight: "400", fill: BRAND.yellow, letterSpacing: 4, lineHeight: 1 }),
-    photo({ x: m, y: photoY, width: W - 2 * m, height: photoH, cornerRadius: 36 * s }),
-    ellipse({ name: "Selo desconto", x: W - m - 230 * s, y: photoY - 70 * s, width: 230 * s, height: 230 * s, fill: BRAND.yellow, showIf: "DESCONTO" }),
-    text({ text: "-{DESCONTO}%", x: W - m - 230 * s, y: photoY + 10 * s, width: 230 * s, fontSize: 66 * s, fontWeight: "900", fill: BRAND.black, align: "center" }),
-    text({ text: "{DESTINO}", x: m, y: yDest, width: W - 2 * m, fontSize: destSize, fontWeight: "900", uppercase: true, lineHeight: 1 }),
-    text({ text: "{HOTEL} • {NOITES} • {REGIME}", x: m, y: yDest + destSize + 18 * s, width: W - 2 * m, fontSize: 32 * s, fontWeight: "500", fill: "#D1D5DB" }),
-    text({ text: "De R$ {VALOR_DE}", x: m, y: yDest + destSize + 90 * s, width: W - 2 * m, fontSize: 36 * s, fontWeight: "600", fill: "#9CA3AF", textDecoration: "line-through" }),
-    text({ text: "{PARCELAS} de R$ {VALOR_PARCELA}", x: m, y: yDest + destSize + 140 * s, width: W - 2 * m, fontSize: (tall ? 92 : 80) * s, fontWeight: "900", fill: BRAND.yellow, lineHeight: 1 }),
-    text({ text: "ou R$ {VALOR_TOTAL} por pessoa • {AEREO}", x: m, y: yDest + destSize + (tall ? 250 : 230) * s, width: W - 2 * m, fontSize: 30 * s, fontWeight: "500", fill: "#E5E7EB" }),
-    rect({ name: "Faixa WhatsApp", x: 0, y: H - 120 * s, width: W, height: 120 * s, fill: BRAND.yellow }),
-    text({ text: "Chame no WhatsApp {WHATSAPP}", x: m, y: H - 80 * s, width: W - 2 * m, fontSize: 38 * s, fontWeight: "900", fill: BRAND.black, align: "center" }),
+  if (format === "square") {
+    const s = 0.86
+    const PH = 650
+    return doc(format, BN.black, [
+      photo({ x: 0, y: 0, width: W, height: PH }),
+      bnTopShade(W, 220),
+      bnShade(W, 440, PH),
+      ...tapes(42, 98, 56),
+      bnLogo(50, 140, 330),
+      ...bnOffer(56, 500, W - 112, s, 54),
+      ...bnPrice(56, 690, 118),
+      rect({ name: "Fio", x: 640, y: 694, width: 3, height: 150, fill: BN.yellow }),
+      ...bnInfo(676, 692, s),
+      ...bnBand(W, H, 900, s, 56),
+    ])
+  }
+
+  // feed 4:5
+  const s = 1
+  const PH = 990
+  return doc(format, BN.black, [
+    photo({ x: 0, y: 0, width: W, height: PH }),
+    bnTopShade(W, 240),
+    bnShade(W, 760, PH),
+    ...tapes(46, 110, 66),
+    bnLogo(54, 160, 430),
+    ...bnOffer(60, 796, W - 120, s, 66),
+    ...bnPrice(60, 1004, 150),
+    rect({ name: "Fio", x: 640, y: 1008, width: 3, height: 180, fill: BN.yellow }),
+    ...bnInfo(676, 1006, s),
+    ...bnBand(W, H, 1222, s, 60),
   ])
 }
 
@@ -206,7 +322,7 @@ function clean(format: ArtFormat): StudioDoc {
 
 export const TEMPLATE_FAMILIES: TemplateFamily[] = [
   { id: "destaque", name: "Destaque", description: "Foto em tela cheia, preço em amarelo", swatch: ["#1f2937", BRAND.yellow], build: destaque },
-  { id: "black-friday", name: "Black Friday", description: "Fundo preto, selo de desconto", swatch: [BRAND.black, BRAND.yellow], build: blackFriday },
+  { id: "black-november", name: "Black November", description: "Campanha: faixas de esquenta, foto em evidência, preço de varejo", swatch: ["#0A0A0C", "#FED400"], build: blackNovember },
   { id: "clean", name: "Clean", description: "Fundo claro, azul e laranja da marca", swatch: ["#FFFFFF", BRAND.navy], build: clean },
 ]
 
