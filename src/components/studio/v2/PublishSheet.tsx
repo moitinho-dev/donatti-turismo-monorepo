@@ -20,7 +20,9 @@ import {
   UNSAVED,
   UPLOAD_ERROR,
   deviceOf,
-  initialSelection,
+  initialSelectionWith,
+  readRemembered,
+  writeRemembered,
   publishOrder,
   scheduleError,
   toggleChannel,
@@ -64,7 +66,8 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
 
   // Marcados ao abrir: seguem a primeira situação lida (uma vez); depois disso valem os cliques da pessoa
   const [picked, setPicked] = useState<Set<Channel> | null>(null)
-  const seeded = useMemo(() => (initialStatus ? initialSelection(initialStatus) : new Set(DEFAULT_SELECTION)), [initialStatus])
+  const [remembered] = useState(readRemembered)
+  const seeded = useMemo(() => (initialStatus ? initialSelectionWith(initialStatus, remembered) : new Set(DEFAULT_SELECTION)), [initialStatus, remembered])
   const selected = picked ?? seeded
   const [focus, setFocus] = useState<Channel>("ig-feed")
   const [tab, setTab] = useState<Network>("instagram")
@@ -175,6 +178,7 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
 
   const publishAll = async () => {
     if (!canPublish || load !== "ready" || running || !toPublish.length) return
+    writeRemembered(selected)
     if (scheduling) {
       const err = scheduleError(scheduleAt)
       setScheduleMsg(err)
@@ -219,6 +223,7 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
   const toggle = (c: Channel) => {
     const next = toggleChannel(selected, c)
     setPicked(next)
+    writeRemembered(next)
     if (next.has(c)) setFocus(c)
     if (!next.has("fb-feed")) setWhen("now")
   }
