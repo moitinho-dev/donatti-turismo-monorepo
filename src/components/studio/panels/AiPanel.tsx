@@ -57,7 +57,7 @@ export function AiPanel({ enabled, promo, format, photoUrl, selected, onSetPhoto
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, destino }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ error: "Demorou demais. Tente de novo." }))
       if (!res.ok) throw new Error(data.error || "A IA não conseguiu agora")
       onLibraryChanged()
       return (data.assets as { url: string }[]).map((a) => a.url)
@@ -80,7 +80,7 @@ export function AiPanel({ enabled, promo, format, photoUrl, selected, onSetPhoto
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ promo, tone: tone || undefined }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ error: "Demorou demais. Tente de novo." }))
       if (!res.ok) throw new Error(data.error || "Erro ao gerar texto")
       setCopy(data)
       onCaption(`${data.caption}\n\n${(data.hashtags || []).map((h: string) => `#${h.replace(/^#/, "")}`).join(" ")}`)

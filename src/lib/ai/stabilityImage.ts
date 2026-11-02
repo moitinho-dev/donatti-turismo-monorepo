@@ -43,7 +43,8 @@ function getClient(region: string) {
   let client = clients.get(region)
   if (!client) {
     // Geração pode passar de 60 s; a AWS recomenda até 5 min
-    client = new BedrockRuntimeClient({ region, requestHandler: { requestTimeout: 300_000 } })
+    client = // A função da Vercel tem 60 s: uma tentativa só e no máximo 50 s por chamada
+    client = new BedrockRuntimeClient({ region, maxAttempts: 1, requestHandler: { requestTimeout: 50_000 } })
     clients.set(region, client)
   }
   return client

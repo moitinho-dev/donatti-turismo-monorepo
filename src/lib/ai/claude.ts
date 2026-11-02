@@ -9,7 +9,7 @@ let client: AnthropicBedrock | null = null
 function getClient() {
   if (!isAiConfigured()) throw new AiNotConfiguredError()
   // bedrock-runtime (InvokeModel): aceita os perfis de inferência "us.anthropic.*" exigidos pelos Claude novos
-  client ??= new AnthropicBedrock({ awsRegion: aiConfig.region })
+  client ??= new AnthropicBedrock({ awsRegion: aiConfig.region, timeout: 50_000, maxRetries: 0 }) // limite de 60 s da Vercel
   return client
 }
 
