@@ -23,7 +23,6 @@ import { Countdown } from '@/components/blackfriday/Countdown'
 import {
   formatCampaignDate,
   getCountdownTarget,
-  CAMPAIGN_PATH,
   isBlackFridayActive,
   type BlackFridayPhase,
   type BlackFridaySettings,
@@ -325,9 +324,6 @@ export default function HomeLanding({ phase, campaign, initialPromos, destinatio
               : `Black November Donatti: até ${campaign.maxDiscount}% OFF em pacotes até ${endsAtLabel} · termina em`}
           </span>
           <Countdown target={countdownTarget} tone="light" size="sm" />
-          <a href={CAMPAIGN_PATH} style={{ color: 'inherit' }}>
-            {phase === 'esquenta' ? 'Ver a página da Black' : 'Ver ofertas Black'}
-          </a>
         </div>
       )}
 
@@ -338,7 +334,7 @@ export default function HomeLanding({ phase, campaign, initialPromos, destinatio
           </a>
           <nav className="dt-nav" aria-label="Principal">
             <a href="#ofertas">Pacotes</a>
-            <a href="/destinos">Destinos</a>
+            <Link href="/destinos">Destinos</Link>
             <a href="#como-funciona">Como funciona</a>
             <a href="#duvidas">Dúvidas</a>
           </nav>
@@ -348,9 +344,9 @@ export default function HomeLanding({ phase, campaign, initialPromos, destinatio
               <span className="dt-hide-sm">Falar com especialista</span>
               <span className="sr-only">Falar no WhatsApp</span>
             </button>
-            <a href="/destinos" className="dt-btn dt-btn--ghost dt-menu-btn" aria-label="Ver destinos" style={{ width: 44, padding: 0 }}>
+            <Link href="/destinos" className="dt-btn dt-btn--ghost dt-menu-btn" aria-label="Ver destinos" style={{ width: 44, padding: 0 }}>
               <img className="dt-ic" src={icon.ui('menu')} alt="" />
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -446,9 +442,9 @@ export default function HomeLanding({ phase, campaign, initialPromos, destinatio
                   Pacotes em destaque
                 </h2>
               </div>
-              <a href="/pacotes" className="dt-btn dt-btn--outline">
+              <Link href="/pacotes" className="dt-btn dt-btn--outline">
                 Ver todos os pacotes
-              </a>
+              </Link>
             </div>
 
             {categories.length > 1 && (

@@ -5,8 +5,7 @@ import { authOptions } from "../../api/auth/[...nextauth]/options"
 import BlackFridayLanding from "@/components/blackfriday/BlackFridayLanding"
 import { getBlackFridayPhase, isBlackFridayActive } from "@/config/blackFriday"
 import { getBlackFridaySettings } from "@/lib/blackFridaySettings"
-import { devPublicPromos } from "@/lib/devPromos"
-import { getBlackFridayPromos } from "@/lib/publicPromos"
+import { loadCampaignPromos } from "@/lib/campaignPage"
 
 export const dynamic = "force-dynamic"
 
@@ -17,7 +16,7 @@ export default async function BlackFridayPreviewPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/promos/login")
   const settings = await getBlackFridaySettings()
-  const promos = await getBlackFridayPromos().catch(() => devPublicPromos())
+  const promos = await loadCampaignPromos()
   const preview = !isBlackFridayActive(getBlackFridayPhase(settings))
   // Desligada, a pré-visualização mostra como fica ligada
   return <BlackFridayLanding settings={preview ? { ...settings, enabled: true } : settings} promos={promos} preview={preview} />

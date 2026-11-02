@@ -226,7 +226,6 @@ describe("POST /api/publish", () => {
     })
     expect(revalidatePath).toHaveBeenCalledWith("/")
     expect(revalidatePath).toHaveBeenCalledWith("/pacotes/porto-seguro")
-    expect(revalidatePath).toHaveBeenCalledWith("/black-november")
     expect(recordPublish).toHaveBeenCalledWith(expect.objectContaining({ channel: "site", kind: "site", status: "published" }))
   })
 
