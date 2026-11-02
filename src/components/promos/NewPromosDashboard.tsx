@@ -7,7 +7,7 @@ import { usePromo } from "@/hooks/usePromo"
 import { useGoogleBusiness } from "@/hooks/useGoogleBusiness"
 import { useInstagram } from "@/hooks/useInstagram"
 import { usePromoImages } from "@/hooks/usePromoImages"
-import { CheckCircle2, AlertCircle } from "lucide-react"
+import { CheckCircle2, AlertCircle, Layers } from "lucide-react"
 import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
 import { PromoListPanel } from "./dashboard/PromoListPanel"
@@ -22,6 +22,9 @@ interface NewPromosDashboardProps {
 }
 
 // O editor usa canvas (Konva): carrega só no navegador
+// O lote desenha as artes com o mesmo canvas do Studio
+const BatchGenerator = dynamic(() => import("./BatchGenerator").then((m) => m.BatchGenerator), { ssr: false })
+
 const Studio = dynamic(() => import("@/components/studio/Studio").then((m) => m.Studio), {
   ssr: false,
   loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
@@ -39,6 +42,18 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [showFormModal, setShowFormModal] = useState(false)
   const [publishingIds, setPublishingIds] = useState<Record<string, boolean>>({})
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [batchOpen, setBatchOpen] = useState(false)
+  const [campaign, setCampaign] = useState<{ name: string; maxDiscount?: number } | null>(null)
+
+  // Campanha no ar (ou no esquenta): o lote já abre com o filtro e o modelo dela
+  useEffect(() => {
+    fetch("/api/black-friday")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && (d.phase === "esquenta" || d.phase === "ao-vivo")) setCampaign({ name: "Black November", maxDiscount: d.settings?.maxDiscount })
+      })
+      .catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     if (!notice) return
@@ -183,6 +198,20 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         {(activePanel === "list" || activePanel === "form") && (
           <>
             <BlackFridayPanel promos={promos} />
+            <div className="max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm">
+              <div>
+                <p className="text-[15px] font-black text-gray-900">Artes em lote</p>
+                <p className="text-[13px] text-gray-500">Feed, stories, Facebook e Canal do WhatsApp de várias ofertas de uma vez, com legenda.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBatchOpen(true)}
+                className="inline-flex items-center gap-2 rounded-[14px] bg-gray-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-gray-800"
+              >
+                <Layers className="h-4 w-4" />
+                Gerar em lote
+              </button>
+            </div>
             <PromoListPanel
               promos={promos}
               isLoading={isLoading}
@@ -231,6 +260,8 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           {notice.text}
         </div>
       )}
+
+      {batchOpen && <BatchGenerator promos={promos} promoImages={promoImages} campaign={campaign} onClose={() => setBatchOpen(false)} />}
 
       {deleteConfirm && (
         <DeleteConfirmModal

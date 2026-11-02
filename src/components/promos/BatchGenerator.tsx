@@ -173,7 +173,7 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, onCl
 
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[380px_1fr] lg:overflow-hidden">
           {/* 1 · ofertas, modelo e canais */}
-          <aside className="flex flex-col gap-6 border-gray-200 p-5 lg:overflow-y-auto lg:border-r">
+          <aside className="flex flex-col gap-6 border-gray-200 p-5 pb-0 lg:overflow-y-auto lg:border-r">
             <section className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-400">1 · Ofertas</h3>
@@ -272,7 +272,7 @@ export function BatchGenerator({ promos, promoImages = {}, campaign = null, onCl
               ))}
             </section>
 
-            <div className="sticky bottom-0 -mx-5 mt-auto border-t border-gray-200 bg-white px-5 py-4">
+            <div className="sticky bottom-0 -mx-5 mt-auto border-t border-gray-200 bg-white/95 px-5 py-4 shadow-[0_-8px_16px_rgba(255,255,255,0.9)] backdrop-blur">
               {busy ? (
                 <button type="button" className={`${btn} w-full bg-gray-100 text-gray-700`} onClick={() => (cancelRef.current = true)}>
                   <Loader2 className="h-4 w-4 animate-spin" />

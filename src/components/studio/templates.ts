@@ -34,7 +34,6 @@ const text = (o: TextOpts): TextLayer => ({
 
 type ShapeOpts = Partial<ShapeLayer> & Pick<ShapeLayer, "x" | "y" | "width" | "height">
 const rect = (o: ShapeOpts): ShapeLayer => ({ id: newId(), name: "Forma", type: "rect", rotation: 0, opacity: 1, fill: BRAND.orange, ...o })
-const ellipse = (o: ShapeOpts): ShapeLayer => ({ id: newId(), name: "Círculo", type: "ellipse", rotation: 0, opacity: 1, fill: BRAND.yellow, ...o })
 
 type ImageOpts = Partial<ImageLayer> & Pick<ImageLayer, "x" | "y" | "width" | "height" | "src">
 const image = (o: ImageOpts): ImageLayer => ({ id: newId(), name: "Imagem", type: "image", rotation: 0, opacity: 1, fit: "cover", cornerRadius: 0, ...o })
@@ -156,8 +155,9 @@ function bnTape(W: number, cy: number, h: number, rotation: number, label: strin
 /** Preço de varejo: "15x" e "R$" empilhados, reais grandes alinhados à direita e centavos em cima */
 function bnPrice(x: number, y: number, size: number): Layer[] {
   const side = Math.round(size * 0.3)
-  const intW = Math.round(size * 1.9)
-  const intX = x + side * 2.3
+  // largura calibrada para 3 dígitos (a fonte encolhe nos de 4)
+  const intW = Math.round(size * 1.62)
+  const intX = x + side * 2.05
   return [
     text({ name: "A partir de", text: "A PARTIR DE", x, y, width: size * 3, fontSize: Math.round(size * 0.13), fontWeight: "900", letterSpacing: 4 }),
     text({ name: "Parcelas", text: "{PARCELAS}", x: x - 2, y: y + size * 0.26, width: side * 2.4, fontSize: side, fontWeight: "900", uppercase: true }),
@@ -178,7 +178,7 @@ function bnInfo(x: number, y: number, s: number): Layer[] {
   ]
   return [
     text({ name: "Noites", text: "{NOITES}", x, y, width: 380 * s, fontSize: Math.round(30 * s), fontWeight: "900", uppercase: true }),
-    text({ name: "Datas", text: "{DATAS}", x, y: y + 42 * s, width: 380 * s, fontSize: Math.round(19 * s), fontWeight: "600", fontFamily: "Inter", fill: "#C9C9CF" }),
+    text({ name: "Saída", text: "Saída {SAIDA}", x, y: y + 42 * s, width: 380 * s, fontSize: Math.round(19 * s), fontWeight: "600", fontFamily: "Inter", fill: "#C9C9CF" }),
     ...item(0, "aereo", "Aéreo", "AEREO"),
     ...item(1, "cafe", "{REGIME}", "REGIME"),
     ...item(2, "hotel", "Hotel"),
@@ -192,7 +192,7 @@ function bnOffer(x: number, y: number, w: number, s: number, hotelSize: number):
     rect({ name: "Etiqueta destino", x, y, width: 470 * s, height: pillH, fill: BN.yellow, cornerRadius: pillH / 2 }),
     text({ name: "Destino", text: "{DESTINO}", x: x + 20 * s, y: y + pillH * 0.26, width: 430 * s, fontSize: Math.round(25 * s), fontWeight: "900", fill: BN.black, align: "center", uppercase: true, letterSpacing: 2 }),
     text({ name: "Hotel", text: "{HOTEL}", x: x - 2, y: y + pillH + 16 * s, width: w, fontSize: hotelSize, fontWeight: "900", uppercase: true, letterSpacing: -1, lineHeight: 1 }),
-    text({ name: "Período", text: "{DATAS}  •  SAÍDA {SAIDA}", x, y: y + pillH + hotelSize + 32 * s, width: w, fontSize: Math.round(22 * s), fontWeight: "800", fill: BN.yellow, uppercase: true, letterSpacing: 2 }),
+    text({ name: "Período", text: "{DATAS}", x, y: y + pillH + hotelSize + 32 * s, width: w, fontSize: Math.round(22 * s), fontWeight: "800", fill: BN.yellow, uppercase: true, letterSpacing: 2 }),
   ]
 }
 
