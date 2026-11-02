@@ -172,10 +172,12 @@ export function MultiGrid({ items, format, onFormat, onOpen, onClose, ready, app
                 // Arte que não deu para ler não abre no editor (salvar lá criaria outra arte): só "Tentar de novo"
                 disabled={busy || item.failed}
                 aria-label={item.failed ? `${item.destino}: não deu para carregar a arte` : `Editar ${item.destino}`}
-                className={`group block w-full text-left disabled:cursor-wait ${item.failed ? "disabled:cursor-default" : ""}`}
+                className={`group block w-full text-left ${item.failed ? "cursor-default" : "disabled:cursor-wait"}`}
               >
                 <span
-                  className="relative block overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition-all group-hover:shadow-lg group-hover:ring-2 group-hover:ring-amber-400 group-focus-visible:ring-2 group-focus-visible:ring-amber-500"
+                  className={`relative block overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition-all ${
+                    item.failed ? "" : "group-hover:shadow-lg group-hover:ring-2 group-hover:ring-amber-400 group-focus-visible:ring-2 group-focus-visible:ring-amber-500"
+                  }`}
                   style={{ aspectRatio: `${width} / ${height}` }}
                 >
                   {item.failed ? (

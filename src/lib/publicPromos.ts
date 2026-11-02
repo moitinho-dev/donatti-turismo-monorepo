@@ -51,11 +51,11 @@ export async function findPublishedPromoBySlug(slug: string): Promise<Promo | nu
   const all = await prisma.promo.findMany({ where: { sitePublished: true } })
   // Também vale o endereço provisório (destino + id), usado em legendas feitas antes do site
   // gravar o slug definitivo da promo
-  return (
-    all.find((p) => computeSlug(p) === slug) ||
-    all.find((p) => computeSlug({ ...p, siteSlug: null }) === slug) ||
-    null
-  )
+  const current = all.find((p) => computeSlug(p) === slug)
+  if (current) return current
+  // O provisório usa só 6 letras do id: promos criadas quase juntas podem repetir; na dúvida, nenhuma
+  const provisional = all.filter((p) => computeSlug({ ...p, siteSlug: null }) === slug)
+  return provisional.length === 1 ? provisional[0] : null
 }
 
 export interface DestinationGroup {
