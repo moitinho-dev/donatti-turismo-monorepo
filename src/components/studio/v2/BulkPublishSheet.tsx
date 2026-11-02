@@ -17,6 +17,7 @@ import {
   apiJobs,
   bulkRepublishPrompts,
   bulkSelection,
+  keepRuns,
   doneCount,
   feedGroups,
   groupCaptionDefault,
@@ -110,10 +111,20 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
   // ---------------------------------------------------------------------------
   const [runs, setRuns] = useState<Record<string, JobRun>>({})
   const runsRef = useRef(runs)
+  /** O que saiu de verdade nesta sessão, por envio (fica mesmo quando a tabela deixa de mostrar o envio) */
+  const sentRef = useRef<Record<string, JobRun>>({})
   const setRun = (key: string, run: JobRun | null) => {
     const next = { ...runsRef.current }
     if (run) next[key] = run
     else delete next[key]
+    runsRef.current = next
+    setRuns(next)
+    if (run?.phase === "done") sentRef.current = { ...sentRef.current, [key]: run }
+  }
+  /** Tira da tabela (e dos erros com "Tentar de novo") os envios que não estão no plano atual */
+  const keepOnly = (plan: BulkJob[]) => {
+    const next = keepRuns(runsRef.current, plan)
+    if (Object.keys(next).length === Object.keys(runsRef.current).length) return
     runsRef.current = next
     setRuns(next)
   }
@@ -189,7 +200,8 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
     }
     // Uma pergunta por canal com promos já publicadas; "Cancelar" pula só aquele canal
     const skip = new Set<Channel>()
-    for (const p of bulkRepublishPrompts(toPublish, status, runsRef.current)) if (!window.confirm(republishMessage(label(p.channel), p.count))) skip.add(p.channel)
+    keepOnly(jobs)
+    for (const p of bulkRepublishPrompts(toPublish, status, sentRef.current)) if (!window.confirm(republishMessage(label(p.channel), p.count))) skip.add(p.channel)
     // Pulados guardam o que já aconteceu nesta sessão (um erro antigo continua com "Tentar de novo")
     for (const j of toPublish) {
       if (!skip.has(j.channel)) setRun(j.key, null)
@@ -216,6 +228,8 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
 
   const retry = async (j: BulkJob) => {
     if (running) return
+    // As promos podem ter saído por outro envio depois do erro (ex.: carrossel que falhou e depois saiu um por promo)
+    if (!isWa(j.channel)) for (const p of bulkRepublishPrompts([j], status, sentRef.current)) if (!window.confirm(republishMessage(label(p.channel), p.count))) return
     setRunning(true)
     try {
       if (isWa(j.channel)) await markJob(j)
@@ -236,6 +250,11 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
       setRunning(false)
       finish()
     }
+  }
+
+  const changeFeed = (f: FeedMode) => {
+    setFeed(f)
+    keepOnly(jobsFor(ids, [...selected], f, wa))
   }
 
   const toggle = (c: Channel) => {
@@ -321,7 +340,7 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
             <BulkChannels selected={selected} disabled={running || load === "loading"} feed={feed} wa={wa} done={done} total={ids.length} onToggle={toggle} />
           </section>
 
-          {hasFeed && <FeedSection feed={feed} onFeed={setFeed} disabled={running} groups={groups} instagram={selected.has("ig-feed")} facebook={selected.has("fb-feed")} />}
+          {hasFeed && <FeedSection feed={feed} onFeed={changeFeed} disabled={running} groups={groups} instagram={selected.has("ig-feed")} facebook={selected.has("fb-feed")} />}
 
           <ScheduleBox
             enabled={selected.has("fb-feed")}

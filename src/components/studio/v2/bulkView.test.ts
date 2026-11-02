@@ -6,6 +6,7 @@ import {
   apiJobs,
   bulkRepublishPrompts,
   bulkSelection,
+  keepRuns,
   campaignOf,
   doneCount,
   feedGroups,
@@ -187,5 +188,26 @@ describe("bulkRepublishPrompts", () => {
     const status: StatusByPromo = { p1: st({ "ig-feed": { state: "published" } }), p2: st(), p3: st() }
     const runs = { "ig-feed:p1,p2,p3": { phase: "done" as const, status: "published" as const } }
     expect(bulkRepublishPrompts(single, status, runs)).toEqual([{ channel: "ig-feed", count: 3 }])
+  })
+})
+
+describe("Tentar de novo depois de trocar o modo do feed", () => {
+  it("carrossel com erro cujas promos já saíram uma por uma: pergunta antes de tentar de novo", () => {
+    const [carousel] = jobsFor(ids(2), ["ig-feed"], "carousel", "batch")
+    const sent = {
+      "ig-feed:p1": { phase: "done" as const, status: "published" as const },
+      "ig-feed:p2": { phase: "done" as const, status: "published" as const },
+    }
+    expect(bulkRepublishPrompts([carousel], { p1: st(), p2: st() }, sent)).toEqual([{ channel: "ig-feed", count: 2 }])
+    expect(bulkRepublishPrompts([carousel], { p1: st(), p2: st() }, {})).toEqual([])
+  })
+  it("keepRuns tira os envios de outro plano", () => {
+    const runs = {
+      "ig-feed:p1,p2": { phase: "error" as const, error: "x" },
+      "ig-feed:p1": { phase: "done" as const, status: "published" as const },
+      "site:p1": { phase: "done" as const, status: "simulated" as const },
+    }
+    expect(Object.keys(keepRuns(runs, jobsFor(ids(2), ["ig-feed", "site"], "single", "batch"))).sort()).toEqual(["ig-feed:p1", "site:p1"])
+    expect(Object.keys(keepRuns(runs, jobsFor(ids(2), ["ig-feed"], "carousel", "batch")))).toEqual(["ig-feed:p1,p2"])
   })
 })

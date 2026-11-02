@@ -62,6 +62,12 @@ export function bulkRepublishPrompts(jobs: BulkJob[], status: StatusByPromo, run
   return republishPrompts(jobs, merged)
 }
 
+/** Andamento só dos envios do plano atual (trocar o modo do feed tira linhas e erros de outro plano) */
+export function keepRuns(runs: Record<string, JobRun>, plan: BulkJob[]): Record<string, JobRun> {
+  const keys = new Set(plan.map((j) => j.key))
+  return Object.fromEntries(Object.entries(runs).filter(([k]) => keys.has(k)))
+}
+
 /** Grupos do carrossel / álbum: até 10 promos, na ordem da seleção */
 export function feedGroups(promoIds: string[]): string[][] {
   const out: string[][] = []

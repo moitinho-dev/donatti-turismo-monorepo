@@ -13,41 +13,47 @@ import { promoVariables } from "../variables"
 import type { StatusByPromo } from "./bulkView"
 import { IMAGE_ERROR, UPLOAD_ERROR, withSiteState } from "./publishView"
 
+/**
+ * Leituras que podem se sobrepor: só a última iniciada entrega o resultado (onLatest).
+ * Devolve true se esta leitura foi a que valeu.
+ */
+export function latestOnly<T>(onLatest: (value: T) => void) {
+  let seq = 0
+  return async (work: Promise<T>): Promise<boolean> => {
+    const mine = ++seq
+    const value = await work
+    if (mine !== seq) return false
+    onLatest(value)
+    return true
+  }
+}
+
 /** Situação dos canais de cada promo (o Site segue a promo, como na lista); quiet: relê sem voltar a "carregando" */
 export function useBulkStatus(promos: PromoData[], ids: string[]) {
   const [raw, setRaw] = useState<Record<string, Record<Channel, ChannelState>>>({})
   const [load, setLoad] = useState<"loading" | "ready" | "error">("loading")
   /** Releitura em andamento: a situação na tela pode estar velha (o Publicar espera) */
   const [refreshing, setRefreshing] = useState(false)
-  // Só a leitura mais recente vale: uma resposta antiga que chega depois não sobrescreve a nova
-  const seq = useRef(0)
-  const apply = useCallback(
-    (got: (Record<Channel, ChannelState> | null)[]) => {
-      setRaw((prev) => ({ ...prev, ...Object.fromEntries(ids.flatMap((id, i) => (got[i] ? [[id, got[i]]] : []))) }))
+  // Só a leitura mais recente vale, e é ela que encerra o "atualizando" (mesmo se as promos mudarem no meio)
+  const [read] = useState(() =>
+    latestOnly<{ ids: string[]; got: (Record<Channel, ChannelState> | null)[] }>(({ ids: done, got }) => {
+      setRaw((prev) => ({ ...prev, ...Object.fromEntries(done.flatMap((id, i) => (got[i] ? [[id, got[i]]] : []))) }))
       setLoad(got.every(Boolean) ? "ready" : "error")
-    },
-    [ids],
+      setRefreshing(false)
+    }),
   )
+  const fetchAll = useCallback(async () => ({ ids, got: await Promise.all(ids.map((id) => fetchStatus(id))) }), [ids])
   const reload = useCallback(
     async (quiet = false) => {
-      const mine = ++seq.current
       if (!quiet) setLoad("loading")
       setRefreshing(true)
-      const got = await Promise.all(ids.map((id) => fetchStatus(id)))
-      if (mine !== seq.current) return
-      apply(got)
-      setRefreshing(false)
+      await read(fetchAll())
     },
-    [ids, apply],
+    [read, fetchAll],
   )
   useEffect(() => {
-    const mine = ++seq.current
-    let alive = true
-    void Promise.all(ids.map((id) => fetchStatus(id))).then((got) => alive && mine === seq.current && apply(got))
-    return () => {
-      alive = false
-    }
-  }, [ids, apply])
+    void read(fetchAll())
+  }, [read, fetchAll])
   const status: StatusByPromo = useMemo(
     () => Object.fromEntries(promos.filter((p) => raw[p.id]).map((p) => [p.id, withSiteState(raw[p.id], p.SITE_PUBLISHED === true)])),
     [promos, raw],
