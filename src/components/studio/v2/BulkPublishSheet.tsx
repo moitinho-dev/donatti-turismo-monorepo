@@ -227,7 +227,8 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
   }
 
   const retry = async (j: BulkJob) => {
-    if (running) return
+    // Com a situação sendo relida, a confirmação de republicar ainda não é confiável
+    if (running || refreshing || load !== "ready") return
     // As promos podem ter saído por outro envio depois do erro (ex.: carrossel que falhou e depois saiu um por promo)
     if (!isWa(j.channel)) for (const p of bulkRepublishPrompts([j], status, sentRef.current)) if (!window.confirm(republishMessage(label(p.channel), p.count))) return
     setRunning(true)
@@ -391,7 +392,7 @@ export function BulkPublishSheet({ promos: all, sets, onClose, onSitePublished, 
           {selected.size > 0 && (
             <section ref={progressRef} aria-labelledby="bulk-andamento" className="mt-6 scroll-mt-4">
               <Heading id="bulk-andamento">Andamento</Heading>
-              <BulkProgress rows={rows} names={names} errors={errors} busy={running} onRetry={(j) => void retry(j)} />
+              <BulkProgress rows={rows} names={names} errors={errors} busy={running || refreshing} onRetry={(j) => void retry(j)} />
             </section>
           )}
         </div>
