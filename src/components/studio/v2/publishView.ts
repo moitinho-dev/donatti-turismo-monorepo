@@ -85,6 +85,46 @@ export function initialSelection(status: Record<Channel, ChannelState>): Set<Cha
   return out
 }
 
+export const REMEMBER_KEY = "donatti.publicar.canais"
+
+/** Lê os canais lembrados (null se não houver, estiver inválido ou o armazenamento estiver bloqueado) */
+export function readRemembered(): Channel[] | null {
+  try {
+    const raw = window.localStorage.getItem(REMEMBER_KEY)
+    const v: unknown = raw ? JSON.parse(raw) : null
+    return Array.isArray(v) ? (v.filter((x) => typeof x === "string") as Channel[]) : null
+  } catch {
+    return null
+  }
+}
+
+export function writeRemembered(selected: Iterable<Channel>): void {
+  try {
+    window.localStorage.setItem(REMEMBER_KEY, JSON.stringify([...selected]))
+  } catch {
+    /* modo privado ou armazenamento cheio: segue sem lembrar */
+  }
+}
+
+/**
+ * Marcados ao abrir lembrando a última escolha: parte dos canais lembrados, tira o que já está publicado/agendado/compartilhado
+ * e em dia, e Site marcado leva o Google. Nunca marca um canal que não estava na escolha lembrada.
+ * Sem escolha lembrada (ou inválida), vale initialSelection.
+ */
+export function initialSelectionWith(status: Record<Channel, ChannelState>, remembered: Channel[] | null): Set<Channel> {
+  const valid = new Set<Channel>(CHANNELS.map((c) => c.id))
+  const kept = Array.isArray(remembered) ? remembered.filter((c) => valid.has(c)) : []
+  if (!kept.length) return initialSelection(status)
+  const out = new Set<Channel>()
+  for (const id of kept) {
+    const s = status[id]
+    const done = s && !s.stale && (s.state === "published" || s.state === "scheduled" || s.state === "shared")
+    if (!done) out.add(id)
+  }
+  if (out.has("site")) out.add("google")
+  return out
+}
+
 export function stateLabel(s: ChannelState | undefined, channelLabel = "canal"): string {
   if (!s) return "—"
   switch (s.state) {
