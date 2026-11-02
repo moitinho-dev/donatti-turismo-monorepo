@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Search, LayoutGrid, List, Loader2, FileText, Plus, AlertTriangle, ChevronDown, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { PromoGridCard } from "./PromoGridCard"
@@ -8,6 +8,7 @@ import type { PromoData, ViewMode } from "./types"
 import { getPromoStatus, getRegimeLabel } from "./types"
 import { getSectionLabel, getPriceNumber, parsePromoDates } from "@/lib/utils"
 import type { PublishSummary } from "@/lib/publishState"
+import { selectAllVisible, selectable, toggleSelection, unselectVisible } from "./selection"
 
 type StatusFilter = "todas" | "no-site" | "rascunho" | "vencida"
 type SortMode = "recentes" | "proxima-saida" | "menor-preco"
@@ -27,6 +28,11 @@ interface PromoListPanelProps {
   onNewPromo: () => void
   onTogglePublish: (promo: PromoData) => void
   onUnpublishExpired: (promos: PromoData[]) => void
+  /** Ids marcados para ação em lote; com onSelectionChange a lista mostra as caixas de seleção */
+  selectedIds?: string[]
+  onSelectionChange?: (ids: string[]) => void
+  /** Ids que aparecem com o filtro atual (para as ações em lote avisarem das marcadas fora dele) */
+  onVisibleChange?: (ids: string[]) => void
 }
 
 function StatCard({
@@ -75,6 +81,9 @@ export function PromoListPanel({
   onNewPromo,
   onTogglePublish,
   onUnpublishExpired,
+  selectedIds = [],
+  onSelectionChange,
+  onVisibleChange,
 }: PromoListPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [searchQuery, setSearchQuery] = useState("")
@@ -131,6 +140,15 @@ export function PromoListPanel({
     }
     return list
   }, [promos, searchQuery, statusFilter, sectionFilter, sortMode])
+
+  useEffect(() => {
+    onVisibleChange?.(filteredPromos.map((p) => p.id))
+  }, [filteredPromos, onVisibleChange])
+
+  const selectableVisible = useMemo(() => filteredPromos.filter((p) => selectable(p).ok), [filteredPromos])
+  const allVisibleSelected = selectableVisible.length > 0 && selectableVisible.every((p) => selectedIds.includes(p.id))
+  const toggleAllVisible = () =>
+    onSelectionChange?.(allVisibleSelected ? unselectVisible(selectedIds, filteredPromos) : selectAllVisible(selectedIds, filteredPromos))
 
   const hasFilters = statusFilter !== "todas" || sectionFilter !== "todas" || searchQuery.trim() !== ""
   const clearFilters = () => {
@@ -271,6 +289,23 @@ export function PromoListPanel({
 
       {error && <div className="bg-red-50 border border-red-200 rounded-[16px] p-4 text-red-700 mb-6">{error}</div>}
 
+      {onSelectionChange && !showSpinner && filteredPromos.length > 0 && (
+        <label
+          className={`mb-4 inline-flex items-center gap-2.5 rounded-[12px] border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ${
+            selectableVisible.length ? "cursor-pointer hover:border-amber-300" : "cursor-not-allowed opacity-50"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={allVisibleSelected}
+            disabled={!selectableVisible.length}
+            onChange={toggleAllVisible}
+            className="h-4 w-4 cursor-pointer accent-amber-500 disabled:cursor-not-allowed"
+          />
+          Selecionar todas as visíveis
+        </label>
+      )}
+
       {!showSpinner && filteredPromos.length > 0 && (
         <div
           data-tour="promo-list"
@@ -297,6 +332,8 @@ export function PromoListPanel({
                   onGenerateImage={onGenerateImage}
                   onDelete={onDelete}
                   onTogglePublish={onTogglePublish}
+                  selected={selectedIds.includes(promo.id)}
+                  onToggleSelect={onSelectionChange ? (p) => onSelectionChange(toggleSelection(selectedIds, p.id)) : undefined}
                 />
               </motion.div>
             ))}

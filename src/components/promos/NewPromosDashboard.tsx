@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { useSearchParams } from "next/navigation"
 import { usePromo } from "@/hooks/usePromo"
@@ -18,6 +18,8 @@ import { useMeta } from "@/hooks/useMeta"
 import { StatsPanel } from "./dashboard/StatsPanel"
 import { DeleteConfirmModal } from "./dashboard/DeleteConfirmModal"
 import { BlackFridayPanel } from "./dashboard/BlackFridayPanel"
+import { BulkActionBar } from "./dashboard/BulkActionBar"
+import { bulkPublishNotice, deleteConfirm as bulkDeleteConfirm, hiddenCount, keepExisting, unpublishConfirm } from "./dashboard/selection"
 import type { PromoData, ActivePanel, UserData } from "./dashboard/types"
 import type { StudioProps } from "@/components/studio/Studio"
 
@@ -41,6 +43,12 @@ const StudioV2 = dynamic(() => import("@/components/studio/v2/StudioV2").then((m
   loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
 })
 
+// Várias promos marcadas: grade com uma arte por promo e o editor de cada uma com a fila
+const StudioMulti = dynamic(() => import("@/components/studio/v2/StudioMulti").then((m) => m.StudioMulti), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-100 text-sm text-gray-500">Abrindo o Studio…</div>,
+})
+
 export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const { promos, isLoading, error, fetchPromos, deletePromo, stats, fetchStats, savePromo } = usePromo()
   const gbp = useGoogleBusiness({ userRole: user.role, fetchPromos })
@@ -60,6 +68,20 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
   const [batchHidden, setBatchHidden] = useState(false)
   const [batchRefresh, setBatchRefresh] = useState<{ promoId: string; n: number } | null>(null)
   const [campaign, setCampaign] = useState<{ name: string; maxDiscount?: number } | null>(null)
+  // Studio novo: promos marcadas na lista (ordem em que foram marcadas). Continua ao trocar o filtro;
+  // só contam as que ainda existem
+  const [selection, setSelection] = useState<string[]>([])
+  const [bulkBusy, setBulkBusy] = useState(false)
+  /** Ids que a lista mostra com o filtro atual (null até ela dizer) */
+  const [visibleIds, setVisibleIds] = useState<string[] | null>(null)
+  // Studio com várias promos aberto (na ordem da seleção)
+  const [multiPromos, setMultiPromos] = useState<PromoData[] | null>(null)
+  const selectedPromos = useMemo(
+    () => keepExisting(selection, promos).map((id) => promos.find((p) => p.id === id)!),
+    [selection, promos],
+  )
+  // Só com a lista na tela (com o formulário aberto por cima, não)
+  const showBulkBar = STUDIO_V2 && (activePanel === "list" || activePanel === "form") && !showFormModal && selectedPromos.length > 0
 
   // Campanha no ar (ou no esquenta): o lote já abre com o filtro e o modelo dela
   useEffect(() => {
@@ -136,29 +158,148 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
     return failed
   }
 
-  // Publicar sem foto/seção funciona: o servidor completa com foto do destino e seção sugerida
-  const handleTogglePublish = async (promo: PromoData) => {
-    const publish = !promo.SITE_PUBLISHED
+  /**
+   * Põe ou tira uma promo do site; ao entrar, vai também para o Google. Mesmo caminho do botão do cartão e da barra
+   * de ações em lote. Devolve o erro do site (nada mudou) ou o do Google (o site deu certo), prontos para a tela.
+   * Publicar sem foto/seção funciona: o servidor completa com foto do destino e seção sugerida.
+   */
+  const setSitePublished = async (promo: PromoData, publish: boolean): Promise<{ siteError: string | null; googleError: string | null }> => {
     setPublishing([promo.id], true)
     try {
       const updated: PromoData = await savePromo({ ...promo, SITE_PUBLISHED: publish })
       if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
       if (!publish) {
         void refreshSummary()
-        setNotice({ type: "success", text: `${promo.DESTINO} saiu do site.` })
-        return
+        return { siteError: null, googleError: null }
       }
-      const failed = await postGoogle(updated)
-      setNotice(
-        failed
-          ? { type: "error", text: `Publicado no site; o Google falhou: ${failed}` }
-          : { type: "success", text: "Publicado no site e no Google." },
-      )
+      return { siteError: null, googleError: await postGoogle(updated) }
     } catch (err) {
-      setNotice({ type: "error", text: err instanceof Error ? err.message : "Erro ao atualizar a promo" })
+      return { siteError: err instanceof Error ? err.message : "Erro ao atualizar a promo", googleError: null }
     } finally {
       setPublishing([promo.id], false)
     }
+  }
+
+  const handleTogglePublish = async (promo: PromoData) => {
+    const publish = !promo.SITE_PUBLISHED
+    const { siteError, googleError } = await setSitePublished(promo, publish)
+    if (siteError) setNotice({ type: "error", text: siteError })
+    else if (!publish) setNotice({ type: "success", text: `${promo.DESTINO} saiu do site.` })
+    else
+      setNotice(
+        googleError
+          ? { type: "error", text: `Publicado no site; o Google falhou: ${googleError}` }
+          : { type: "success", text: "Publicado no site e no Google." },
+      )
+  }
+
+  // ---- Ações em lote (Studio novo): uma promo por vez, na ordem da seleção ----
+
+  /** Depois de qualquer ação em lote: limpa a seleção e atualiza a lista e os canais */
+  const finishBulk = () => {
+    setSelection([])
+    setBulkBusy(false)
+    void fetchPromos()
+    void fetchStats()
+    void refreshSummary()
+  }
+
+  /** "{ok} feitas; {erro} com erro." com a primeira mensagem do servidor (ex.: sem permissão) */
+  const bulkNotice = (ok: number, errors: string[], allDone: string, partial: (ok: number, n: number) => string) =>
+    setNotice(
+      errors.length
+        ? { type: "error", text: `${partial(ok, errors.length)} ${errors[0]}` }
+        : { type: "success", text: allDone },
+    )
+
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+  const handleBulkSite = async (publish: boolean) => {
+    // Quem já está como pedido fica de fora (não posta de novo no Google)
+    const targets = selectedPromos.filter((p) => !!p.SITE_PUBLISHED !== publish)
+    if (!targets.length) return
+    if (!publish && !window.confirm(unpublishConfirm(targets.length))) return
+    setBulkBusy(true)
+    const errors: string[] = []
+    const googleErrors: string[] = []
+    for (const promo of targets) {
+      const { siteError, googleError } = await setSitePublished(promo, publish)
+      if (siteError) errors.push(siteError)
+      // Entrou no site: conta como publicada; o Google vem à parte no aviso
+      else if (googleError) googleErrors.push(`${promo.DESTINO}: ${googleError}`)
+    }
+    const ok = targets.length - errors.length
+    if (publish) setNotice(bulkPublishNotice(ok, errors, googleErrors))
+    else
+      bulkNotice(ok, errors, `${plural(ok, "tirada", "tiradas")} do site.`, (o, e) => `${plural(o, "tirada", "tiradas")} do site; ${e} com erro.`)
+    finishBulk()
+  }
+
+  const handleBulkDelete = async () => {
+    const targets = selectedPromos
+    const hidden = hiddenCount(targets.map((p) => p.id), visibleIds)
+    if (!window.confirm(bulkDeleteConfirm(targets.length, hidden))) return
+    setBulkBusy(true)
+    const errors: string[] = []
+    for (const promo of targets) {
+      try {
+        await deletePromo(promo.id)
+      } catch (err) {
+        errors.push(err instanceof Error ? err.message : "Erro ao excluir")
+      }
+    }
+    const ok = targets.length - errors.length
+    bulkNotice(ok, errors, `${plural(ok, "excluída", "excluídas")}.`, (o, e) => `${plural(o, "excluída", "excluídas")}; ${e} com erro.`)
+    finishBulk()
+  }
+
+  /** Cópia da promo (fora do site, sem artes/posts) e já abre o formulário dela para ajustar */
+  const handleDuplicate = async () => {
+    const [promo] = selectedPromos
+    if (!promo || selectedPromos.length !== 1) return
+    setBulkBusy(true)
+    try {
+      const res = await fetch(`/api/promos/${encodeURIComponent(promo.id)}/duplicate`, { method: "POST" })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || "Erro ao duplicar a promo")
+      setNotice({ type: "success", text: "Cópia criada." })
+      finishBulk()
+      handleEdit(data as PromoData)
+    } catch (err) {
+      setBulkBusy(false)
+      setNotice({ type: "error", text: err instanceof Error ? err.message : "Erro ao duplicar a promo" })
+    }
+  }
+
+  const handleBulkOpenStudio = () => {
+    const [promo] = selectedPromos
+    if (!promo) return
+    setSelection([])
+    handleGenerateImage(promo)
+  }
+
+  const handleBulkOpenStudioMany = (ids: string[]) => {
+    const list: PromoData[] = ids.flatMap((id) => selectedPromos.filter((p) => p.id === id))
+    if (list.length < 2) return
+    setSelection([])
+    setSelectedPromo(null)
+    setMultiPromos(list)
+    setActivePanel("editor")
+  }
+
+  /** Oferta mudada no Studio com várias: grava e atualiza a foto na lista (o Studio novo publica o Google sozinho) */
+  const handleMultiSavePromo = async (p: Record<string, unknown>) => {
+    const updated = await savePromo(p)
+    if (updated?.SITE_IMAGE) updatePromoImage(updated.id, updated.SITE_IMAGE)
+    return updated
+  }
+
+  const handleCloseMulti = () => {
+    setMultiPromos(null)
+    setActivePanel("list")
+    // O Studio pode ter publicado em canais e mudado ofertas
+    void fetchPromos()
+    void refreshSummary()
   }
 
   const handleUnpublishExpired = async (expired: PromoData[]) => {
@@ -284,26 +425,28 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         onOpenStudio={handleOpenStudioDemo}
       />
 
-      <main className="p-3 sm:p-6">
+      <main className={`p-3 sm:p-6 ${showBulkBar ? "pb-28 sm:pb-28" : ""}`}>
         {(activePanel === "list" || activePanel === "form") && (
           <>
             <BlackFridayPanel promos={promos} />
             <MetaPanel meta={meta} />
             <GooglePanel gbp={gbp} isAdmin={user.role === "admin"} />
-            <div className="max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm">
-              <div>
-                <p className="text-[15px] font-black text-gray-900">Artes em lote</p>
-                <p className="text-[13px] text-gray-500">Feed, stories, Facebook e Canal do WhatsApp de várias ofertas de uma vez, com legenda.</p>
+            {!STUDIO_V2 && (
+              <div className="max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm">
+                <div>
+                  <p className="text-[15px] font-black text-gray-900">Artes em lote</p>
+                  <p className="text-[13px] text-gray-500">Feed, stories, Facebook e Canal do WhatsApp de várias ofertas de uma vez, com legenda.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBatchOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-[14px] bg-gray-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-gray-800"
+                >
+                  <Layers className="h-4 w-4" />
+                  Gerar em lote
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setBatchOpen(true)}
-                className="inline-flex items-center gap-2 rounded-[14px] bg-gray-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-gray-800"
-              >
-                <Layers className="h-4 w-4" />
-                Gerar em lote
-              </button>
-            </div>
+            )}
             <PromoListPanel
               promos={promos}
               isLoading={isLoading}
@@ -318,11 +461,16 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
               onNewPromo={handleNewPromo}
               onTogglePublish={(promo) => void handleTogglePublish(promo)}
               onUnpublishExpired={(list) => void handleUnpublishExpired(list)}
+              {...(STUDIO_V2 ? { selectedIds: selectedPromos.map((p) => p.id), onSelectionChange: setSelection, onVisibleChange: setVisibleIds } : {})}
             />
           </>
         )}
 
-        {activePanel === "editor" && selectedPromo && (STUDIO_V2 ? (
+        {activePanel === "editor" && STUDIO_V2 && multiPromos && (
+          <StudioMulti promos={multiPromos} isAdmin={user.role === "admin"} onClose={handleCloseMulti} onSavePromo={handleMultiSavePromo} />
+        )}
+
+        {activePanel === "editor" && !multiPromos && selectedPromo && (STUDIO_V2 ? (
           <StudioV2
             key={selectedPromo.id}
             promo={selectedPromo as unknown as StudioProps["promo"]}
@@ -349,7 +497,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
       {notice && (
         <div
           role="status"
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-[14px] px-4 py-3 text-sm font-semibold shadow-xl max-w-[calc(100vw-2rem)] ${
+          className={`fixed ${showBulkBar ? "bottom-24" : "bottom-4"} left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-[14px] px-4 py-3 text-sm font-semibold shadow-xl max-w-[calc(100vw-2rem)] ${
             notice.type === "success" ? "bg-gray-900 text-white" : "bg-red-600 text-white"
           }`}
         >
@@ -358,7 +506,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
         </div>
       )}
 
-      {batchOpen && (
+      {!STUDIO_V2 && batchOpen && (
         <div hidden={batchHidden}>
           <BatchGenerator
             promos={promos}
@@ -373,6 +521,23 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
             onClose={() => setBatchOpen(false)}
           />
         </div>
+      )}
+
+      {showBulkBar && (
+        <BulkActionBar
+          count={selectedPromos.length}
+          selectedIds={selectedPromos.map((p) => p.id)}
+          busy={bulkBusy}
+          canPublish={selectedPromos.some((p) => !p.SITE_PUBLISHED)}
+          canUnpublish={selectedPromos.some((p) => p.SITE_PUBLISHED)}
+          onOpenStudio={handleBulkOpenStudio}
+          onOpenStudioMany={handleBulkOpenStudioMany}
+          onPublishSite={() => void handleBulkSite(true)}
+          onUnpublishSite={() => void handleBulkSite(false)}
+          onDuplicate={() => void handleDuplicate()}
+          onDelete={() => void handleBulkDelete()}
+          onClear={() => setSelection([])}
+        />
       )}
 
       {deleteConfirm && (

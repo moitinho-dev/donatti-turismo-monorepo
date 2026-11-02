@@ -15,6 +15,11 @@ export interface ArtSet {
   photo: string | null
   /** Formatos ajustados à mão depois do template */
   edited: ArtFormat[]
+  /**
+   * Arte salva sem a lista de ajustes (gravada pelo Studio antigo): não dá para saber se foi
+   * ajustada à mão, então conta como ajustada antes de aplicar um template por cima
+   */
+  editedUnknown?: boolean
   /** Formatos completados agora (não estavam salvos) */
   generated: ArtFormat[]
   captions: Captions | null
@@ -47,6 +52,7 @@ export function completeArtSet(saved: SavedDesignData, fallbackFamily: string): 
     family,
     photo: saved.photo,
     edited: saved.edited ? FORMAT_ORDER.filter((f) => saved.edited!.includes(f)) : [],
+    editedUnknown: !saved.edited,
     generated,
     captions: saved.captions ?? null,
   }
@@ -62,7 +68,7 @@ export function savedDocsOnly(set: Pick<ArtSet, "docs" | "generated">): Partial<
 
 /** Refaz os 4 formatos com o modelo; zera os ajustes manuais */
 export function applyFamily(set: ArtSet, familyId: string): ArtSet {
-  return { ...set, docs: buildAll(familyId, set.photo), family: familyId, edited: [], generated: [] }
+  return { ...set, docs: buildAll(familyId, set.photo), family: familyId, edited: [], editedUnknown: false, generated: [] }
 }
 
 export function applyTemplateDocs(
@@ -80,7 +86,7 @@ export function applyTemplateDocs(
       generated.push(f)
     }
   }
-  return { ...set, docs: next, edited: [], generated }
+  return { ...set, docs: next, edited: [], editedUnknown: false, generated }
 }
 
 export function setPhotoAll(set: ArtSet, url: string): ArtSet {

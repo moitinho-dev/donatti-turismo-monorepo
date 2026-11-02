@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { slugify } from "@/lib/utils"
 import { downloadDataUrl, renderDoc } from "../render"
-import { FORMAT_ORDER, type ArtFormat, type StudioDoc } from "../types"
+import { FORMAT_ORDER, type ArtFormat } from "../types"
 import { VARIABLES } from "../variables"
 import type { ArtSet } from "../artSet"
-import type { SavedDesignData } from "../savedArt"
+import { saveArtSet, thumbnailOf } from "../savedArt"
 import { fixedTextHits, replaceFixedText } from "../teamTemplates"
 
 type Notify = (type: "ok" | "error", text: string) => void
@@ -15,7 +15,7 @@ interface Options {
   set: ArtSet | null
   vars: Record<string, string>
   format: ArtFormat
-  promo: { id: string; DESTINO: string }
+  promo: Record<string, unknown> & { id: string; DESTINO: string }
   /** Demonstração: nunca grava */
   isDemo: boolean
   loading: boolean
@@ -23,15 +23,6 @@ interface Options {
   dirty: boolean
   markSaved: (rev: number) => void
   notify: Notify
-}
-
-/** Miniatura para a lista; foto sem liberação de origem: salva sem miniatura */
-const thumbnailOf = async (d: StudioDoc, vars: Record<string, string>) => {
-  try {
-    return await renderDoc(d, vars, { mime: "image/jpeg", quality: 0.75, maxWidth: 360 })
-  } catch {
-    return undefined
-  }
 }
 
 /** Exportar, salvar a arte da promo (os 4 formatos juntos, automático 4 s depois da última mudança) e salvar template */
@@ -71,9 +62,10 @@ export function useArtSaving({ set, vars, format, promo, isDemo, loading, rev, d
     }
   }
 
+  /** Grava a arte; true se gravou ou se não havia o que gravar (demonstração, arte carregando), false se falhou */
   const saveDesign = useCallback(
-    async (quiet = false) => {
-      if (isDemo || !set) return
+    async (quiet = false): Promise<boolean> => {
+      if (isDemo || !set) return true
       // Um salvamento por vez: espera o anterior e grava o estado mais novo
       while (inflight.current) await inflight.current
       let done = () => {}
@@ -81,35 +73,22 @@ export function useArtSaving({ set, vars, format, promo, isDemo, loading, rev, d
       setSaving(true)
       const savingRev = rev
       try {
-        const data: SavedDesignData = { formats: set.docs, family: set.family, photo: set.photo, captions: set.captions ?? undefined, edited: set.edited }
-        const res = await fetch("/api/designs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: designId.current || undefined,
-            name: `${promo.DESTINO} - artes`,
-            kind: "design",
-            format,
-            data,
-            promoId: promo.id,
-            thumbnail: await thumbnailOf(set.docs[format], vars),
-          }),
-        })
-        const saved = await res.json()
-        if (!res.ok) throw new Error(saved.error || "Erro ao salvar")
-        designId.current = saved.id
+        const saved = await saveArtSet(promo, set, designId.current, { format, vars })
+        designId.current = saved.designId
         setSavedAt(new Date())
         markSaved(savingRev)
         if (!quiet) notify("ok", "Artes salvas")
+        return true
       } catch (err) {
         if (!quiet) notify("error", err instanceof Error ? err.message : "Erro ao salvar")
+        return false
       } finally {
         inflight.current = null
         done()
         setSaving(false)
       }
     },
-    [isDemo, set, rev, vars, promo.DESTINO, promo.id, format, markSaved, notify],
+    [isDemo, set, rev, vars, promo, format, markSaved, notify],
   )
 
   // Salvamento automático 4 s depois da última mudança, sempre o conjunto inteiro

@@ -12,7 +12,6 @@ import { promoVariables } from "../variables"
 import {
   applyFamily,
   applyTemplateDocs,
-  buildArtSet,
   equivalentLayers,
   markEdited,
   propagate,
@@ -20,7 +19,7 @@ import {
   type ArtSet,
   type Captions,
 } from "../artSet"
-import { loadSavedArt } from "../savedArt"
+import { openArt } from "../savedArt"
 import { fixedTextHits, replaceFixedText } from "../teamTemplates"
 import { AddPanel } from "../panels/AddPanel"
 import { AiPanel } from "../panels/AiPanel"
@@ -31,14 +30,31 @@ import { TemplatesPanel } from "../panels/TemplatesPanel"
 import { Spinner } from "../panels/ui"
 import { BrandPanel, type BRAND_LOGOS } from "./BrandPanel"
 import { FormatStrip } from "./FormatStrip"
+import { defaultFamilyOf } from "./multiState"
 import { OfferPanel } from "./OfferPanel"
 import { PublishSheet } from "./PublishSheet"
+import { QueueStrip, StripToggle, type QueueItem, type StripView } from "./QueueStrip"
 import { SaveTemplateBox } from "./SaveTemplateBox"
 import { MobileTabs, PanelHeader, PropagateBar, ToolRail, TopBar, ZoomControls, tabTitle, type Tab } from "./StudioChrome"
 import { useArtSaving } from "./useArtSaving"
 import { useArtSetHistory } from "./useArtSetHistory"
 
-export type StudioV2Props = Omit<StudioProps, "ig" | "gbp">
+export interface StudioQueue {
+  items: QueueItem[]
+  /** Posição da promo aberta em items */
+  index: number
+  /** Abrir outra promo da fila (o Studio já salvou a atual) */
+  onGo: (index: number) => void
+  /** Voltar à grade (o Studio já salvou a atual) */
+  onBackToGrid: () => void
+}
+
+export type StudioV2Props = Omit<StudioProps, "ig" | "gbp"> & {
+  /** Várias promos: fila embaixo, anterior / próxima e "Voltar à grade". Quem usa monta o Studio com key={promo.id}. */
+  queue?: StudioQueue
+  /** Promo atualizada no servidor (oferta salva, entrou no site): quem abriu mantém a sua cópia em dia */
+  onPromoChange?: (promo: Record<string, unknown> & { id: string; DESTINO: string }) => void
+}
 
 type Promo = StudioProps["promo"]
 const MOVE_KEYS = ["x", "y", "width", "height", "rotation"]
@@ -57,9 +73,9 @@ const formatList = (fs: ArtFormat[]) => {
 
 const reId = (d: StudioDoc): StudioDoc => ({ ...d, layers: d.layers.map((l) => ({ ...l, id: newId() })) })
 
-export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2Props) {
+export function StudioV2({ promo: initialPromo, onClose, onSavePromo, queue, onPromoChange }: StudioV2Props) {
   const isDemo = initialPromo.id === "demo-tutorial"
-  const defaultFamily = initialPromo.CAMPAIGN === "black-friday" ? "black-november" : "destaque"
+  const defaultFamily = defaultFamilyOf(initialPromo)
   const [promo, setPromo] = useState<Promo>(initialPromo)
   const vars = useMemo(() => promoVariables(promo), [promo])
   const aiStatus = useAiStatus()
@@ -77,6 +93,9 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
   const [bar, setBar] = useState<{ format: ArtFormat; layerName: string; patch: Partial<Layer> } | null>(null)
   const [publishOpen, setPublishOpen] = useState(false)
   const [canvasKey, setCanvasKey] = useState(0)
+  const [stripView, setStripView] = useState<StripView>("fila")
+  const [leaving, setLeaving] = useState(false)
+  const leavingRef = useRef(false)
   const canvasBoxRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<Konva.Stage | null>(null)
   const lockOk = useRef(new Set<string>())
@@ -131,31 +150,11 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
     const start = async () => {
       // Sem isso o primeiro desenho sai com a fonte padrão e os textos mudam de tamanho depois
       await preloadAllFonts().catch(() => undefined)
-      if (!isDemo) {
-        try {
-          const saved = await loadSavedArt(initialPromo, defaultFamily)
-          if (alive && saved) {
-            const { designId: id, ...art } = saved
-            setDesignId(id)
-            reset(seen(art))
-            setLoading(false)
-            return
-          }
-        } catch {
-          // segue com o modelo padrão
-        }
-      }
-      let photo = (initialPromo.SITE_IMAGE as string) || null
-      if (!photo) {
-        try {
-          const data = await fetch(`/api/image-search?query=${encodeURIComponent(initialPromo.DESTINO)}&limit=1&orientation=portrait`).then((r) => r.json())
-          photo = data.results?.[0]?.urls?.regular || null
-        } catch {
-          photo = null
-        }
-      }
+      // Demonstração não lê arte salva
+      const { set: art, designId: id } = await openArt(initialPromo, defaultFamily, { saved: !isDemo })
       if (!alive) return
-      reset(buildArtSet(defaultFamily, photo))
+      setDesignId(id)
+      reset(id ? seen(art) : art)
       setLoading(false)
     }
     void start()
@@ -367,20 +366,61 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
   // ---------------------------------------------------------------------------
   // Dados da oferta e fechar
   // ---------------------------------------------------------------------------
-  const onOfferSaved = useCallback((updated: Record<string, unknown>, sent: Promo) => {
-    // Só usa a resposta se ninguém digitou de novo enquanto salvava
-    setPromo((cur) => (cur === sent ? ({ ...sent, ...updated } as Promo) : cur))
-  }, [])
+  // Última versão gravada no servidor (o que quem abriu precisa saber), sem o que ainda está sendo digitado
+  const serverPromo = useRef<Promo>(initialPromo)
+
+  const onOfferSaved = useCallback(
+    (updated: Record<string, unknown>, sent: Promo) => {
+      // Só usa a resposta se ninguém digitou de novo enquanto salvava
+      setPromo((cur) => (cur === sent ? ({ ...sent, ...updated } as Promo) : cur))
+      serverPromo.current = { ...serverPromo.current, ...sent, ...updated } as Promo
+      onPromoChange?.(serverPromo.current)
+    },
+    [onPromoChange],
+  )
 
   /** Publicar → Site deu certo: a promo aberta fica no site (com seção, slug e foto que o servidor completou) */
-  const onSitePublished = useCallback((fields: Record<string, unknown>) => {
-    setPromo((cur) => ({ ...cur, ...fields, SITE_PUBLISHED: true }) as Promo)
-  }, [])
+  const onSitePublished = useCallback(
+    (fields: Record<string, unknown>) => {
+      setPromo((cur) => ({ ...cur, ...fields, SITE_PUBLISHED: true }) as Promo)
+      serverPromo.current = { ...serverPromo.current, ...fields, SITE_PUBLISHED: true } as Promo
+      onPromoChange?.(serverPromo.current)
+    },
+    [onPromoChange],
+  )
+
+  /**
+   * Grava o que ainda não foi salvo (fechar, voltar à grade ou trocar de promo). true: pode sair.
+   * Falhou: pergunta se sai mesmo assim (perde as alterações) ou fica para tentar de novo.
+   */
+  const saveNow = async () => {
+    if (!dirty || isDemo) return true
+    if (await saveDesign(true)) return true
+    setToast({ type: "error", text: "Não deu para salvar; tente de novo." })
+    return window.confirm("Não deu para salvar. Sair mesmo assim e perder as alterações?")
+  }
 
   const close = async () => {
-    if (dirty && !isDemo) await saveDesign(true)
-    onClose()
+    if (await saveNow()) onClose()
   }
+
+  /** Sai desta promo pela fila: salva e só então avisa quem abriu (que troca a promo ou mostra a grade) */
+  const leaveTo = async (go: () => void) => {
+    if (leavingRef.current) return
+    leavingRef.current = true
+    setLeaving(true)
+    try {
+      if (await saveNow()) go()
+    } finally {
+      leavingRef.current = false
+      setLeaving(false)
+    }
+  }
+  const goTo = (i: number) => {
+    if (!queue || i < 0 || i >= queue.items.length || i === queue.index) return
+    void leaveTo(() => queue.onGo(i))
+  }
+  const backToGrid = () => queue && void leaveTo(queue.onBackToGrid)
 
   // ---------------------------------------------------------------------------
   // Atalhos de teclado
@@ -516,11 +556,12 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
         canUndo={canUndo}
         canRedo={canRedo}
         publishDisabled={!set}
-        onBack={() => void close()}
+        onBack={queue ? backToGrid : () => void close()}
         onUndo={undo}
         onRedo={redo}
         onDownload={(which, mime) => void download(which, mime)}
         onPublish={() => setPublishOpen(true)}
+        queue={queue && { index: queue.index, total: queue.items.length }}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -566,7 +607,24 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
 
           {bar && <PropagateBar onApply={applyBar} onDismiss={() => setBar(null)} />}
 
-          {set && !loading && <FormatStrip set={set} vars={vars} format={format} onSelect={selectFormat} compact={!isWide} />}
+          {queue ? (
+            <div className="shrink-0 border-t border-gray-200 bg-white">
+              <div className={`flex items-center justify-center ${isWide ? "pt-2" : "pt-1.5"}`}>
+                <StripToggle view={stripView} onView={setStripView} />
+              </div>
+              {stripView === "fila" ? (
+                <QueueStrip items={queue.items} index={queue.index} onGo={goTo} busy={leaving} compact={!isWide} />
+              ) : set && !loading ? (
+                <FormatStrip set={set} vars={vars} format={format} onSelect={selectFormat} compact={!isWide} embedded />
+              ) : (
+                <div className={`flex items-center justify-center text-gray-400 ${isWide ? "h-[126px]" : "h-[84px]"}`}>
+                  <Spinner className="h-4 w-4" />
+                </div>
+              )}
+            </div>
+          ) : (
+            set && !loading && <FormatStrip set={set} vars={vars} format={format} onSelect={selectFormat} compact={!isWide} />
+          )}
         </div>
 
         {/* Propriedades (computador) */}
@@ -600,7 +658,7 @@ export function StudioV2({ promo: initialPromo, onClose, onSavePromo }: StudioV2
           format={format}
           onDownload={(which, mime) => void download(which, mime)}
           onClose={() => setPublishOpen(false)}
-          onDone={() => void close()}
+          onDone={queue ? backToGrid : () => void close()}
           onSitePublished={onSitePublished}
         />
       )}

@@ -21,6 +21,7 @@ export const NO_SHARE_ERROR = "Este aparelho não abre o compartilhar com imagen
 export const SHARE_ERROR = "Não deu para abrir o compartilhar. Tente de novo."
 export const SHARED_MARK_ERROR = "Não foi possível marcar como compartilhado"
 export const UNSAVED = "Salve a promoção para publicar."
+export const SCHEDULE_TOO_CLOSE = "O horário agendado ficou perto demais. Escolha outro horário e tente de novo."
 
 /** Mensagens já no jeito da equipe; o resto (erro técnico da rede social, do Google ou do navegador) vira uma mensagem simples */
 const KNOWN = new Set([
@@ -32,6 +33,7 @@ const KNOWN = new Set([
   SHARE_ERROR,
   SHARED_MARK_ERROR,
   UNSAVED,
+  SCHEDULE_TOO_CLOSE,
   "Conecte a Meta no painel antes de publicar",
   "Conecte o Google no painel antes de publicar",
   "A Página conectada não tem Instagram profissional ligado",

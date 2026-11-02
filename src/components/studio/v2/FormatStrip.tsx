@@ -12,10 +12,12 @@ interface FormatStripProps {
   format: ArtFormat
   onSelect: (format: ArtFormat) => void
   compact?: boolean
+  /** Dentro de outra barra (fila de promos): sem borda e fundo próprios */
+  embedded?: boolean
 }
 
 /** As 4 miniaturas sempre visíveis embaixo da arte; clicar troca o formato */
-export function FormatStrip({ set, vars, format, onSelect, compact }: FormatStripProps) {
+export function FormatStrip({ set, vars, format, onSelect, compact, embedded }: FormatStripProps) {
   const [thumbs, setThumbs] = useState<Partial<Record<ArtFormat, string | null>>>({})
   const rendered = useRef<{ docs: Partial<Record<ArtFormat, StudioDoc>>; vars: Record<string, string> | null }>({ docs: {}, vars: null })
 
@@ -50,7 +52,7 @@ export function FormatStrip({ set, vars, format, onSelect, compact }: FormatStri
   return (
     <nav
       aria-label="Formatos da arte"
-      className={`flex shrink-0 items-end justify-center gap-3 overflow-x-auto border-t border-gray-200 bg-white [scrollbar-width:none] ${compact ? "px-3 py-2" : "px-4 py-3"}`}
+      className={`flex shrink-0 items-end justify-center gap-3 overflow-x-auto [scrollbar-width:none] ${embedded ? "" : "border-t border-gray-200 bg-white"} ${compact ? "px-3 py-2" : "px-4 py-3"}`}
     >
       {FORMAT_ORDER.map((f) => {
         const { width, height, label, hint } = FORMATS[f]

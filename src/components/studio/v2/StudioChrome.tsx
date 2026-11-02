@@ -54,9 +54,11 @@ interface TopBarProps {
   onRedo: () => void
   onDownload: (which: ArtFormat | "all", mime: "image/png" | "image/jpeg") => void
   onPublish: () => void
+  /** Studio com várias promos: posição na fila e "Voltar à grade" no lugar de "Voltar" */
+  queue?: { index: number; total: number }
 }
 
-export function TopBar({ title, subtitle, format, status, canUndo, canRedo, publishDisabled, onBack, onUndo, onRedo, onDownload, onPublish }: TopBarProps) {
+export function TopBar({ title, subtitle, format, status, canUndo, canRedo, publishDisabled, onBack, onUndo, onRedo, onDownload, onPublish, queue }: TopBarProps) {
   const [open, setOpen] = useState(false)
   const download = (which: ArtFormat | "all", mime: "image/png" | "image/jpeg") => {
     setOpen(false)
@@ -64,10 +66,25 @@ export function TopBar({ title, subtitle, format, status, canUndo, canRedo, publ
   }
   return (
     <header className="flex h-14 shrink-0 items-center gap-1 border-b border-gray-200 bg-white px-2 sm:gap-2 sm:px-4">
-      <button type="button" onClick={onBack} className="flex items-center gap-1.5 rounded-xl px-2 py-2 text-[13px] font-semibold text-gray-600 hover:bg-gray-100" aria-label="Voltar para a lista">
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-1.5 rounded-xl px-2 py-2 text-[13px] font-semibold text-gray-600 hover:bg-gray-100"
+        aria-label={queue ? "Voltar à grade" : "Voltar para a lista"}
+      >
         <ArrowLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Voltar</span>
+        <span className="hidden sm:inline">{queue ? "Voltar à grade" : "Voltar"}</span>
       </button>
+      {queue && (
+        <span className="shrink-0 rounded-lg bg-gray-100 px-2 py-1 text-[12px] font-bold tabular-nums text-gray-700" title={`Promoção ${queue.index + 1} de ${queue.total}`}>
+          <span aria-hidden="true">
+            {queue.index + 1}/{queue.total}
+          </span>
+          <span className="sr-only">
+            Promoção {queue.index + 1} de {queue.total}
+          </span>
+        </span>
+      )}
       <div className="hidden min-w-0 border-l border-gray-200 pl-3 md:block">
         <p className="truncate text-[14px] font-black leading-tight">{title}</p>
         <p className="truncate text-[11px] text-gray-500">{subtitle}</p>
