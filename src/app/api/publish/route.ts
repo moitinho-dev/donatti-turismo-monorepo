@@ -5,8 +5,9 @@ import prisma from "@/lib/db"
 import { getMetaConnection, publishMeta } from "@/lib/meta"
 import { getBusinessConnection, publishPromoPost } from "@/lib/googleBusiness"
 import { CHANNELS, isMetaChannel, publishKind, type Channel } from "@/lib/channels"
-import { channelStatus, offerHash, recordPublish, type PublishState } from "@/lib/publishLog"
+import { canPublish, channelStatus, offerHash, recordPublish, type PublishState } from "@/lib/publishLog"
 import { computeSlug } from "@/lib/utils"
+import { isOwnMediaUrl } from "@/lib/mediaHosts"
 import { CAMPAIGN_PATH } from "@/config/blackFriday"
 import { metaSession } from "../meta/session"
 
@@ -20,7 +21,7 @@ const schema = z.object({
   promoId: z.string().min(1),
   channel: z.enum(channelIds),
   /** URLs públicas já enviadas por /api/meta/media; vazio para "site" */
-  images: z.array(z.string().min(10)).max(10).default([]),
+  images: z.array(z.string().url("Arte inválida").startsWith("https://", "Arte inválida")).max(10).default([]),
   caption: z.string().max(2200).optional(),
   /** Só feed do Facebook: agenda entre 10 minutos e 30 dias */
   scheduledAt: z.string().datetime({ offset: true }).optional(),
@@ -40,11 +41,16 @@ type PromoRow = {
   numeroDeNoites: string
   sitePublished: boolean
   siteSlug: string | null
+  createdById: string
 }
 
 type Kind = "post" | "story" | "carousel" | "album" | "message" | "site"
 
 const bad = (error: string, status: number) => NextResponse.json({ error }, { status })
+
+const FORBIDDEN = "Sem permissão para publicar esta promoção"
+
+const channelLabel = (c: Channel) => CHANNELS.find((x) => x.id === c)?.label ?? c
 
 /** Publica a promo em um canal e grava o registro (um por promo quando é carrossel/álbum) */
 export async function POST(req: Request) {
@@ -63,7 +69,7 @@ export async function POST(req: Request) {
     if (group.kind !== (channel === "ig-feed" ? "carousel" : "album")) return bad("Carrossel é do Instagram e álbum é do Facebook", 400)
     if (!group.promoIds.includes(body.promoId)) return bad("A promoção não faz parte do grupo", 400)
     if (new Set(group.promoIds).size !== group.promoIds.length) return bad("Promoção repetida no grupo", 400)
-    if (body.images.length < 2) return bad("Carrossel e álbum precisam de pelo menos duas artes", 400)
+    if (body.images.length !== group.promoIds.length) return bad("Envie uma arte por promoção do grupo", 400)
   }
 
   // Imagens
@@ -72,7 +78,10 @@ export async function POST(req: Request) {
     if ((channel === "ig-story" || channel === "fb-story") && body.images.length > 1) return bad("Envie um story por vez", 400)
     if (!group && body.images.length > 1) return bad("Mais de uma arte só em carrossel ou álbum", 400)
   }
-  if (channel === "google" && body.images[0] && !body.images[0].startsWith("https://")) return bad("Arte do Google inválida", 400)
+  if (channel === "google") {
+    if (body.images.length !== 1) return bad("Envie uma arte para o Google", 400)
+    if (!isOwnMediaUrl(body.images[0])) return bad("Arte do Google inválida", 400)
+  }
 
   let scheduledAt: Date | null = null
   if (body.scheduledAt) {
@@ -88,6 +97,7 @@ export async function POST(req: Request) {
   if (promos.some((p) => !p)) return bad("Promoção não encontrada", 404)
   const targets = promos as PromoRow[]
   const main = targets.find((p) => p.id === body.promoId)!
+  if (!targets.every((p) => canPublish(user, p))) return bad(FORBIDDEN, 403)
 
   const simulate = process.env.PUBLISH_SIMULATE === "on"
 
@@ -168,14 +178,22 @@ export async function POST(req: Request) {
     await record(status, { externalId: result.externalId, kind: result.kind })
     if (channel === "ig-feed" && !group && result.externalId) {
       // Compatibilidade: o painel antigo lê o post do Instagram na promo
-      await prisma.promo.updateMany({ where: { id: main.id }, data: { instagramPostId: result.externalId } }).catch(() => undefined)
+      try {
+        await prisma.promo.updateMany({
+          where: { id: main.id, ...(user.admin ? {} : { createdById: user.id }) },
+          data: { instagramPostId: result.externalId },
+        })
+      } catch (err) {
+        console.error("Publicar: erro ao guardar o post do Instagram na promo", err)
+      }
     }
     return NextResponse.json({ ok: true, status, externalId: result.externalId })
   } catch (err) {
     console.error("Publicar: erro", channel, err)
+    // O registro guarda o erro técnico; a equipe vê uma mensagem simples
     const error = err instanceof Error && err.message ? err.message : "Erro ao publicar"
     await record("error", { error })
-    return bad(error, 502)
+    return bad(`Não foi possível publicar no ${channelLabel(channel)}. Tente de novo em alguns minutos.`, 502)
   }
 }
 
@@ -189,6 +207,7 @@ export async function GET(req: Request) {
 
   const promo = await prisma.promo.findUnique({ where: { id: promoId } })
   if (!promo) return bad("Promoção não encontrada", 404)
+  if (!canPublish(user, promo)) return bad(FORBIDDEN, 403)
 
   const logs = await prisma.publishLog.findMany({
     where: { promoId },

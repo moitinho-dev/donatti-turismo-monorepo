@@ -180,7 +180,7 @@ export function PublishPanel(props: PublishPanelProps) {
       <Section title="Google (Perfil da Empresa)">
         <Btn
           className="w-full"
-          disabled={!gbp.gbpConnected || gbp.gbpBusy || !promo.id}
+          disabled={!gbp.gbpReady || gbp.gbpBusy || !promo.id}
           onClick={() => promo.id && void gbp.postPromoToGbp(String(promo.id))}
         >
           {gbp.gbpBusy ? <Spinner /> : <Send className="h-4 w-4" />}
@@ -188,7 +188,7 @@ export function PublishPanel(props: PublishPanelProps) {
         </Btn>
         {gbp.gbpMessage && <p className="text-[12px] text-green-700">{gbp.gbpMessage}</p>}
         {gbp.gbpError && <p className="text-[12px] text-red-600">{gbp.gbpError}</p>}
-        {!gbp.gbpConnected && <p className="text-[12px] text-gray-500">Google não conectado.</p>}
+        {!gbp.gbpReady && <p className="text-[12px] text-gray-500">Google não conectado.</p>}
         {isAdmin && (
           <>
             <button type="button" onClick={() => setShowGbpConfig((v) => !v)} className="text-[12px] font-semibold text-amber-700 underline">

@@ -74,6 +74,11 @@ export function needsConfirm(state: ChannelState): boolean {
   )
 }
 
+/** Mesma regra das promos: admin publica qualquer uma; agente só as que criou */
+export function canPublish(user: { id: string; admin: boolean }, promo: { createdById: string }): boolean {
+  return user.admin || promo.createdById === user.id
+}
+
 export async function recordPublish(data: Omit<PublishLogCreate, "id" | "createdAt">): Promise<void> {
   await prisma.publishLog.create({ data })
 }

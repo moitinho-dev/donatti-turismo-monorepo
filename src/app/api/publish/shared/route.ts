@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import prisma from "@/lib/db"
-import { offerHash, recordPublish } from "@/lib/publishLog"
+import { canPublish, offerHash, recordPublish } from "@/lib/publishLog"
 import { metaSession } from "../../meta/session"
 
 export const runtime = "nodejs"
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
 
   const promo = await prisma.promo.findUnique({ where: { id: promoId } })
   if (!promo) return NextResponse.json({ error: "Promoção não encontrada" }, { status: 404 })
+  if (!canPublish(user, promo)) return NextResponse.json({ error: "Sem permissão para publicar esta promoção" }, { status: 403 })
 
   const status = process.env.PUBLISH_SIMULATE === "on" ? "simulated" : "shared"
   try {
