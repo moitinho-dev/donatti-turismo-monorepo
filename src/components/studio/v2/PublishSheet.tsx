@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { CalendarClock, Download, Send, X } from "lucide-react"
+import { Download, Send, X } from "lucide-react"
 import { uploadImage, usePublish } from "@/hooks/usePublish"
 import { CHANNELS, type Channel } from "@/lib/channels"
 import { captionsFor, type CaptionPromo } from "@/lib/promoCaptions"
@@ -13,6 +13,7 @@ import { Spinner } from "../panels/ui"
 import { CaptionTabs, type Network } from "./CaptionTabs"
 import { ChannelList, type Run } from "./ChannelList"
 import { PublishPreview } from "./PublishPreview"
+import { ScheduleBox, localInput } from "./ScheduleBox"
 import { ShareWhatsApp } from "./ShareWhatsApp"
 import { deviceOf, publishOrder, scheduleError, toggleChannel, type Device } from "./publishView"
 
@@ -36,12 +37,6 @@ const IMAGE_ERROR = "Não deu para gerar a imagem: alguma foto da arte não perm
 const UPLOAD_ERROR = "Não foi possível enviar a arte. Tente de novo."
 const label = (c: Channel) => CHANNELS.find((x) => x.id === c)!.label
 const formatOf = (c: Channel) => CHANNELS.find((x) => x.id === c)!.format
-
-/** "2026-11-02T14:30" no fuso do aparelho, para o campo de data e hora */
-const localInput = (d: Date) => {
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 /** Painel Publicar: canais, legenda por rede, prévia e situação de cada canal */
 export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onClose, format, onDownload }: PublishSheetProps) {
@@ -303,50 +298,18 @@ export function PublishSheet({ promo, set, getDataUrl, setCaptions, onDone, onCl
               />
             </section>
 
-            <section aria-labelledby="pub-quando" className="mt-6">
-              <h3 id="pub-quando" className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
-                Quando
-              </h3>
-              <div className="flex gap-1 rounded-xl bg-gray-100 p-1" role="radiogroup" aria-label="Quando publicar">
-                {(["now", "schedule"] as const).map((w) => {
-                  const off = w === "schedule" && (!selected.has("fb-feed") || !canPublish)
-                  return (
-                    <button
-                      key={w}
-                      type="button"
-                      role="radio"
-                      aria-checked={when === w}
-                      disabled={off || running}
-                      onClick={() => setWhen(w)}
-                      title={w === "schedule" && off ? "Marque o Facebook feed para agendar" : undefined}
-                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12.5px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${when === w ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
-                    >
-                      {w === "now" ? <Send className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
-                      {w === "now" ? "Publicar agora" : "Agendar"}
-                    </button>
-                  )
-                })}
-              </div>
-              {when === "schedule" && selected.has("fb-feed") ? (
-                <div className="mt-2.5 space-y-1.5">
-                  <input
-                    type="datetime-local"
-                    value={scheduleAt}
-                    min={localInput(new Date(Date.now() + 10 * 60_000))}
-                    onChange={(e) => {
-                      setScheduleAt(e.target.value)
-                      setScheduleMsg(null)
-                    }}
-                    aria-label="Data e hora do post no Facebook"
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-[13px] outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
-                  />
-                  <p className="text-[11.5px] text-gray-500">O agendamento vale só para o Facebook feed. Os outros canais saem agora.</p>
-                  {scheduleMsg && <p className="text-[12px] font-semibold text-red-600">{scheduleMsg}</p>}
-                </div>
-              ) : (
-                <p className="mt-2 text-[11.5px] text-gray-500">Agendar só funciona no Facebook feed.</p>
-              )}
-            </section>
+            <ScheduleBox
+              enabled={selected.has("fb-feed") && canPublish}
+              busy={running}
+              when={when}
+              onWhen={setWhen}
+              value={scheduleAt}
+              onValue={(v) => {
+                setScheduleAt(v)
+                setScheduleMsg(null)
+              }}
+              message={scheduleMsg}
+            />
 
             <section aria-labelledby="pub-legenda" className="mt-6">
               <h3 id="pub-legenda" className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
