@@ -8,10 +8,10 @@ import type { PublishState } from "@/lib/publishState"
 import { cardChannels, type ChannelTone } from "./channelStatus"
 
 const TONE: Record<ChannelTone, string> = {
-  ok: "bg-emerald-500 text-white",
-  simulated: "bg-violet-500 text-white",
-  error: "bg-red-500 text-white",
-  none: "bg-gray-100 text-gray-400",
+  ok: "bg-emerald-600 text-white",
+  simulated: "bg-violet-600 text-white",
+  error: "bg-red-600 text-white",
+  none: "bg-gray-100 text-gray-500",
 }
 
 const ICON: Record<Channel, ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -32,7 +32,7 @@ const ROUND = new Set<Channel>(["ig-story", "fb-story", "wa-status"])
 export function ChannelStatusRow({ states, sitePublished }: { states: Partial<Record<Channel, PublishState>> | undefined; sitePublished: boolean }) {
   const list = cardChannels(states, sitePublished)
   return (
-    <ul aria-label="Canais" className="flex flex-wrap items-center gap-1">
+    <ul className="flex flex-wrap items-center gap-1">
       {list.map((c) => {
         const Icon = ICON[c.channel]
         return (

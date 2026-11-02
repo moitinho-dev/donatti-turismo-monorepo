@@ -18,33 +18,38 @@ export async function GET() {
   const user = await metaSession()
   if (!user?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
-  // Mesma regra do Publicar: admin vê todas; agente só as que criou
-  const promos = await prisma.promo.findMany({
-    where: user.admin ? {} : { createdById: user.id },
-    select: { id: true, dataFormatada: true },
-  })
-  const ids = promos.filter((p) => !isPromoExpired(p.dataFormatada)).map((p) => p.id)
+  try {
+    // Mesma regra do Publicar: admin vê todas; agente só as que criou
+    const promos = await prisma.promo.findMany({
+      where: user.admin ? {} : { createdById: user.id },
+      select: { id: true, dataFormatada: true },
+    })
+    const ids = promos.filter((p) => !isPromoExpired(p.dataFormatada)).map((p) => p.id)
 
-  const out: PublishSummary = {}
-  for (const id of ids) out[id] = {}
-  if (!ids.length) return NextResponse.json(out)
+    const out: PublishSummary = {}
+    for (const id of ids) out[id] = {}
+    if (!ids.length) return NextResponse.json(out)
 
-  // Uma consulta: o registro mais novo de cada promo + canal
-  const logs = await prisma.publishLog.findMany({
-    where: { promoId: { in: ids } },
-    distinct: ["promoId", "channel"],
-    orderBy: { createdAt: "desc" },
-    select: { promoId: true, channel: true, status: true, createdAt: true },
-  })
+    // Uma consulta: o registro mais novo de cada promo + canal
+    const logs = await prisma.publishLog.findMany({
+      where: { promoId: { in: ids } },
+      distinct: ["promoId", "channel"],
+      orderBy: { createdAt: "desc" },
+      select: { promoId: true, channel: true, status: true, createdAt: true },
+    })
 
-  const newest = new Map<string, Date>()
-  for (const log of logs) {
-    if (!KNOWN.has(log.channel) || !out[log.promoId]) continue
-    const key = `${log.promoId}|${log.channel}`
-    const prev = newest.get(key)
-    if (prev && prev.getTime() >= log.createdAt.getTime()) continue
-    newest.set(key, log.createdAt)
-    out[log.promoId][log.channel as Channel] = log.status as PublishState
+    const newest = new Map<string, Date>()
+    for (const log of logs) {
+      if (!KNOWN.has(log.channel) || !out[log.promoId]) continue
+      const key = `${log.promoId}|${log.channel}`
+      const prev = newest.get(key)
+      if (prev && prev.getTime() >= log.createdAt.getTime()) continue
+      newest.set(key, log.createdAt)
+      out[log.promoId][log.channel as Channel] = log.status as PublishState
+    }
+    return NextResponse.json(out)
+  } catch (err) {
+    console.error("[publish/summary] falha ao ler a situação dos canais", err)
+    return NextResponse.json({ error: "Não foi possível carregar a situação dos canais" }, { status: 500 })
   }
-  return NextResponse.json(out)
 }

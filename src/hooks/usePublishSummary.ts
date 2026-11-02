@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { PublishSummary } from "@/lib/publishState"
 
 /** null se não deu para ler (mantém o que já estava na tela) */
@@ -17,20 +17,23 @@ async function fetchSummary(): Promise<PublishSummary | null> {
 export function usePublishSummary() {
   const [summary, setSummary] = useState<PublishSummary | null>(null)
 
+  // Só a resposta da leitura mais recente vale: uma antiga que chega depois não sobrescreve a nova
+  const seq = useRef(0)
+  const alive = useRef(true)
+
   const refresh = useCallback(async () => {
+    const mine = ++seq.current
     const next = await fetchSummary()
-    if (next) setSummary(next)
+    if (next && alive.current && mine === seq.current) setSummary(next)
   }, [])
 
   useEffect(() => {
-    let alive = true
-    void fetchSummary().then((next) => {
-      if (alive && next) setSummary(next)
-    })
+    alive.current = true
+    void refresh()
     return () => {
-      alive = false
+      alive.current = false
     }
-  }, [])
+  }, [refresh])
 
   return { summary, refresh }
 }

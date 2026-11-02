@@ -40,6 +40,16 @@ describe("GET /api/publish/summary", () => {
     expect(db.promo.findMany).not.toHaveBeenCalled()
   })
 
+  it("erro do banco responde 500 com mensagem amigável", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+    db.promo.findMany.mockRejectedValue(new Error("db fora"))
+    const res = await GET()
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: "Não foi possível carregar a situação dos canais" })
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
   it("dois logs da mesma promo e canal: vale o mais novo", async () => {
     // O mais antigo vem primeiro de propósito: a rota não depende da ordem do banco
     db.publishLog.findMany.mockResolvedValue([

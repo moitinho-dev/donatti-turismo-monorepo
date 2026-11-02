@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation"
 import type React from "react"
 
 import { usePromo } from "@/hooks/usePromo"
+import { postGoogleAfterSite, googleError } from "@/lib/client/postGoogle"
 import { MapPin, Hotel, Calendar, DollarSign, Users, Utensils, Plane, Loader2, Save, X, CreditCard, FileUp, CheckCircle2, AlertCircle } from "lucide-react"
 
 interface PromoFormProps {
@@ -361,18 +362,32 @@ export function PromoForm({ promo, onSuccess }: PromoFormProps) {
     }
 
     try {
-      await savePromo(payload)
-                setFormSuccess(formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!")
+      const saved = await savePromo(payload)
+      const base = formData.id ? "Promoção atualizada com sucesso!" : "Promoção adicionada com sucesso!"
+      setFormSuccess(base)
 
-              // Reset form if it's a new promo
-              if (!formData.id) {
-                resetForm()
-              }
+      // Entrou no site agora (nova já publicada, ou rascunho que foi publicado): vai também para o Google
+      const enteredSite = !!saved?.SITE_PUBLISHED && (!formData.id || !promo?.SITE_PUBLISHED)
+      let googleFailed: string | null = null
+      if (enteredSite) {
+        googleFailed = googleError(await postGoogleAfterSite(saved))
+        if (googleFailed) {
+          setFormSuccess(null)
+          setFormError(`Publicado no site; o Google falhou: ${googleFailed}`)
+        } else {
+          setFormSuccess("Publicado no site e no Google.")
+        }
+      }
 
-      // Notify parent component
+      // Reset form if it's a new promo
+      if (!formData.id) {
+        resetForm()
+      }
+
+      // Notify parent component (mais tempo quando há aviso de falha para dar para ler)
       setTimeout(() => {
         onSuccess()
-      }, 1500)
+      }, googleFailed ? 5000 : 1500)
     } catch (error) {
       setFormError("Erro ao salvar promoção. Por favor, tente novamente.")
     }
