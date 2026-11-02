@@ -10,6 +10,7 @@ export const runtime = "nodejs"
 const schema = z.object({
   accountName: z.string().min(1),
   locationName: z.string().min(1),
+  locationTitle: z.string().max(300).optional().nullable(),
 })
 
 export async function GET() {
@@ -22,6 +23,7 @@ export async function GET() {
     connected: Boolean(conn?.refreshToken),
     accountName: conn?.accountName || null,
     locationName: conn?.locationName || null,
+    locationTitle: conn?.locationTitle || null,
   })
 }
 
@@ -30,10 +32,12 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   if (session.user.role !== "admin") return NextResponse.json({ error: "Apenas admin" }, { status: 403 })
 
-  const body = await req.json()
+  const body = await req.json().catch(() => null)
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
 
-  await saveBusinessTarget(parsed.data.accountName, parsed.data.locationName)
+  const conn = await getBusinessConnection()
+  if (!conn?.refreshToken) return NextResponse.json({ error: "Conecte o Google antes de escolher o local." }, { status: 409 })
+  await saveBusinessTarget(parsed.data.accountName, parsed.data.locationName, parsed.data.locationTitle)
   return NextResponse.json({ ok: true })
 }

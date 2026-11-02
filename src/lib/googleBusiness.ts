@@ -24,19 +24,27 @@ const getBaseUrl = () => {
   return normalized.replace(/\/$/, "")
 }
 
-export const buildConnectUrl = () => {
+/** URL de retorno do login do Google (precisa estar cadastrada no cliente OAuth do Google Cloud) */
+export const googleRedirectUri = () => `${getBaseUrl()}/api/google-business/callback`
+
+export const isGoogleConfigured = () => !!(process.env.GOOGLE_ID_CLIENT && process.env.GOOGLE_ID_CLIENT_SECRET)
+
+/** Cookie com o nonce do state (mesmo esquema da Meta: state assinado + cookie deste navegador, 15 min, uso único) */
+export const GOOGLE_NONCE_COOKIE = "google_oauth_nonce"
+
+export const buildConnectUrl = (state: string) => {
   const clientId = process.env.GOOGLE_ID_CLIENT
   if (!clientId) throw new Error("Missing GOOGLE_ID_CLIENT")
 
-  const redirectUri = `${getBaseUrl()}/api/google-business/callback`
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth")
   url.searchParams.set("client_id", clientId)
-  url.searchParams.set("redirect_uri", redirectUri)
+  url.searchParams.set("redirect_uri", googleRedirectUri())
   url.searchParams.set("response_type", "code")
   url.searchParams.set("access_type", "offline")
   url.searchParams.set("prompt", "consent")
   url.searchParams.set("include_granted_scopes", "true")
   url.searchParams.set("scope", BUSINESS_MANAGE_SCOPE)
+  url.searchParams.set("state", state)
   return url.toString()
 }
 
@@ -53,12 +61,12 @@ export const upsertRefreshToken = async (refreshToken: string) => {
   })
 }
 
-export const saveBusinessTarget = async (accountName: string, locationName: string) => {
+export const saveBusinessTarget = async (accountName: string, locationName: string, locationTitle?: string | null) => {
   const existing = await prisma.googleBusinessConnection.findFirst()
   if (!existing) throw new Error("Google Business not connected")
   return prisma.googleBusinessConnection.update({
     where: { id: existing.id },
-    data: { accountName, locationName },
+    data: { accountName, locationName, locationTitle: locationTitle || null },
   })
 }
 
@@ -71,12 +79,11 @@ export const exchangeCodeForTokens = async (code: string) => {
     throw new Error("Missing GOOGLE_ID_CLIENT/GOOGLE_ID_CLIENT_SECRET")
   }
 
-  const redirectUri = `${getBaseUrl()}/api/google-business/callback`
   const body = new URLSearchParams()
   body.set("code", code)
   body.set("client_id", clientId)
   body.set("client_secret", clientSecret)
-  body.set("redirect_uri", redirectUri)
+  body.set("redirect_uri", googleRedirectUri())
   body.set("grant_type", "authorization_code")
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -160,6 +167,17 @@ export const listLocations = async (accountName: string) => {
     headers: { Authorization: `Bearer ${token}` },
   })
   return data.locations || []
+}
+
+/** Sem local escolhido e com uma conta só e um local só: já deixa pronto para postar */
+export const autoPickTarget = async () => {
+  const conn = await prisma.googleBusinessConnection.findFirst()
+  if (!conn || (conn.accountName && conn.locationName)) return
+  const accounts = await listAccounts()
+  if (accounts.length !== 1) return
+  const locations = await listLocations(accounts[0].name)
+  if (locations.length !== 1) return
+  await saveBusinessTarget(accounts[0].name, locations[0].name, locations[0].title)
 }
 
 const extractIdsForV4 = (accountName: string, locationName: string) => {

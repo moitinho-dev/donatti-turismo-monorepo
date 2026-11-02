@@ -13,8 +13,13 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   const accountName = url.searchParams.get("accountName")
-  if (!accountName) return NextResponse.json({ error: "accountName é obrigatório" }, { status: 400 })
+  // Só "accounts/{id}": o valor vai no caminho da chamada ao Google
+  if (!accountName || !/^accounts\/[\w-]+$/.test(accountName)) return NextResponse.json({ error: "Conta inválida" }, { status: 400 })
 
-  const locations = await listLocations(accountName)
-  return NextResponse.json(locations)
+  try {
+    return NextResponse.json(await listLocations(accountName))
+  } catch (error) {
+    console.error("Google: erro ao listar locais", error)
+    return NextResponse.json({ error: "Não foi possível carregar os locais desta conta." }, { status: 502 })
+  }
 }

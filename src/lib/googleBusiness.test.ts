@@ -8,7 +8,7 @@ vi.mock("@/lib/db", () => ({
 }))
 
 import prisma from "@/lib/db"
-import { publishPromoPost } from "./googleBusiness"
+import { buildConnectUrl, publishPromoPost } from "./googleBusiness"
 
 const db = prisma as unknown as {
   googleBusinessConnection: { findFirst: ReturnType<typeof vi.fn> }
@@ -101,5 +101,17 @@ describe("publishPromoPost com replace", () => {
     const calls = mockGoogle(200, 200)
     expect(await publishPromoPost("p1")).toEqual({ name: OLD, skipped: true })
     expect(calls.some((c) => c.url.startsWith("https://mybusiness.googleapis.com"))).toBe(false)
+  })
+})
+
+describe("link de conexão do Google", () => {
+  it("leva o state e a URL de retorno do painel", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://app.donatti.com/"
+    const url = new URL(buildConnectUrl("st.ate"))
+    expect(url.origin + url.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth")
+    expect(url.searchParams.get("state")).toBe("st.ate")
+    expect(url.searchParams.get("redirect_uri")).toBe("https://app.donatti.com/api/google-business/callback")
+    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/business.manage")
+    delete process.env.NEXT_PUBLIC_APP_URL
   })
 })

@@ -13,6 +13,7 @@ import { PromoFormModal } from "./PromoFormModal"
 import { DashboardHeader } from "./dashboard/DashboardHeader"
 import { PromoListPanel } from "./dashboard/PromoListPanel"
 import { MetaPanel } from "./dashboard/MetaPanel"
+import { GooglePanel } from "./dashboard/GooglePanel"
 import { useMeta } from "@/hooks/useMeta"
 import { StatsPanel } from "./dashboard/StatsPanel"
 import { DeleteConfirmModal } from "./dashboard/DeleteConfirmModal"
@@ -288,6 +289,7 @@ export default function NewPromosDashboard({ user }: NewPromosDashboardProps) {
           <>
             <BlackFridayPanel promos={promos} />
             <MetaPanel meta={meta} />
+            <GooglePanel gbp={gbp} isAdmin={user.role === "admin"} />
             <div className="max-w-7xl mx-auto mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-gray-200 bg-white p-4 shadow-sm">
               <div>
                 <p className="text-[15px] font-black text-gray-900">Artes em lote</p>
