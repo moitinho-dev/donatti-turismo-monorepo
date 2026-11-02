@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * DONATTI TURISMO - Página Black Friday (/black-friday)
+ * DONATTI TURISMO - Página Black November (/black-november), a Black Friday da Donatti.
  * Ligada, datas e desconto do título vêm do painel de promos (BlackFridayPanel).
+ * Identidade: manual da campanha (preto, amarelo #FED400, logo com avião no A e pin no O).
  */
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
@@ -19,9 +20,11 @@ import {
   type BlackFridayPhase,
   type BlackFridaySettings,
 } from '@/config/blackFriday'
+import { campaignFaqs, discountOf } from '@/lib/campaign'
 
 const WHATSAPP_NUMBER = '5567992167694'
 const FALLBACK_IMAGE = '/images/hero-beach.jpg'
+const HERO_IMAGE = '/images/home/porto-de-galinhas.jpg'
 
 const icon = {
   ui: (name: string) => `/icons/ui/${name}.png`,
@@ -51,42 +54,12 @@ const steps = [
   { icon: 'luggage', title: 'Parcele e viaje', description: 'Fechamos a reserva com você e acompanhamos até a volta.' },
 ]
 
-const faqs = [
-  {
-    q: 'O desconto é real?',
-    a: 'Sim. O preço "de" é o valor praticado antes da campanha e o "por" já tem o desconto aplicado. Não precisa de cupom.',
-  },
-  {
-    q: 'Preciso viajar durante a Black Friday?',
-    a: 'Não. Você compra durante a campanha e viaja na data da oferta escolhida, que pode ser meses depois.',
-  },
-  {
-    q: 'Por que as ofertas esgotam?',
-    a: 'As tarifas são por lote, com poucos lugares por data. Quando o lote acaba, o preço sobe ou a oferta sai do ar.',
-  },
-  {
-    q: 'Posso parcelar?',
-    a: 'Sim. Cada oferta mostra em quantas vezes pode ser parcelada no cartão. Também aceitamos Pix e boleto.',
-  },
-  {
-    q: 'Não moro em Campo Grande nem em São Paulo. Posso comprar?',
-    a: 'Pode. As saídas principais são CGR e GRU, mas cotamos outras cidades pelo WhatsApp.',
-  },
-]
-
 const formatInt = (value: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)
 const formatBRL = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(value)
 
 const getParcelas = (promo: PublicPromo) =>
   typeof promo.PARCELAS === 'number' ? promo.PARCELAS : Number.parseInt(String(promo.PARCELAS ?? '10'), 10) || 10
-
-/** Desconto em % entre o "de" e o "por" (0 sem preço "de") */
-export const discountOf = (promo: PublicPromo) => {
-  const now = getPriceNumber(promo.VALOR)
-  const before = promo.VALOR_ORIGINAL ? getPriceNumber(promo.VALOR_ORIGINAL) : 0
-  return before > now && now > 0 ? Math.round((1 - now / before) * 100) : 0
-}
 
 const monthKey = (promo: PublicPromo) => {
   const { start } = parsePromoDates(promo.DATA_FORMATADA)
@@ -197,7 +170,7 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
     setModalOpen(true)
     trackEvent(pkg ? 'cta_click' : 'whatsapp_click', {
       location,
-      campaign: 'black_friday',
+      campaign: 'black_november',
       package_slug: pkg?.SITE_SLUG || undefined,
       destination: pkg?.DESTINO,
     })
@@ -211,14 +184,14 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
     }
     setModalSending(true)
     setModalError(null)
-    const source = modalPkg ? 'black_friday_card' : 'black_friday_page'
+    const source = modalPkg ? 'black_november_card' : 'black_november_page'
     const payload = {
       name: modalData.name.trim(),
       phone: modalData.phone.trim(),
       source,
       destino: modalPkg?.DESTINO,
       hotel: modalPkg?.HOTEL,
-      promoDetails: modalPkg ? `Black Friday | ${modalPkg.DATA_FORMATADA} | ${modalPkg.VALOR}` : 'Black Friday',
+      promoDetails: modalPkg ? `Black November | ${modalPkg.DATA_FORMATADA} | ${modalPkg.VALOR}` : 'Black November',
     }
     try {
       await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -226,7 +199,7 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
         name: payload.name,
         phone: payload.phone,
         email: 'nao-informado@lead.local',
-        destination: payload.destino || 'black-friday',
+        destination: payload.destino || 'black-november',
         period: payload.promoDetails,
         source,
       })
@@ -234,8 +207,8 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
       console.error('Erro ao salvar lead:', error)
     }
     const message = modalPkg
-      ? `Olá! Sou ${payload.name}. Quero a oferta Black Friday para ${modalPkg.DESTINO} (${modalPkg.DATA_FORMATADA}) por ${modalPkg.VALOR}. Ainda tem lugar nesse lote?`
-      : `Olá! Sou ${payload.name}. Quero as ofertas da Black Friday Donatti.`
+      ? `Olá! Sou ${payload.name}. Quero a oferta da Black November para ${modalPkg.DESTINO} (${modalPkg.DATA_FORMATADA}) por ${formatBRL(getPriceNumber(modalPkg.VALOR))}. Ainda tem lugar nesse lote?`
+      : `Olá! Sou ${payload.name}. Quero as ofertas da Black November Donatti.`
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
     setModalSending(false)
     setModalOpen(false)
@@ -254,10 +227,10 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
       const res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: vip.name.trim(), phone: vip.phone.trim(), source: 'black_friday_vip', promoDetails: 'Lista VIP Black Friday' }),
+        body: JSON.stringify({ name: vip.name.trim(), phone: vip.phone.trim(), source: 'black_november_vip', promoDetails: 'Lista VIP Black November' }),
       })
       if (!res.ok) throw new Error('lead_error')
-      trackEvent('lead_form_submit', { source: 'black_friday_vip' })
+      trackEvent('lead_form_submit', { source: 'black_november_vip' })
       setVipStatus('success')
       setVip({ name: '', phone: '' })
     } catch {
@@ -269,8 +242,10 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
     settings.endsAt,
   )} nas ofertas desta página, enquanto durarem os lugares de cada lote. Preços por pessoa.`
 
+  const tapes = esquenta ? ['Esquenta Black November', 'Só na Donatti'] : ['Black November no ar', 'Ofertas o mês inteiro']
+
   return (
-    <div className="dt" style={{ minHeight: '100vh', background: 'var(--dt-bg)', color: 'var(--dt-ink)', fontFamily: 'var(--dt-font-sans)' }}>
+    <div className="dt bn">
       {preview && (
         <div className="bf-preview" role="status">
           Pré-visualização da equipe: a página está {phase === 'encerrada' ? 'encerrada' : 'desligada'} e os clientes não veem.
@@ -278,19 +253,19 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
         </div>
       )}
 
-      <header style={{ position: 'sticky', top: preview ? 40 : 0, zIndex: 20, background: '#ffffff', borderBottom: '1px solid var(--dt-border)' }}>
-        <div className="dt-wrap" style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+      <header className="bn-header" style={{ top: preview ? 40 : 0 }}>
+        <div className="dt-wrap bn-header__bar">
           <Link href="/" aria-label="Donatti Turismo, início" style={{ display: 'flex' }}>
-            <img src="/images/home/logo-donatti.png" alt="Donatti Turismo" style={{ height: 40, width: 'auto' }} width={140} height={40} />
+            <img src="/images/black-november/donatti-negativo-black.svg" alt="Donatti Turismo" width={132} height={38} style={{ height: 38, width: 'auto' }} />
           </Link>
-          <nav className="dt-nav" aria-label="Principal">
+          <nav className="dt-nav bn-nav" aria-label="Principal">
             {esquenta && <a href="#vip">Lista VIP</a>}
-            <a href="#ofertas">Ofertas Black</a>
+            <a href="#ofertas">Ofertas</a>
             <a href="#como-funciona">Como funciona</a>
             <a href="#duvidas">Dúvidas</a>
           </nav>
-          <button type="button" className="dt-btn dt-btn--whatsapp" onClick={() => openLead('header')}>
-            <img className="dt-ic" src={icon.ui('whatsapp')} alt="" />
+          <button type="button" className="dt-btn bn-btn" onClick={() => openLead('header')}>
+            <img className="dt-ic bn-ic--dark" src={icon.ui('whatsapp')} alt="" />
             <span className="dt-hide-sm">Falar com especialista</span>
             <span className="sr-only">Falar no WhatsApp</span>
           </button>
@@ -298,80 +273,70 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
       </header>
 
       <main id="main-content">
-        <section className="bf-hero" aria-labelledby="bf-title">
-          <img className="bf-hero__photo" src="/images/home/caribe.jpg" alt="" aria-hidden="true" />
-          <div className="bf-hero__fade" aria-hidden="true" />
-          <div className="dt-wrap">
-            <div className="bf-hero__grid">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 640 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <h1 id="bf-title" className="bf-logo" style={{ margin: 0 }} aria-label="Black Friday Donatti Turismo">
-                    <span className="bf-l1">Black</span>
-                    <span className="bf-l2">
-                      Fr<span className="bf-pct">%</span>day
-                    </span>
-                  </h1>
-                  <span className="dt-eyebrow" style={{ color: 'var(--dt-brand-yellow)' }}>
-                    {esquenta ? `Começa em ${formatCampaignShortDate(settings.startsAt)}` : `Só até ${formatCampaignShortDate(settings.endsAt)}`}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, flexWrap: 'wrap' }}>
-                  <span style={{ font: '800 18px/1 var(--dt-font-sans)', textTransform: 'uppercase', paddingBottom: 18 }}>até</span>
-                  <span className="bf-off">
-                    {settings.maxDiscount}
-                    <span className="bf-pct">%</span>
-                    <small>OFF</small>
-                  </span>
-                </div>
-                <p style={{ margin: 0, font: '700 20px/1.3 var(--dt-font-sans)' }}>
-                  Pacotes com aéreo + hotel
-                  <br />
-                  saindo de Campo Grande e São Paulo
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                  {esquenta ? (
-                    <a href="#vip" className="dt-btn dt-btn--lg bf-go" style={{ fontSize: 17 }}>
-                      Quero ser avisado
-                    </a>
-                  ) : (
-                    <a href="#ofertas" className="dt-btn dt-btn--lg bf-go" style={{ fontSize: 17 }}>
-                      Quero aproveitar
-                    </a>
-                  )}
-                </div>
-                <p style={{ margin: 0, font: '400 12px/1.5 var(--dt-font-sans)', color: 'rgba(255,255,255,0.75)' }}>{legal}</p>
-              </div>
-              {target && <Clock target={target} label={esquenta ? 'As ofertas abrem em' : 'A Black termina em'} />}
-            </div>
-          </div>
-        </section>
-
-        <div className="dt-wrap" style={{ marginTop: -56, position: 'relative', zIndex: 2 }}>
-          <div className="bf-trust">
-            {trust.map((t) => (
-              <div key={t.title}>
-                <img src={icon.big(t.icon)} alt="" />
-                <div>
-                  <p className="dt-trust__title">{t.title}</p>
-                  <p className="dt-trust__text">{t.text}</p>
-                </div>
+        <section className="bn-hero" aria-labelledby="bn-title">
+          <img className="bn-hero__photo" src={HERO_IMAGE} alt="Igrejinha de São Benedito na praia de Porto de Galinhas" fetchPriority="high" />
+          <div className="bn-hero__shade" aria-hidden="true" />
+          <div className="bn-tapes" aria-hidden="true">
+            {tapes.map((label, i) => (
+              <div key={label} className={`bn-tape bn-tape--${i + 1}`}>
+                <span>{Array.from({ length: 8 }, () => label).join('   •   ')}</span>
               </div>
             ))}
           </div>
+          <div className="dt-wrap bn-hero__grid">
+            <div className="bn-hero__copy">
+              <h1 id="bn-title" className="bn-logo">
+                <img src="/images/black-november/logo-black-november.svg" alt="" width={520} height={250} />
+                <span className="sr-only">Black November Donatti Turismo: Black Friday de viagens</span>
+              </h1>
+              <p className="bn-hero__date">
+                {esquenta ? `Começa em ${formatCampaignShortDate(settings.startsAt)}` : `Só até ${formatCampaignShortDate(settings.endsAt)}`}
+              </p>
+              <p className="bn-hero__off">
+                <span className="bn-hero__ate">até</span>
+                <b>{settings.maxDiscount}%</b>
+                <span className="bn-hero__offtag">OFF</span>
+              </p>
+              <p className="bn-hero__lead">Pacotes com aéreo + hotel saindo de Campo Grande e São Paulo, parcelados no cartão.</p>
+              <div className="bn-hero__ctas">
+                <a href={esquenta ? '#vip' : '#ofertas'} className="dt-btn dt-btn--lg bn-btn">
+                  {esquenta ? 'Quero ser avisado' : 'Ver as ofertas'}
+                </a>
+                <button type="button" className="dt-btn dt-btn--lg bn-btn--ghost" onClick={() => openLead('hero')}>
+                  <img className="dt-ic bn-ic--light" src={icon.ui('whatsapp')} alt="" />
+                  Falar no WhatsApp
+                </button>
+              </div>
+            </div>
+            {target && <Clock target={target} label={esquenta ? 'As ofertas abrem em' : 'A Black termina em'} />}
+          </div>
+          <p className="dt-wrap bn-hero__legal">{legal}</p>
+        </section>
+
+        <div className="dt-wrap bn-trust">
+          {trust.map((t) => (
+            <div key={t.title}>
+              <span className="bn-trust__ic">
+                <img src={icon.big(t.icon)} alt="" />
+              </span>
+              <div>
+                <p className="bn-trust__title">{t.title}</p>
+                <p className="bn-trust__text">{t.text}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {esquenta && (
-          <section id="vip" aria-labelledby="vip-title" style={{ padding: '72px 0 0', scrollMarginTop: 80 }}>
+          <section id="vip" aria-labelledby="vip-title" className="bn-section" style={{ paddingBottom: 0 }}>
             <div className="dt-wrap">
-              <div className="bf-vip">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <span className="dt-eyebrow" style={{ color: 'var(--dt-brand-yellow)' }}>
-                    Lista VIP
-                  </span>
-                  <h2 id="vip-title" className="dt-sec-title" style={{ color: '#ffffff' }}>
+              <div className="bn-vip">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <span className="bn-kicker bn-kicker--dark">Lista VIP</span>
+                  <h2 id="vip-title" className="bn-title bn-title--dark">
                     Receba as ofertas antes de abrir
                   </h2>
-                  <p style={{ margin: 0, font: '400 17px/1.6 var(--dt-font-sans)', color: 'rgba(255,255,255,0.85)' }}>
+                  <p style={{ margin: 0, font: '500 17px/1.55 var(--dt-font-sans)' }}>
                     Os primeiros lotes têm poucos lugares. Deixe seu WhatsApp e a gente avisa assim que a Black começar.
                   </p>
                 </div>
@@ -397,21 +362,21 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
                       onChange={(e) => setVip({ ...vip, phone: e.target.value })}
                     />
                   </div>
-                  <button type="submit" className="dt-btn dt-btn--lg bf-go--dark" style={{ gridColumn: '1 / -1' }} disabled={vipStatus === 'sending'}>
+                  <button type="submit" className="dt-btn dt-btn--lg bn-btn--black" style={{ gridColumn: '1 / -1' }} disabled={vipStatus === 'sending'}>
                     {vipStatus === 'sending' ? 'Enviando…' : 'Quero entrar na lista VIP'}
                   </button>
                   <div aria-live="polite" style={{ gridColumn: '1 / -1' }}>
                     {vipStatus === 'success' && (
                       <div className="dt-alert dt-alert--success" role="status">
                         <div>
-                          <b>Pronto!</b>Você vai receber as ofertas no WhatsApp quando a Black abrir.
+                          <b>Pronto!</b> Você vai receber as ofertas no WhatsApp quando a Black abrir.
                         </div>
                       </div>
                     )}
                     {vipStatus === 'error' && (
                       <div className="dt-alert dt-alert--danger" role="alert">
                         <div>
-                          <b>Confira os dados</b>Informe seu nome e um WhatsApp com DDD.
+                          <b>Confira os dados</b> Informe seu nome e um WhatsApp com DDD.
                         </div>
                       </div>
                     )}
@@ -422,25 +387,21 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
           </section>
         )}
 
-        <section id="ofertas" aria-labelledby="offers-title" style={{ padding: '72px 0 88px', scrollMarginTop: 80 }}>
+        <section id="ofertas" aria-labelledby="offers-title" className="bn-section">
           <div className="dt-wrap" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span className="dt-eyebrow" style={{ color: 'var(--dt-brand-navy)' }}>
-                {esquenta ? 'Prévia das ofertas' : 'Ofertas no ar agora'}
-              </span>
-              <h2 id="offers-title" className="dt-sec-title">
-                Pacotes com até <span className="bf-mark">{settings.maxDiscount}% OFF</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span className="bn-kicker">{esquenta ? 'Prévia das ofertas' : 'Ofertas no ar agora'}</span>
+              <h2 id="offers-title" className="bn-title">
+                Pacotes com até <span className="bn-mark">{settings.maxDiscount}% OFF</span>
               </h2>
-              <span style={{ font: '500 15px/1.5 var(--dt-font-sans)', color: 'var(--dt-ink-secondary)' }}>
-                O desconto já está no preço. Quando o lote acaba, a oferta esgota.
-              </span>
+              <p className="bn-sub">O desconto já está no preço. Quando o lote acaba, a oferta esgota.</p>
             </div>
 
             {months.length > 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <span style={{ font: '700 13px/1 var(--dt-font-sans)', color: 'var(--dt-ink-secondary)' }}>Quando você quer viajar?</span>
+                <span className="bn-filter-label">Quando você quer viajar?</span>
                 <div className="bf-months" role="group" aria-label="Mês da viagem">
-                  <button type="button" className="bf-month" aria-pressed={month === 'all'} onClick={() => setMonth('all')}>
+                  <button type="button" className="bn-month" aria-pressed={month === 'all'} onClick={() => setMonth('all')}>
                     <b>Qualquer mês</b>
                     <span>
                       {promos.length} oferta{promos.length === 1 ? '' : 's'}
@@ -450,11 +411,11 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
                     <button
                       key={m.key}
                       type="button"
-                      className="bf-month"
+                      className="bn-month"
                       aria-pressed={month === m.key}
                       onClick={() => {
                         setMonth(m.key)
-                        trackEvent('catalog_filter', { campaign: 'black_friday', month: m.key })
+                        trackEvent('catalog_filter', { campaign: 'black_november', month: m.key })
                       }}
                     >
                       <b>{m.label}</b>
@@ -468,10 +429,10 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
             )}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-              <span style={{ font: '700 13px/1 var(--dt-font-sans)', color: 'var(--dt-ink-secondary)' }}>Quanto quer gastar por pessoa?</span>
+              <span className="bn-filter-label">Quanto quer gastar por pessoa?</span>
               <div className="bf-bands" role="group" aria-label="Faixa de preço">
                 {priceBands.map((b) => (
-                  <button key={b.value} type="button" className="bf-band" aria-pressed={band === b.value} onClick={() => setBand(b.value)}>
+                  <button key={b.value} type="button" className="bn-band" aria-pressed={band === b.value} onClick={() => setBand(b.value)}>
                     {b.label}
                   </button>
                 ))}
@@ -480,11 +441,11 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
 
             {sections.length > 1 && (
               <div className="bf-bands" role="group" aria-label="Tipo de viagem">
-                <button type="button" className="bf-band" aria-pressed={section === 'all'} onClick={() => setSection('all')}>
+                <button type="button" className="bn-band" aria-pressed={section === 'all'} onClick={() => setSection('all')}>
                   Todos os destinos
                 </button>
                 {sections.map((s) => (
-                  <button key={s} type="button" className="bf-band" aria-pressed={section === s} onClick={() => setSection(s)}>
+                  <button key={s} type="button" className="bn-band" aria-pressed={section === s} onClick={() => setSection(s)}>
                     {getSectionLabel(s).replace(/^Pacotes /, '')}
                   </button>
                 ))}
@@ -492,169 +453,68 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
             )}
 
             {offers.length === 0 ? (
-              <div className="dt-card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20 }}>
+              <div className="bn-empty">
                 <img src={icon.big('passport-and-tickets')} alt="" style={{ width: 56, height: 56 }} />
                 <div style={{ flex: 1, minWidth: 220 }}>
-                  <h3 className="dt-card__title">
-                    {promos.length === 0 ? 'As ofertas da Black estão chegando' : 'Nenhuma oferta com esses filtros'}
-                  </h3>
-                  <p className="dt-card__text">Conte o destino e as datas. A especialista procura a melhor tarifa da Black para você.</p>
+                  <h3>{promos.length === 0 ? 'As ofertas da Black estão chegando' : 'Nenhuma oferta com esses filtros'}</h3>
+                  <p>Conte o destino e as datas. A especialista procura a melhor tarifa da Black para você.</p>
                 </div>
-                <button type="button" className="dt-btn dt-btn--whatsapp" onClick={() => openLead('no_results')}>
-                  <img className="dt-ic" src={icon.ui('whatsapp')} alt="" />
+                <button type="button" className="dt-btn bn-btn" onClick={() => openLead('no_results')}>
+                  <img className="dt-ic bn-ic--dark" src={icon.ui('whatsapp')} alt="" />
                   Cotar no WhatsApp
                 </button>
               </div>
             ) : (
               <div className="dt-grid-offers">
-                {offers.map((pkg) => {
-                  const total = getPriceNumber(pkg.VALOR)
-                  const before = pkg.VALOR_ORIGINAL ? getPriceNumber(pkg.VALOR_ORIGINAL) : 0
-                  const off = discountOf(pkg)
-                  const parcelas = getParcelas(pkg)
-                  const installment = parcelas > 0 ? total / parcelas : total
-                  const nights = Number.parseInt(pkg.NUMERO_DE_NOITES || '0', 10)
-                  const regime = getRegimeLabel(pkg)
-                  return (
-                    <article key={pkg.id} className="dt-offer">
-                      <Link href={pkg.SITE_SLUG ? `/pacotes/${pkg.SITE_SLUG}` : '#ofertas'} className="dt-offer__media">
-                        <img
-                          src={pkg.SITE_IMAGE || FALLBACK_IMAGE}
-                          alt={`Foto de ${pkg.DESTINO}`}
-                          loading="lazy"
-                          onError={(e) => {
-                            if (!e.currentTarget.src.endsWith(FALLBACK_IMAGE)) e.currentTarget.src = FALLBACK_IMAGE
-                          }}
-                        />
-                        <div className="dt-offer__tags">{off > 0 ? <span className="bf-tag">-{off}%</span> : <span className="bf-tag">Black Friday</span>}</div>
-                        {nights > 0 && (
-                          <span
-                            style={{
-                              position: 'absolute',
-                              right: 12,
-                              bottom: 12,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              height: 26,
-                              padding: '0 10px',
-                              borderRadius: 6,
-                              background: 'rgba(0,0,0,0.6)',
-                              color: '#ffffff',
-                              font: '600 12px/1 var(--dt-font-sans)',
-                            }}
-                          >
-                            {nights} noites
-                          </span>
-                        )}
-                      </Link>
-                      <div className="dt-offer__body">
-                        <span className="dt-offer__where">
-                          {pkg.DATA_FORMATADA} · saída {getDepartureCities(pkg).join(' e ')}
-                        </span>
-                        <h3 className="dt-offer__dest">{pkg.DESTINO}</h3>
-                        <div className="dt-offer__meta">
-                          {pkg.HOTEL && (
-                            <span>
-                              <img className="dt-ic-sm" src={icon.ui('bed')} alt="" />
-                              {pkg.HOTEL}
-                            </span>
-                          )}
-                          {regime && (
-                            <span>
-                              <img className="dt-ic-sm" src={icon.ui('coffee')} alt="" />
-                              {regime}
-                            </span>
-                          )}
-                          {pkg.AEREO && (
-                            <span>
-                              <img className="dt-ic-sm" src={icon.ui('airplane-take-off')} alt="" />
-                              Aéreo incluso
-                            </span>
-                          )}
-                        </div>
-                        {before > total && (
-                          <div>
-                            <span className="bf-save">Economia de R$ {formatInt(before - total)} por pessoa</span>
-                          </div>
-                        )}
-                        <div className="dt-offer__foot" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
-                          <div className="dt-price">
-                            {before > total ? (
-                              <span className="dt-price__from">
-                                De <span className="dt-price__old">R$ {formatInt(before)}</span> por pessoa
-                              </span>
-                            ) : (
-                              <span className="dt-price__from">Por pessoa</span>
-                            )}
-                            <span className="dt-price__value" style={{ fontSize: 28 }}>
-                              {parcelas}x {formatBRL(installment)}
-                            </span>
-                            <span className="dt-price__inst">ou R$ {formatInt(total)} à vista</span>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                            <button type="button" className="dt-btn dt-btn--sm bf-go--dark" onClick={() => openLead('package_card', pkg)}>
-                              {esquenta ? 'Garantir antes' : 'Garantir oferta'}
-                            </button>
-                            <button
-                              type="button"
-                              className="dt-btn dt-btn--outline dt-btn--sm"
-                              style={{ borderColor: '#000000' }}
-                              onClick={() => openLead('package_card_whatsapp', pkg)}
-                            >
-                              <img className="dt-ic-sm" src={icon.ui('whatsapp')} alt="" />
-                              WhatsApp
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
+                {offers.map((pkg) => (
+                  <OfferCard key={pkg.id} pkg={pkg} esquenta={esquenta} onLead={openLead} />
+                ))}
               </div>
             )}
           </div>
         </section>
 
-        <section id="como-funciona" aria-labelledby="steps-title" style={{ padding: '88px 0', background: 'var(--dt-surface-muted)', scrollMarginTop: 80 }}>
+        <section id="como-funciona" aria-labelledby="steps-title" className="bn-section bn-section--alt">
           <div className="dt-wrap" style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span className="dt-eyebrow">Como garantir sua oferta</span>
-              <h2 id="steps-title" className="dt-sec-title">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span className="bn-kicker">Como garantir sua oferta</span>
+              <h2 id="steps-title" className="bn-title">
                 Três passos antes do lote acabar
               </h2>
             </div>
             <ol className="dt-grid-3" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {steps.map((step, i) => (
-                <li key={step.title} className="dt-step" style={{ borderTopColor: '#000000' }}>
+                <li key={step.title} className="bn-step">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <img src={icon.big(step.icon)} alt="" style={{ width: 64, height: 64 }} />
-                    <span className="dt-step-n" aria-hidden="true">
+                    <span className="bn-trust__ic" style={{ width: 64, height: 64 }}>
+                      <img src={icon.big(step.icon)} alt="" style={{ width: 44, height: 44 }} />
+                    </span>
+                    <span className="bn-step__n" aria-hidden="true">
                       {pad(i + 1)}
                     </span>
                   </div>
-                  <h3 className="dt-card__title" style={{ fontSize: 20 }}>
-                    {step.title}
-                  </h3>
-                  <p className="dt-card__text" style={{ fontSize: 15 }}>
-                    {step.description}
-                  </p>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
                 </li>
               ))}
             </ol>
           </div>
         </section>
 
-        <section id="duvidas" aria-labelledby="faq-title" style={{ padding: '96px 0', scrollMarginTop: 80 }}>
+        <section id="duvidas" aria-labelledby="faq-title" className="bn-section">
           <div className="dt-wrap" style={{ maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 32 }}>
-            <h2 id="faq-title" className="dt-sec-title">
-              Dúvidas sobre a Black Friday
-            </h2>
-            <div className="dt-accordion">
-              {faqs.map((f, i) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span className="bn-kicker">Dúvidas</span>
+              <h2 id="faq-title" className="bn-title">
+                Perguntas sobre a Black November
+              </h2>
+            </div>
+            <div className="bn-accordion">
+              {campaignFaqs.map((f, i) => (
                 <details key={f.q} open={i === 0}>
                   <summary>
                     {f.q}
-                    <img className="dt-ic" src={icon.ui('expand-arrow')} alt="" />
+                    <img className="dt-ic bn-ic--light" src={icon.ui('expand-arrow')} alt="" />
                   </summary>
                   <p>{f.a}</p>
                 </details>
@@ -662,37 +522,36 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
             </div>
           </div>
         </section>
+
+        <section className="bn-cta" aria-label="Falar com a Donatti">
+          <div className="dt-wrap bn-cta__bar">
+            <p>Garanta o seu no WhatsApp</p>
+            <button type="button" className="dt-btn dt-btn--lg bn-btn--black" onClick={() => openLead('footer_band')}>
+              <img className="dt-ic bn-ic--light" src={icon.ui('whatsapp')} alt="" />
+              (67) 99216-7694
+            </button>
+          </div>
+        </section>
       </main>
 
-      <footer role="contentinfo" style={{ background: '#000000', color: 'rgba(255,255,255,0.8)', padding: '48px 0 32px' }}>
+      <footer role="contentinfo" className="bn-footer">
         <div className="dt-wrap" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
-            <img src="/images/home/selo-donatti.png" alt="Donatti Turismo" style={{ width: 72, height: 72 }} width={72} height={72} />
+            <img src="/images/black-november/donatti-negativo-black.svg" alt="Donatti Turismo" width={160} height={46} style={{ height: 46, width: 'auto' }} />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, font: '500 14px/1.4 var(--dt-font-sans)' }}>
-              <Link href="/" style={{ color: 'inherit' }}>
-                Site Donatti
-              </Link>
-              <Link href="/pacotes" style={{ color: 'inherit' }}>
-                Todos os pacotes
-              </Link>
-              <a href="tel:+5567992167694" style={{ color: 'inherit' }}>
-                WhatsApp (67) 99216-7694
-              </a>
+              <Link href="/">Site Donatti</Link>
+              <Link href="/pacotes">Todos os pacotes</Link>
+              <Link href="/destinos">Destinos</Link>
+              <a href="tel:+5567992167694">WhatsApp (67) 99216-7694</a>
             </div>
           </div>
-          <p style={{ margin: 0, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.15)', font: '400 12px/1.5 var(--dt-font-sans)', color: 'rgba(255,255,255,0.65)' }}>
-            {legal} Donatti Turismo · CNPJ 41.887.394/0001-29 · Avenida Tamandaré, 8 · Campo Grande/MS.
+          <p className="bn-footer__legal">
+            {legal} Donatti Turismo · CNPJ 41.887.394/0001-29 · Avenida Tamandaré, 8 · Vila Planalto · Campo Grande/MS.
           </p>
         </div>
       </footer>
 
-      <button
-        type="button"
-        onClick={() => openLead('floating_button')}
-        aria-label="Falar no WhatsApp"
-        className="dt-btn dt-btn--whatsapp"
-        style={{ position: 'fixed', right: 20, bottom: 20, zIndex: 50, width: 60, height: 60, padding: 0, borderRadius: 9999, boxShadow: 'var(--dt-shadow-xl)' }}
-      >
+      <button type="button" onClick={() => openLead('floating_button')} aria-label="Falar no WhatsApp" className="dt-btn bn-fab">
         <img src={icon.ui('whatsapp')} alt="" style={{ width: 28, height: 28 }} />
       </button>
 
@@ -724,8 +583,8 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
                 </h2>
                 <p className="dt-dialog__text">
                   {modalPkg
-                    ? `Deixe nome e WhatsApp. A especialista já recebe que você quer ${modalPkg.DESTINO} na Black.`
-                    : 'Deixe nome e WhatsApp. Uma especialista te chama com as ofertas da Black.'}
+                    ? `Deixe nome e WhatsApp. A especialista já recebe que você quer ${modalPkg.DESTINO} na Black November.`
+                    : 'Deixe nome e WhatsApp. Uma especialista te chama com as ofertas da Black November.'}
                 </p>
                 <form className="dt-stack" style={{ gap: 12 }} onSubmit={handleModalSubmit}>
                   <div className="dt-field">
@@ -773,5 +632,88 @@ export default function BlackFridayLanding({ settings, promos, preview = false }
           document.body,
         )}
     </div>
+  )
+}
+
+/** Preço de varejo: parcela grande com os centavos em cima, como nas peças da campanha */
+function RetailPrice({ parcelas, installment, total, before }: { parcelas: number; installment: number; total: number; before: number }) {
+  const [int, cents] = formatBRL(installment).replace(/^R\$\s?/, '').split(',')
+  return (
+    <div className="bn-price">
+      <span className="bn-price__from">{before > total ? <>De <s>R$ {formatInt(before)}</s> por</> : 'A partir de'}</span>
+      <div className="bn-price__row" aria-label={`${parcelas} vezes de ${formatBRL(installment)}`}>
+        <span className="bn-price__side">
+          <b>{parcelas}x</b>
+          <span>R$</span>
+        </span>
+        <span className="bn-price__int">{int}</span>
+        <span className="bn-price__cents">,{cents}</span>
+      </div>
+      <span className="bn-price__total">Por pessoa · ou R$ {formatInt(total)} à vista</span>
+    </div>
+  )
+}
+
+function OfferCard({ pkg, esquenta, onLead }: { pkg: PublicPromo; esquenta: boolean; onLead: (location: string, pkg?: PublicPromo | null) => void }) {
+  const total = getPriceNumber(pkg.VALOR)
+  const before = pkg.VALOR_ORIGINAL ? getPriceNumber(pkg.VALOR_ORIGINAL) : 0
+  const off = discountOf(pkg)
+  const parcelas = getParcelas(pkg)
+  const installment = parcelas > 0 ? total / parcelas : total
+  const nights = Number.parseInt(pkg.NUMERO_DE_NOITES || '0', 10)
+  const regime = getRegimeLabel(pkg)
+  return (
+    <article className="bn-offer">
+      <Link href={pkg.SITE_SLUG ? `/pacotes/${pkg.SITE_SLUG}` : '#ofertas'} className="bn-offer__media">
+        <img
+          src={pkg.SITE_IMAGE || FALLBACK_IMAGE}
+          alt={`Foto de ${pkg.DESTINO}`}
+          loading="lazy"
+          onError={(e) => {
+            if (!e.currentTarget.src.endsWith(FALLBACK_IMAGE)) e.currentTarget.src = FALLBACK_IMAGE
+          }}
+        />
+        <span className="bn-offer__tag">{off > 0 ? `-${off}%` : 'Black November'}</span>
+        {nights > 0 && <span className="bn-offer__nights">{nights} noites</span>}
+      </Link>
+      <div className="bn-offer__body">
+        <span className="bn-offer__pill">{pkg.DESTINO}</span>
+        <h3 className="bn-offer__hotel">{pkg.HOTEL || pkg.DESTINO}</h3>
+        <span className="bn-offer__when">
+          {pkg.DATA_FORMATADA} · saída {getDepartureCities(pkg).join(' e ')}
+        </span>
+        <ul className="bn-offer__inc">
+          {pkg.AEREO && (
+            <li>
+              <img className="bn-ic--light" src={icon.ui('airplane-take-off')} alt="" />
+              Aéreo
+            </li>
+          )}
+          {regime && (
+            <li>
+              <img className="bn-ic--light" src={icon.ui('coffee')} alt="" />
+              {regime}
+            </li>
+          )}
+          {pkg.HOTEL && (
+            <li>
+              <img className="bn-ic--light" src={icon.ui('bed')} alt="" />
+              Hotel
+            </li>
+          )}
+        </ul>
+        {before > total && <span className="bn-save">Economia de R$ {formatInt(before - total)} por pessoa</span>}
+        <RetailPrice parcelas={parcelas} installment={installment} total={total} before={before} />
+        <div className="bn-offer__ctas">
+          <button type="button" className="dt-btn dt-btn--sm bn-btn" onClick={() => onLead('package_card', pkg)}>
+            {esquenta ? 'Garantir antes' : 'Garantir oferta'}
+          </button>
+          <button type="button" className="dt-btn dt-btn--sm bn-btn--ghost" onClick={() => onLead('package_card_whatsapp', pkg)}>
+            <img className="dt-ic-sm bn-ic--light" src={icon.ui('whatsapp')} alt="" />
+            WhatsApp
+          </button>
+        </div>
+      </div>
+    </article>
   )
 }

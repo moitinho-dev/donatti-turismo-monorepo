@@ -695,7 +695,7 @@ export function PromoFormModal({ promo, isOpen, onClose, onSuccess, autofill }: 
                   checked={form.blackFriday}
                   onChange={(v) => update("blackFriday", v)}
                   icon={<Zap size={18} />}
-                  title="Oferta Black Friday"
+                  title="Oferta Black November"
                   sub="Marca a promo como parte da campanha"
                 />
                 {field(

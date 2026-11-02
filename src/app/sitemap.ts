@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next"
 import { getActivePromos, getDestinations } from "@/lib/publicPromos"
 import { SITE_URL, absoluteUrl, promoImageUrl } from "@/lib/site"
 import { computeSlug } from "@/lib/utils"
-import { getBlackFridayPhase, isBlackFridayActive } from "@/config/blackFriday"
+import { CAMPAIGN_PATH, getBlackFridayPhase, isBlackFridayActive } from "@/config/blackFriday"
 import { getBlackFridaySettings } from "@/lib/blackFridaySettings"
 
 export const revalidate = 3600
@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
   // Página da Black só entra no sitemap enquanto está no ar
   if (isBlackFridayActive(getBlackFridayPhase(await getBlackFridaySettings()))) {
-    staticRoutes.push({ url: `${SITE_URL}/black-friday`, lastModified: now, changeFrequency: "daily", priority: 0.9 })
+    staticRoutes.push({ url: `${SITE_URL}${CAMPAIGN_PATH}`, lastModified: now, changeFrequency: "daily", priority: 0.9 })
   }
 
   try {

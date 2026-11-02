@@ -15,9 +15,9 @@ const DEFAULT_DESCRIPTION =
 
 export async function generateMetadata(): Promise<Metadata> {
   const bf = isBlackFridayActive(getBlackFridayPhase(await getBlackFridaySettings()))
-  const title = bf ? 'Black Friday Donatti Turismo: pacotes de viagem em oferta' : DEFAULT_TITLE
+  const title = bf ? 'Black November Donatti Turismo: a Black Friday de viagens o mês inteiro' : DEFAULT_TITLE
   const description = bf
-    ? 'Black Friday de pacotes com aéreo e hotel saindo de Campo Grande e São Paulo. Parcelado no cartão, com atendimento no WhatsApp. Tarifas por lote.'
+    ? 'Black November: Black Friday de pacotes com aéreo e hotel saindo de Campo Grande e São Paulo, o mês de novembro inteiro. Parcelado no cartão, com atendimento no WhatsApp.'
     : DEFAULT_DESCRIPTION
 
   return {

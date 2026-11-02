@@ -212,7 +212,7 @@ export default function RealTimePromos({
   const buildWhatsAppUrl = (pkg: PublicPromo, name?: string) => {
     const departures = getDepartureCities(pkg).join(", ")
     const intro = name ? `Olá! Sou ${name}.` : "Olá!"
-    const campaign = blackFriday ? " da Black Friday" : ""
+    const campaign = blackFriday ? " da Black November" : ""
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
       `${intro} Quero a oferta${campaign} para ${pkg.DESTINO} (${pkg.DATA_FORMATADA}), saindo de ${departures}. Ainda tem disponibilidade?`,
     )}`
@@ -317,7 +317,7 @@ export default function RealTimePromos({
       <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
         <p className="mb-4 text-lg text-gray-700">
           {blackFriday
-            ? "As ofertas da Black Friday estão sendo carregadas pela nossa equipe. Chame no WhatsApp e receba em primeira mão."
+            ? "As ofertas da Black November estão sendo carregadas pela nossa equipe. Chame no WhatsApp e receba em primeira mão."
             : "Estamos atualizando as ofertas. Chame no WhatsApp e montamos um pacote para você."}
         </p>
         {onNoResults && (
@@ -466,7 +466,7 @@ export default function RealTimePromos({
                       {blackFriday ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-[#FED400] shadow-md">
                           <Zap className="h-3.5 w-3.5 fill-[#FED400]" aria-hidden="true" />
-                          Black Friday
+                          Black November
                         </span>
                       ) : (
                         <span className="rounded-full bg-[#FFA000] px-3 py-1 text-xs font-semibold text-white shadow-md">Oferta</span>

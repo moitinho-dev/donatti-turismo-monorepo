@@ -23,6 +23,7 @@ import { Countdown } from '@/components/blackfriday/Countdown'
 import {
   formatCampaignDate,
   getCountdownTarget,
+  CAMPAIGN_PATH,
   isBlackFridayActive,
   type BlackFridayPhase,
   type BlackFridaySettings,
@@ -317,14 +318,14 @@ export default function HomeLanding({ phase, campaign, initialPromos, destinatio
       </a>
 
       {bf && countdownTarget && (
-        <div className="dt-urgency" role="region" aria-label="Campanha Black Friday">
+        <div className="dt-urgency" role="region" aria-label="Campanha Black November">
           <span>
             {phase === 'esquenta'
-              ? 'Esquenta Black Friday Donatti: as ofertas abrem em'
-              : `Black Friday Donatti: até ${campaign.maxDiscount}% OFF em pacotes até ${endsAtLabel} · termina em`}
+              ? 'Esquenta Black November Donatti: as ofertas abrem em'
+              : `Black November Donatti: até ${campaign.maxDiscount}% OFF em pacotes até ${endsAtLabel} · termina em`}
           </span>
           <Countdown target={countdownTarget} tone="light" size="sm" />
-          <a href="/black-friday" style={{ color: 'inherit' }}>
+          <a href={CAMPAIGN_PATH} style={{ color: 'inherit' }}>
             {phase === 'esquenta' ? 'Ver a página da Black' : 'Ver ofertas Black'}
           </a>
         </div>

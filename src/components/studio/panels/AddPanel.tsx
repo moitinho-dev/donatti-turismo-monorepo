@@ -79,7 +79,7 @@ export function AddPanel({ doc, onAdd }: AddPanelProps) {
       },
     },
     {
-      label: "Black Friday",
+      label: "Black November",
       preview: <span className="bg-black px-1 text-[10px] font-black text-yellow-300">BLACK FRIDAY</span>,
       make: () => [text({ text: "BLACK FRIDAY", y: H * 0.08, fontSize: 130 * s, fontFamily: "Anton", fontWeight: "400", fill: BRAND.yellow, letterSpacing: 4 })],
     },
