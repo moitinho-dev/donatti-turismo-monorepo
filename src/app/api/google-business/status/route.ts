@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/options"
-import { getBusinessConnection } from "@/lib/googleBusiness"
+import { getBusinessConnection, isGoogleConfigured } from "@/lib/googleBusiness"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -13,9 +13,13 @@ export async function GET() {
 
   const conn = await getBusinessConnection()
   const connected = Boolean(conn?.refreshToken)
+  const ready = connected && Boolean(conn?.accountName && conn?.locationName)
   return NextResponse.json({
+    configured: isGoogleConfigured(),
     connected,
-    ready: connected && Boolean(conn?.accountName && conn?.locationName),
+    ready,
+    canManage: session.user.role === "admin",
+    locationTitle: ready ? conn?.locationTitle || null : null,
     // Simulação: o Publicar não chama o Google, então dá para "postar" sem conexão
     simulate: process.env.PUBLISH_SIMULATE === "on",
   })

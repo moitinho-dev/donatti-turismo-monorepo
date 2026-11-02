@@ -24,28 +24,44 @@ const getBaseUrl = () => {
   return normalized.replace(/\/$/, "")
 }
 
-export const buildConnectUrl = () => {
+/** URL de retorno do login do Google (precisa estar cadastrada no cliente OAuth do Google Cloud) */
+export const googleRedirectUri = () => `${getBaseUrl()}/api/google-business/callback`
+
+export const isGoogleConfigured = () => !!(process.env.GOOGLE_ID_CLIENT && process.env.GOOGLE_ID_CLIENT_SECRET)
+
+/** Cookie com o nonce do state (mesmo esquema da Meta: state assinado + cookie deste navegador, 15 min, uso único) */
+export const GOOGLE_NONCE_COOKIE = "google_oauth_nonce"
+
+export const buildConnectUrl = (state: string) => {
   const clientId = process.env.GOOGLE_ID_CLIENT
   if (!clientId) throw new Error("Missing GOOGLE_ID_CLIENT")
 
-  const redirectUri = `${getBaseUrl()}/api/google-business/callback`
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth")
   url.searchParams.set("client_id", clientId)
-  url.searchParams.set("redirect_uri", redirectUri)
+  url.searchParams.set("redirect_uri", googleRedirectUri())
   url.searchParams.set("response_type", "code")
   url.searchParams.set("access_type", "offline")
   url.searchParams.set("prompt", "consent")
   url.searchParams.set("include_granted_scopes", "true")
   url.searchParams.set("scope", BUSINESS_MANAGE_SCOPE)
+  url.searchParams.set("state", state)
   return url.toString()
 }
 
+/** Formatos aceitos para a conta e o local (o post usa o último trecho de cada um) */
+export const ACCOUNT_NAME_RE = /^accounts\/[^/]+$/
+export const LOCATION_NAME_RE = /^(accounts\/[^/]+\/)?locations\/[^/]+$/
+
+/**
+ * Salva o acesso de uma nova conexão. Limpa a conta e o local escolhidos: a reconexão pode ser
+ * com outra conta do Google, e o local antigo deixaria de valer (o admin escolhe de novo, ou o retorno escolhe sozinho).
+ */
 export const upsertRefreshToken = async (refreshToken: string) => {
   const existing = await prisma.googleBusinessConnection.findFirst()
   if (existing) {
     return prisma.googleBusinessConnection.update({
       where: { id: existing.id },
-      data: { refreshToken },
+      data: { refreshToken, accountName: null, locationName: null, locationTitle: null },
     })
   }
   return prisma.googleBusinessConnection.create({
@@ -53,12 +69,12 @@ export const upsertRefreshToken = async (refreshToken: string) => {
   })
 }
 
-export const saveBusinessTarget = async (accountName: string, locationName: string) => {
+export const saveBusinessTarget = async (accountName: string, locationName: string, locationTitle?: string | null) => {
   const existing = await prisma.googleBusinessConnection.findFirst()
   if (!existing) throw new Error("Google Business not connected")
   return prisma.googleBusinessConnection.update({
     where: { id: existing.id },
-    data: { accountName, locationName },
+    data: { accountName, locationName, locationTitle: locationTitle || null },
   })
 }
 
@@ -71,12 +87,11 @@ export const exchangeCodeForTokens = async (code: string) => {
     throw new Error("Missing GOOGLE_ID_CLIENT/GOOGLE_ID_CLIENT_SECRET")
   }
 
-  const redirectUri = `${getBaseUrl()}/api/google-business/callback`
   const body = new URLSearchParams()
   body.set("code", code)
   body.set("client_id", clientId)
   body.set("client_secret", clientSecret)
-  body.set("redirect_uri", redirectUri)
+  body.set("redirect_uri", googleRedirectUri())
   body.set("grant_type", "authorization_code")
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -141,25 +156,56 @@ const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   return (await res.json()) as T
 }
 
+/** Limite de páginas por listagem (evita laço infinito se o Google repetir o nextPageToken) */
+const MAX_PAGES = 10
+
+/** Segue o nextPageToken e junta os itens de todas as páginas */
+const fetchAllPages = async <T>(baseUrl: string, key: string, token: string, params: Record<string, string> = {}): Promise<T[]> => {
+  const items: T[] = []
+  let pageToken: string | undefined
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const url = new URL(baseUrl)
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
+    if (pageToken) url.searchParams.set("pageToken", pageToken)
+    const data = await fetchJson<Record<string, unknown> & { nextPageToken?: string }>(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    items.push(...((data[key] as T[] | undefined) || []))
+    pageToken = data.nextPageToken
+    if (!pageToken) break
+  }
+  return items
+}
+
 export const listAccounts = async () => {
   const { token } = await getAccessToken()
-  const data = await fetchJson<{ accounts?: GoogleAccount[] }>(
-    "https://mybusinessaccountmanagement.googleapis.com/v1/accounts",
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  )
-  return data.accounts || []
+  return fetchAllPages<GoogleAccount>("https://mybusinessaccountmanagement.googleapis.com/v1/accounts", "accounts", token, { pageSize: "20" })
 }
 
 export const listLocations = async (accountName: string) => {
   const { token } = await getAccessToken()
-  const url = new URL(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations`)
-  url.searchParams.set("readMask", "name,title")
-  const data = await fetchJson<{ locations?: GoogleLocation[] }>(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  return data.locations || []
+  return fetchAllPages<GoogleLocation>(
+    `https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations`,
+    "locations",
+    token,
+    { readMask: "name,title", pageSize: "100" },
+  )
+}
+
+/**
+ * Sem local escolhido, com uma conta só e um local só (contando todas as páginas): já deixa pronto para postar.
+ * Devolve o nome do local escolhido, ou null se o admin precisa escolher.
+ */
+export const autoPickTarget = async (): Promise<string | null> => {
+  const conn = await prisma.googleBusinessConnection.findFirst()
+  if (!conn || (conn.accountName && conn.locationName)) return null
+  const accounts = await listAccounts()
+  if (accounts.length !== 1) return null
+  const locations = await listLocations(accounts[0].name)
+  if (locations.length !== 1) return null
+  const title = locations[0].title || locations[0].name
+  await saveBusinessTarget(accounts[0].name, locations[0].name, title)
+  return title
 }
 
 const extractIdsForV4 = (accountName: string, locationName: string) => {

@@ -11,6 +11,10 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   if (session.user.role !== "admin") return NextResponse.json({ error: "Apenas admin" }, { status: 403 })
 
-  const accounts = await listAccounts()
-  return NextResponse.json(accounts)
+  try {
+    return NextResponse.json(await listAccounts())
+  } catch (error) {
+    console.error("Google: erro ao listar contas", error)
+    return NextResponse.json({ error: "Não foi possível carregar as contas do Google. Tente reconectar." }, { status: 502 })
+  }
 }

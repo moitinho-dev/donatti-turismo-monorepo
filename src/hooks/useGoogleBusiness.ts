@@ -11,6 +11,12 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
   const [gbpConnected, setGbpConnected] = useState(false)
   /** Conectado e com conta/local escolhidos: dá para postar */
   const [gbpReady, setGbpReady] = useState(false)
+  /** Já leu a situação da conexão (o painel só aparece depois) */
+  const [gbpLoaded, setGbpLoaded] = useState(false)
+  /** O login do Google está configurado no servidor */
+  const [gbpConfigured, setGbpConfigured] = useState(true)
+  /** Nome do local onde as ofertas são postadas */
+  const [gbpLocationTitle, setGbpLocationTitle] = useState<string | null>(null)
   const [gbpAccountName, setGbpAccountName] = useState("")
   const [gbpLocationName, setGbpLocationName] = useState("")
   const [gbpAccounts, setGbpAccounts] = useState<Array<{ name: string; accountName?: string }>>([])
@@ -20,6 +26,7 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
   const [gbpBusy, setGbpBusy] = useState(false)
 
   const refreshGbp = useCallback(async () => {
+    let statusOk = false
     try {
       // Situação da conexão: qualquer pessoa da equipe publica no Google
       const res = await fetch("/api/google-business/status")
@@ -27,6 +34,9 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
         const data = await res.json()
         setGbpConnected(Boolean(data?.connected))
         setGbpReady(Boolean(data?.ready))
+        setGbpConfigured(data?.configured !== false)
+        setGbpLocationTitle(data?.locationTitle || null)
+        statusOk = true
       }
       // Conta e local escolhidos: só admin troca
       if (userRole !== "admin") return
@@ -37,6 +47,9 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
       setGbpLocationName(data?.locationName || "")
     } catch {
       // ignore
+    } finally {
+      // O painel aparece depois de ler tudo (a escolha de conta parte do que já está salvo)
+      if (statusOk) setGbpLoaded(true)
     }
   }, [userRole])
 
@@ -45,51 +58,62 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
     setGbpError(null)
     try {
       const res = await fetch("/api/google-business/accounts")
-      if (!res.ok) throw new Error("Nao foi possivel carregar contas do Google")
-      const data = await res.json()
-      setGbpAccounts(Array.isArray(data) ? data : [])
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || "Não foi possível carregar as contas do Google.")
+      const accounts: Array<{ name: string; accountName?: string }> = Array.isArray(data) ? data : []
+      setGbpAccounts(accounts)
+      return accounts
     } catch (err) {
-      setGbpError(err instanceof Error ? err.message : "Erro ao carregar contas do Google")
+      setGbpError(err instanceof Error ? err.message : "Não foi possível carregar as contas do Google.")
+      return []
     } finally {
       setGbpBusy(false)
     }
   }, [])
 
-  const loadGbpLocations = useCallback(async (accountName: string) => {
-    if (!accountName) return
+  const loadGbpLocations = useCallback(async (accountName: string): Promise<Array<{ name: string; title?: string }>> => {
+    if (!accountName) return []
     setGbpBusy(true)
     setGbpError(null)
     try {
       const res = await fetch(`/api/google-business/locations?accountName=${encodeURIComponent(accountName)}`)
-      if (!res.ok) throw new Error("Nao foi possivel carregar locais do Google")
-      const data = await res.json()
-      setGbpLocations(Array.isArray(data) ? data : [])
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || "Não foi possível carregar os locais do Google.")
+      const locations: Array<{ name: string; title?: string }> = Array.isArray(data) ? data : []
+      setGbpLocations(locations)
+      return locations
     } catch (err) {
-      setGbpError(err instanceof Error ? err.message : "Erro ao carregar locais do Google")
+      setGbpError(err instanceof Error ? err.message : "Não foi possível carregar os locais do Google.")
+      return []
     } finally {
       setGbpBusy(false)
     }
   }, [])
 
+  /** Salva a conta e o local escolhidos; devolve se deu certo */
   const saveGbpTarget = useCallback(async () => {
     setGbpBusy(true)
     setGbpError(null)
     setGbpMessage(null)
     try {
+      const locationTitle = gbpLocations.find((l) => l.name === gbpLocationName)?.title || null
       const res = await fetch("/api/google-business/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountName: gbpAccountName, locationName: gbpLocationName }),
+        body: JSON.stringify({ accountName: gbpAccountName, locationName: gbpLocationName, locationTitle }),
       })
-      if (!res.ok) throw new Error("Nao foi possivel salvar conta/local do Google")
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || "Não foi possível salvar a conta e o local do Google.")
       setGbpMessage("Conta e local salvos.")
       await refreshGbp()
+      return true
     } catch (err) {
-      setGbpError(err instanceof Error ? err.message : "Erro ao salvar configuracao do Google")
+      setGbpError(err instanceof Error ? err.message : "Não foi possível salvar a conta e o local do Google.")
+      return false
     } finally {
       setGbpBusy(false)
     }
-  }, [gbpAccountName, gbpLocationName, refreshGbp])
+  }, [gbpAccountName, gbpLocationName, gbpLocations, refreshGbp])
 
   const syncGbpPosts = useCallback(async () => {
     setGbpBusy(true)
@@ -134,6 +158,9 @@ export function useGoogleBusiness({ userRole, fetchPromos }: UseGoogleBusinessOp
   return {
     gbpConnected,
     gbpReady,
+    gbpLoaded,
+    gbpConfigured,
+    gbpLocationTitle,
     gbpAccountName,
     setGbpAccountName,
     gbpLocationName,

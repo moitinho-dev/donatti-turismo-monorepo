@@ -114,9 +114,9 @@ describe("postGoogleAfterSite", () => {
     fetchMock.mockImplementation(async () => json({ connected: true, ready: false, simulate: false }))
     expect(await postGoogleAfterSite(promo())).toEqual({
       ok: false,
-      error: "Google não está conectado. Peça para um administrador conectar em Configurações.",
+      error: "Google não está conectado. Peça para um administrador conectar o Google no painel de promoções.",
     })
-    expect(GOOGLE_NOT_CONNECTED).toBe("Google não está conectado. Peça para um administrador conectar em Configurações.")
+    expect(GOOGLE_NOT_CONNECTED).toBe("Google não está conectado. Peça para um administrador conectar o Google no painel de promoções.")
     expect(loadSavedArt).not.toHaveBeenCalled()
     expect(renderDoc).not.toHaveBeenCalled()
     expect(calls().map((c) => c.url)).toEqual([STATUS])
